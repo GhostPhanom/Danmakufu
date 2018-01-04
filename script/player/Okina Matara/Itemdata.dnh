@@ -1,0 +1,9 @@
+item_image = "./Image/season_item.png"
+
+ItemData{
+	id = 9999
+	type = 9999
+	rect = (0, 0, 16, 16)
+	out = (0, 0, 0, 0)
+	render = ALPHA
+}

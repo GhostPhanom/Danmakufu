@@ -1,0 +1,24 @@
+function Delete() {
+	let dir = GetCurrentScriptDirectory;
+
+//Common
+	RemoveTexture(dir ~ "Default_Player_MagicCircle.png");
+	RemoveTexture(dir ~ "hitbox.png");
+	RemoveTexture(dir ~ "hitboxcircle.png");
+	RemoveTexture(dir ~ "graze_eff.png");
+	RemoveTexture(dir ~ "spellattack.png");
+
+//Player
+	RemoveTexture(dir ~ "reimu_cutin.png");
+	RemoveTexture(dir ~ "Player_Reimu.png");
+	RemoveTexture(dir ~ "ReimuSpell.png");
+	RemoveTexture(dir ~ "reimu_spell.png");	
+	RemoveTexture(dir ~ "bgreimu.png");	
+
+//Sound
+	RemoveSound(dir ~ "seBomb.wav");
+	RemoveSound(dir ~ "seScore.wav");
+	RemoveSound(dir ~ "seGraze.wav");
+	RemoveSound(dir ~ "seDeath.wav");
+	RemoveSound(dir ~ "seShot.wav");
+}

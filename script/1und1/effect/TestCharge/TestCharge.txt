@@ -1,0 +1,129 @@
+/*Ver 0.8
+!!This Charge effect is still slightly buggy and isn't a the finished product!!
+Feel free to poke around and change things if you wish!
+
+	This -> nTestCharge(x-position,y-position,frames,red-value,green-value,blue-value); <- This
+
+This effect is just the same image stacked on top of each other spinning and shrinking.
+This effect and image were created by neito, but you are free to use these as you please.
+
+notes: long charge times make it look abit silly because the spinning speed is random and if it hits a high number
+itll be spinning noticeably fast 
+*/
+/////////////////////////////////////////////////////////////////////////////
+
+task nTestCharge(x,y,flame,r1,g1,b1) //This is the Task youll be using for the effect!!
+{
+	ascent(i in 0..5){
+		lotemasLite(x+rand(-5,5),y+rand(-15,15),1*i,flame,r1,g1,b1,(1*i)/1); //Creates the Color Charge effect
+		lotemas(x+rand(-5,5),y+rand(-15,15),1*i,flame,250,250,250,(1*i)); //Creates the Black charge effect
+	}
+	loop(flame-30){ //No dot effects will be spawned if the charge times is less then or equal to 30 frames.
+		loop(rand(1,3)){
+			oltahmas(x+rand(-5,5),y+rand(-5,5),30,r1,g1,b1); //Creates Dots of black and the designated colors randomly that fly in at the given position.
+		}
+		yield;
+	}
+}
+
+task lotemas(x,y,Edscale,flame,r1,g1,b1,fractal)
+{
+	let imgEff = GetCurrentScriptDirectory~"./img/eltmas1.png";
+	let scale = Edscale;
+	let alpha = 0;
+	let angle = rand(0,360);
+	let angleR = rand(-3,3); 
+
+	let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
+	ObjPrim_SetTexture(obj, imgEff);
+	Obj_SetRenderPriority(obj, 0.23);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 256, 256);
+	ObjSprite2D_SetDestRect(obj, -128, -128, 128, 128);
+	ObjRender_SetAlpha(obj, 255);
+	ObjRender_SetPosition(obj, x, y, 0);
+	ascent(i in 0 .. flame){
+		//if(Obj_IsDeleted(bossObj)==true){Obj_Delete(obj);}
+		ObjRender_SetColor(obj, alpha*r1, alpha*g1, alpha*b1);
+		ObjRender_SetScaleXYZ(obj,scale,scale,1.0);
+		ObjRender_SetAngleXYZ(obj,0,0,angle);
+		angle+=angleR;
+		scale-= Edscale/flame;
+		alpha+= (1/fractal)/(flame/Edscale);
+		yield;
+	}
+	Obj_Delete(obj);
+}
+task lotemasLite(x,y,Edscale,flame,r1,g1,b1,fractal)
+{
+	let imgEff = GetCurrentScriptDirectory~"./img/eltmas1.png";
+	let scale = Edscale;
+	let alpha = 0;
+	let angle = rand(0,360);
+	let angleR = rand(-3,3); 
+
+	let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	ObjPrim_SetTexture(obj, imgEff);
+	Obj_SetRenderPriority(obj, 0.23);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 256, 256);
+	ObjSprite2D_SetDestRect(obj, -128, -128, 128, 128);
+	ObjRender_SetAlpha(obj, 255);
+	ObjRender_SetPosition(obj, x, y, 0);
+	ascent(i in 0 .. flame){
+		//if(Obj_IsDeleted(bossObj)==true){Obj_Delete(obj);}
+		ObjRender_SetColor(obj, alpha*r1, alpha*g1, alpha*b1);
+		ObjRender_SetScaleXYZ(obj,scale,scale,1.0);
+		ObjRender_SetAngleXYZ(obj,0,0,angle);
+		angle+=angleR;
+		scale-= Edscale/flame;
+		alpha+= (1/fractal)/(flame/Edscale);
+		yield;
+	}
+	Obj_Delete(obj);
+}
+task oltahmas(x,y,flame,r1,g1,b1)
+{
+	let imgEff = GetCurrentScriptDirectory~"./img/dot.png";
+	let scaleStandard = rand(0.25,1);
+	let scale = scaleStandard;
+	let alpha = 0;
+	let alphaDun = rand(0.1,1);
+
+	let accer = rand(0.3, 0.4);
+	let angle = rand(0, 360);
+	let r = accer*(flame^2)/2;
+	x += r*cos(angle);
+	y += r*sin(angle);
+
+	let ToF=0;
+	ToF=rand(-1,1);
+
+	let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+	if(ToF>0){
+		ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	}else if(ToF<0){
+		ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
+	}
+	ObjPrim_SetTexture(obj, imgEff);
+	Obj_SetRenderPriority(obj, 0.23);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 64, 64);
+	ObjSprite2D_SetDestRect(obj, -32, -32, 32, 32);
+	ObjRender_SetPosition(obj, x, y, 0);
+	ascent(i in 0 .. flame){
+		ObjRender_SetPosition(obj, x, y, 0);
+		ObjRender_SetAlpha(obj, 255*alpha);
+		//if(Obj_IsDeleted(bossObj)==true){Obj_Delete(obj);}
+		ObjRender_SetColor(obj, alpha*r1, alpha*g1, alpha*b1);
+		ObjRender_SetScaleXYZ(obj,scale,scale,1.0);
+		x -= accer*i*cos(angle);
+		y -= accer*i*sin(angle);
+		if(alpha<alphaDun){
+			alpha+= alphaDun/5;
+		}
+		scale-=scaleStandard/flame;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+/////////////////////////////////////////////////////////////////////////////

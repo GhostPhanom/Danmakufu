@@ -1,0 +1,26 @@
+function Delete() {
+	let dir = GetCurrentScriptDirectory;
+
+//Common
+	RemoveTexture(dir ~ "Default_Player_MagicCircle.png");
+	RemoveTexture(dir ~ "hitbox.png");
+	RemoveTexture(dir ~ "hitboxcircle.png");
+	RemoveTexture(dir ~ "graze_eff.png");
+	RemoveTexture(dir ~ "spellattack.png");
+
+//Player
+	RemoveTexture(dir ~ "Sakuya_cutin.png");
+	RemoveTexture(dir ~ "Player_Sakuya.png");
+	RemoveTexture(dir ~ "Sakuya_spell.png");	
+	RemoveTexture(dir ~ "bgsakuya.png");	
+	RemoveTexture(dir ~ "option.png");
+
+//Sound
+	RemoveSound(dir ~ "seBomb.wav");
+	RemoveSound(dir ~ "seBombUse.wav");
+	RemoveSound(dir ~ "seBombHit.wav");
+	RemoveSound(dir ~ "seScore.wav");
+	RemoveSound(dir ~ "seGraze.wav");
+	RemoveSound(dir ~ "seDeath.wav");
+	RemoveSound(dir ~ "seShot.wav");
+}

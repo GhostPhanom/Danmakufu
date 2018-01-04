@@ -1,0 +1,50 @@
+shot_image  = "./Image/Shot.png"
+
+
+ShotData{
+	id = 1 //pink shot
+	rect = (0, 0, 16, 48)
+	render = ALPHA
+	alpha=128
+	collision = 8
+}
+
+ShotData{
+	id = 2 //green shot
+	rect = (16, 0, 32, 48)
+	render = ALPHA
+	alpha=128
+	collision = 8
+}
+
+ShotData{
+	id = 3 //orange shot
+	rect = (32, 0, 48, 48)
+	render = ALPHA
+	alpha=128
+	collision = 8
+}
+
+ShotData{
+	id = 4 //blue shot
+	rect = (48, 0, 64, 48)
+	render = ALPHA
+	alpha=128
+	collision = 8
+}
+
+ShotData{
+	id = 5 //white shot
+	rect = (64, 0, 80, 48)
+	render = ALPHA
+	alpha=128
+	collision = 8
+}
+
+ShotData{
+	id = 6 //spell laser
+	rect = (80, 0, 144, 96)
+	render = ALPHA
+	alpha=255
+	collision = 8
+}

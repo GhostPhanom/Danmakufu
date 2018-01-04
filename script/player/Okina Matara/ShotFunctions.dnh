@@ -1,0 +1,299 @@
+function TShotRegular(x, y, v, a, g, d){
+	let obj = ObjShot_Create(OBJ_SHOT);
+	ObjShot_Regist(obj);
+	ObjMove_SetPosition(obj, x, y);
+	ObjMove_SetSpeed(obj, v);
+	ObjMove_SetAngle(obj, a);
+	ObjShot_SetGraphic(obj, g);
+	ObjShot_SetDamage(obj, d);
+	ObjShot_SetPenetration(obj, 1);
+
+	let obj_Anim = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj_Anim, GetCurrentScriptDirectory ~ "Image/Shot.png");
+	Obj_SetRenderPriorityI(obj_Anim, 60);
+	AnimateOnRemoval;
+	return obj;
+
+	task AnimateOnRemoval{
+		let pos = [0, 0];
+		let z = a;
+		let rect = GetShotDataInfoA1(g, TARGET_PLAYER, INFO_RECT);
+		while(!Obj_IsDeleted(obj)){
+			pos = [ObjRender_GetX(obj), ObjRender_GetY(obj)];
+			z = ObjMove_GetAngle(obj);
+			yield;
+		}
+
+		if(!Point_IsInArea(pos, -8, -8, GetStgFrameWidth + 8, GetStgFrameHeight + 8)){Obj_Delete(obj_Anim); return;}
+
+		ObjRender_SetPosition(obj_Anim, pos[0] + 16*cos(z), pos[1] + 16*sin(z), 0);
+		ObjRender_SetBlendType(obj_Anim, BLEND_ADD_ARGB);
+		ObjSprite2D_SetSourceRect(obj_Anim, rect[0], rect[1] + 48, rect[2], rect[3] + 16);
+		ObjSprite2D_SetDestCenter(obj_Anim);
+		ObjRender_SetAngleZ(obj_Anim, z + 90 + rand(-5, 5));
+
+		if(round(rand(0, 5)) == 0){SeasonItem(pos[0], pos[1], rand(60, 120));}
+
+		ascent(i in 0 .. 8){
+			ObjSprite2D_SetSourceRect(obj_Anim, rect[0], rect[1] + 48 + trunc(i/2)*16, rect[2], rect[3] + 16 + trunc(i/2)*16);
+			ObjSprite2D_SetDestCenter(obj_Anim);
+
+			ObjRender_SetScaleXYZ(obj_Anim, 1 + i*0.35, 1 + i*0.35, 0);
+			loop(3){yield;}
+		}
+		Obj_Delete(obj_Anim);
+	}
+}
+
+function TShotHome(x, y, v, a, g, d, homeEnd){
+	let obj = ObjShot_Create(OBJ_SHOT);
+	ObjShot_Regist(obj);
+	ObjMove_SetPosition(obj, x, y);
+	ObjMove_SetSpeed(obj, 0);
+	ObjMove_SetAcceleration(obj, 0.3);
+	ObjMove_SetMaxSpeed(obj, v);
+	ObjMove_SetAngle(obj, a);
+	ObjShot_SetGraphic(obj, g);
+	ObjShot_SetDamage(obj, d);
+	ObjShot_SetPenetration(obj, 1);
+
+	let obj_Anim = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj_Anim, GetCurrentScriptDirectory ~ "Image/Shot.png");
+	Obj_SetRenderPriorityI(obj_Anim, 60);
+	AnimateOnRemoval;
+	return obj;
+
+	task AnimateOnRemoval{
+		let pos = [0, 0];
+		let z = a;
+		let rect = GetShotDataInfoA1(g, TARGET_PLAYER, INFO_RECT);
+
+		let minDis = 600;
+		let enem = [x + 500*cos(a), y + 500*sin(a), minDis];
+		let counter = 0;
+		let speed = v;
+		let intensity = 0;
+
+		while(!Obj_IsDeleted(obj)){ //I should stop stealing this code from the random player generator, but it just works
+			pos = [ObjRender_GetX(obj), ObjRender_GetY(obj)];
+
+			counter++;
+			let ar = GetIntersectionRegistedEnemyID;
+			if(length(ar) > 0 && counter > 15 && (counter < homeEnd || homeEnd < 0)){
+				let ar = GetIntersectionRegistedEnemyID;
+				ascent(i in 0..(length(ar))){
+					let dis = ((x - ObjMove_GetX(ar[i]))^2 + (y - ObjMove_GetY(ar[i]))^2)^0.5;
+					if(dis < minDis){
+						if(dis<enem[2]){
+							enem[2] = dis;
+							enem[0] = ObjMove_GetX(ar[i]);
+							enem[1] = ObjMove_GetY(ar[i]);
+						}
+					}
+				}
+				enem[2] = minDis;
+
+				let dir = NormalizeAngle(atan2(enem[1] - pos[1], enem[0] - pos[0]));
+
+				TurnToAngle(obj, intensity, dir);
+				intensity += 0.25;
+			}
+
+			z = ObjMove_GetAngle(obj);
+			yield;
+		}
+		if(!Point_IsInArea(pos, -8, -8, GetStgFrameWidth + 8, GetStgFrameHeight + 8)){Obj_Delete(obj_Anim); return;}
+
+		ObjRender_SetPosition(obj_Anim, pos[0] + 16*cos(z), pos[1] + 16*sin(z), 0);
+		ObjRender_SetBlendType(obj_Anim, BLEND_ADD_ARGB);
+		ObjSprite2D_SetSourceRect(obj_Anim, rect[0], rect[1] + 48, rect[2], rect[3] + 16);
+		ObjSprite2D_SetDestCenter(obj_Anim);
+		ObjRender_SetAngleZ(obj_Anim, z + 90 + rand(-5, 5));
+
+		if(round(rand(0, 5)) == 0){SeasonItem(pos[0], pos[1], rand(60, 120));}
+
+		ascent(i in 0 .. 8){
+			ObjSprite2D_SetSourceRect(obj_Anim, rect[0], rect[1] + 48 + trunc(i/2)*16, rect[2], rect[3] + 16 + trunc(i/2)*16);
+			ObjSprite2D_SetDestCenter(obj_Anim);
+
+			ObjRender_SetScaleXYZ(obj_Anim, 1 + i*0.35, 1 + i*0.35, 0);
+			loop(3){yield;}
+		}
+		Obj_Delete(obj_Anim);
+	}
+}
+
+function TLaser(parent, a, d){
+	let obj = ObjShot_Create(OBJ_STRAIGHT_LASER);
+	ObjShot_Regist(obj);
+	ObjMove_SetPosition(obj, ObjRender_GetX(parent), ObjRender_GetY(parent));
+	ObjMove_SetAngle(obj, a);
+	ObjShot_SetGraphic(obj, 0);
+
+	let obj_Anim = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj_Anim, GetCurrentScriptDirectory ~ "Image/Shot.png");
+	Obj_SetRenderPriorityI(obj_Anim, 40);
+	ObjRender_SetAngleZ(obj_Anim, a);
+	ObjRender_SetScaleY(obj_Anim, 0);
+	ObjRender_SetAlpha(obj_Anim, 96);
+
+	let obj_baseAnim = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj_baseAnim, GetCurrentScriptDirectory ~ "Image/Shot.png");
+	Obj_SetRenderPriorityI(obj_baseAnim, 50);
+	ObjSprite2D_SetSourceRect(obj_baseAnim, 240, 0, 256, 32);
+	ObjSprite2D_SetDestCenter(obj_baseAnim);
+	ObjRender_SetAngleZ(obj_baseAnim, rand(0, 360));
+	ObjRender_SetScaleXYZ(obj_baseAnim, 0, 0, 0);
+	ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+	ObjRender_SetScaleXYZ(obj, 0, 0, 0);
+	ObjRender_SetAlpha(obj_baseAnim, 96);
+	HandleLaser;
+	return obj;
+
+	task HandleLaser{
+		let pos = [0, 0];
+		let endPos = [0, 0];
+		let c = 0;
+
+		let enememes = [];
+		let laserLength = 0;
+		while(!Obj_IsDeleted(obj)){
+			if(Obj_IsDeleted(parent)){Obj_Delete(obj);}
+
+			PlaySoundA1(5, 25, 0);
+			if(c < 5){
+				ObjRender_SetScaleY(obj_Anim, deceleration(0, 1, c/5));
+				ObjRender_SetScaleXYZ(obj_baseAnim, deceleration(0, 0.35, c/5), deceleration(0, 0.75, c/5), 0);
+			}
+
+			laserLength = GetDist(endPos[0], endPos[1], ObjRender_GetX(parent), ObjRender_GetY(parent));
+
+			HitboxBullet;
+
+			ObjMove_SetPosition(obj, ObjRender_GetX(parent), ObjRender_GetY(parent));
+			ObjRender_SetPosition(obj_Anim, ObjMove_GetX(obj), ObjMove_GetY(obj), 0);
+			ObjSprite2D_SetSourceRect(obj_Anim, 0 - c*7.5, 112, laserLength - c*7.5, 128);
+			ObjSprite2D_SetDestRect(obj_Anim, 0, -4, laserLength, 4);
+
+			ObjRender_SetAngleZ(obj_baseAnim, c*15);
+			ObjRender_SetPosition(obj_baseAnim, ObjMove_GetX(obj), ObjMove_GetY(obj), 0);
+
+			c++;
+			yield;
+		}
+
+		c = 0;
+		loop(5){
+			ObjRender_SetScaleY(obj_Anim, deceleration(1, 0, c/5));
+			ObjRender_SetScaleXYZ(obj_baseAnim, deceleration(0.5, 0, c/5), deceleration(0.75, 0, c/5), 0);
+			c++;
+			yield;
+		}
+		Obj_Delete(obj_Anim);
+		Obj_Delete(obj_baseAnim);
+
+		task HitboxBullet{
+			let shot = CreateShotA1(ObjRender_GetX(parent), ObjRender_GetY(parent), 0, a, 1, 0);
+			ObjShot_SetDamage(shot, d/2);
+			ObjShot_SetPenetration(shot, 2);
+			Obj_SetVisible(shot, false);
+
+			let shot_Anim = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjPrim_SetTexture(shot_Anim, GetCurrentScriptDirectory ~ "Image/Shot.png");
+			ObjSprite2D_SetSourceRect(shot_Anim, 224, 96, 256, 112);
+			ObjSprite2D_SetDestCenter(shot_Anim);
+			ObjRender_SetBlendType(shot_Anim, BLEND_ADD_ARGB);
+			ObjRender_SetAngleZ(shot_Anim, a);
+			ObjRender_SetAlpha(shot_Anim, 96);
+			Obj_SetVisible(shot_Anim, false);
+			Obj_SetRenderPriorityI(shot_Anim, 60);
+
+			let dis = 0;
+			while(!Obj_IsDeleted(shot)){
+				if(ObjShot_GetPenetration(shot) < 2){
+					endPos = [ObjMove_GetX(shot), ObjMove_GetY(shot)];
+				}
+				if(!Obj_IsInArea(shot, -16, -16, GetStgFrameWidth + 16, GetStgFrameHeight + 48)){
+					Obj_Delete(shot_Anim);
+					endPos = [ObjMove_GetX(shot), ObjMove_GetY(shot)];
+					Obj_Delete(shot);
+					return;
+				}
+
+				ObjMove_SetPosition(shot, ObjRender_GetX(parent) + dis*cos(a), ObjRender_GetY(parent) + dis*sin(a));
+				dis += 20;
+				yield;
+			}
+
+			ObjRender_SetPosition(shot_Anim, endPos[0], endPos[1], 0);
+			Obj_SetVisible(shot_Anim, true);
+
+			ascent(i in 0 .. 11){
+				ObjRender_SetScaleXYZ(shot_Anim, linear(1, 3, i/10), linear(1, 0, i/10), 0);
+				ObjRender_SetPosition(shot_Anim, endPos[0] + linear(0, 64, i/10)*cos(a), endPos[1] + linear(0, 64, i/10)*sin(a), 0);
+				yield;
+			}
+			Obj_Delete(shot_Anim);
+		}
+	}
+}
+
+task SeasonItem(x, y, a){
+	let anim = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(anim, 60);
+	ObjPrim_SetTexture(anim, GetCurrentScriptDirectory ~ "Image/season_item.png");
+	ObjSprite2D_SetSourceRect(anim, 0, 0, 16, 16);
+	ObjSprite2D_SetDestCenter(anim);
+	ObjRender_SetBlendType(anim, BLEND_ADD_ARGB);
+	ObjRender_SetPosition(anim, x, y, 0);
+	moveDeceleration(anim, x + 80*cos(a), y + 80*sin(a), 30);
+
+	let z = 0;
+	let prematureAutoCollect = false;
+	loop(30){
+		if(IsReleasing || IsPlayerSpellActive){prematureAutoCollect = true;}
+		ObjRender_SetAngleZ(anim, z);
+		z += 0.5;
+		yield;
+	}
+	Obj_Delete(anim);
+
+	let obj = CreateItemU1(9999, x + 80*cos(a), y + 80*sin(a), 10);
+	Obj_SetValue(obj, "SeasonItem", true);
+	ObjRender_SetAlpha(obj, 128);
+	ObjItem_SetRenderScoreEnable(obj, false);
+	ObjMove_SetSpeed(obj, 0);
+	ObjMove_SetAcceleration(obj, 0.1);
+	ObjMove_SetMaxSpeed(obj, 2);
+	ObjMove_SetAngle(obj, 90);
+
+	let autoCollect = false;
+	let home = false;
+	while(!Obj_IsDeleted(obj)){
+		if((GetPlayerY < 130 || IsReleasing || IsPlayerSpellActive || prematureAutoCollect) && !autoCollect){
+			home = true;
+
+			autoCollect = true;
+			ObjMove_SetAcceleration(obj, 0);
+			ObjMove_SetMaxSpeed(obj, 0);
+			ObjMove_SetSpeed(obj, 7);
+		}
+
+		if(GetObjectDistance(obj, GetPlayerObjectID) < 30){
+			PlaySoundA1(4, 70, 0);
+			if(seasonGauge < 600){seasonGauge++;}
+			AddScore(10);
+			Obj_Delete(obj);
+			break;
+		}
+
+		if(home){
+			ObjMove_SetAngle(obj, GetAngleToPlayer(obj));
+		}
+
+
+		ObjRender_SetAngleZ(obj, z);
+		z += 2;
+		yield;
+	}
+}

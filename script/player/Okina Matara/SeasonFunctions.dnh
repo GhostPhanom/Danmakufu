@@ -1,0 +1,256 @@
+let releasing = false;
+let subOptionAlive = true;
+
+task SeasonGauge{
+	let leftBound = GetPlayerClip[0] - 8;
+	let boundHeight = GetPlayerClip[3] + 20;
+
+	let gaugeBack = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(gaugeBack, 70);
+	ObjPrim_SetTexture(gaugeBack, GetCurrentScriptDirectory ~ "Image/Field.png");
+	ObjSprite2D_SetSourceRect(gaugeBack, 0, 0, 50, 4);
+	ObjSprite2D_SetDestRect(gaugeBack, 0, -2, 50, 2);
+	ObjRender_SetColor(gaugeBack, 128, 128, 160);
+	ObjRender_SetPosition(gaugeBack, leftBound + 5, boundHeight - 10, 0);
+
+	let gaugeFill = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(gaugeFill, 71);
+	ObjPrim_SetTexture(gaugeFill, GetCurrentScriptDirectory ~ "Image/Field.png");
+	ObjSprite2D_SetSourceRect(gaugeFill, 0, 0, 50, 4);
+	ObjSprite2D_SetDestRect(gaugeFill, 0, -2, 50, 2);
+	ObjRender_SetColor(gaugeFill, 255, 255, 0);
+	ObjRender_SetPosition(gaugeFill, leftBound + 5, boundHeight - 10, 0);
+
+	let icon = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(icon, 72);
+	ObjPrim_SetTexture(icon, GetCurrentScriptDirectory ~ "Image/gauge_img.png");
+	ObjSprite2D_SetSourceRect(icon, 0, 0, 32, 32);
+	ObjSprite2D_SetDestCenter(icon);
+	ObjRender_SetPosition(icon, leftBound + 10, boundHeight - 18, 0);
+	ObjRender_SetScaleXYZ(icon, 0.5, 0.5, 0);
+
+	let releasable = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(releasable, 72);
+	ObjPrim_SetTexture(releasable, GetCurrentScriptDirectory ~ "Image/gauge_img.png");
+	ObjSprite2D_SetSourceRect(releasable, 0, 32, 64, 48);
+	ObjSprite2D_SetDestRect(releasable, 0, -8, 64, 8);
+	ObjRender_SetPosition(releasable, leftBound + 20, boundHeight - 15, 0);
+	ObjRender_SetScaleXYZ(releasable, 0.5, 0.5, 0);
+	Obj_SetVisible(releasable, false);
+
+	let level = ObjText_Create();
+	Obj_SetRenderPriorityI(level, 72);
+	ObjText_SetFontSize(level, 10);
+	ObjText_SetFontBold(level, true);
+	ObjText_SetFontBorderWidth(level, 1);
+	ObjText_SetFontBorderType(level, BORDER_FULL);
+	ObjText_SetFontColorTop(level, 255, 255, 0);
+	ObjText_SetFontColorBottom(level, 192, 192, 0);
+	ObjText_SetFontBorderColor(level, 0, 0, 0);
+	ObjRender_SetPosition(level, leftBound + 58, boundHeight - 16, 0);
+	Obj_SetVisible(level, false);
+
+	let gaugeSize = 0;
+	let playFillSound = false;
+	let gaugeLevel = 1;
+
+	HandleReleases;
+
+	loop{
+		if(seasonGauge >= 100){Obj_SetVisible(releasable, true); Obj_SetVisible(level, true);}else{Obj_SetVisible(releasable, false); Obj_SetVisible(level, false);}
+
+		gaugeSize = ((seasonGauge%100)/100) * 50;
+
+		//plays the sound when the gauge increases in level
+		if(trunc(seasonGauge/100) > gaugeLevel && seasonGauge > 0){
+			gaugeLevel = trunc(seasonGauge/100);
+			PlaySoundA1(6, 150, 0);
+
+			SpawnSeasonOptions(gaugeLevel);
+		}
+
+		if(seasonGauge >= 600){
+			gaugeSize = 50;
+		}
+
+		ObjSprite2D_SetSourceRect(gaugeFill, 0, 0, gaugeSize, 4);
+		ObjSprite2D_SetDestRect(gaugeFill, 0, -2, gaugeSize, 2);
+
+		ObjText_SetText(level, IntToString(gaugeLevel));
+		yield;
+	}
+
+	task HandleReleases{
+		loop{
+			if(GetVirtualKeyState(VK_RELEASE) == KEY_PUSH && GetPlayerState == STATE_NORMAL && IsPermitPlayerRelease && seasonGauge >= 100){
+				seasonGauge -= gaugeLevel*100;
+
+				PlaySoundA1(0, 70, 0);
+				PlaySoundA1(10, 70, 0);
+				SetPlayerInvincibilityFrame(30);
+				Release(GetPlayerX, GetPlayerY, 2.5, 270, gaugeLevel/6, 30 + 15 * max(1, gaugeLevel/2));
+				gaugeLevel = 0;
+			}
+			yield;
+		}
+	}
+}
+
+task Release(x, y, v, a, size, time){
+	let obj = ObjShot_Create(OBJ_SHOT);
+	ObjShot_Regist(obj);
+	ObjShot_SetIntersectionCircleA1(obj, 32 + 16*size);
+	ObjShot_SetAutoDelete(obj, false);
+	ObjShot_SetEraseShot(obj, true);
+	ObjShot_SetDamage(obj, damage*5);
+	ObjShot_SetPenetration(obj, 1000);
+	ObjShot_SetSpellFactor(obj, false);
+	ObjMove_SetPosition(obj, x, y);
+	ObjMove_SetSpeed(obj, v);
+	ObjMove_SetAngle(obj, a);
+
+	let renderBorder = ObjPrim_CreateRegularPolygon(x, y, 0, 40, 18);
+	Obj_SetRenderPriorityI(renderBorder, 29);
+	ObjRender_SetScaleXYZ(renderBorder, 2 + size, 2 + size, 0);
+	ObjRender_SetBlendType(renderBorder, BLEND_ADD_ARGB);
+	ObjRender_SetColor(renderBorder, 255, 160, 160);
+	ObjRender_SetPosition(renderBorder, x, y, 0);
+
+	let render = ObjPrim_CreateRegularPolygon(x, y, 0, 40, 16);
+	Obj_SetRenderPriorityI(render, 30);
+	ObjRender_SetScaleXYZ(render, 2 + size, 2 + size, 0);
+	ObjRender_SetBlendType(render, BLEND_SUBTRACT);
+	ObjRender_SetColor(render, 0, 160, 160);
+	ObjRender_SetPosition(render, x, y, 0);
+
+	SetForbidPlayerRelease(true);
+	subOptionAlive = false;
+
+	let shots = [];
+	let z = 0;
+	releasing = true;
+	loop(time){
+		shots = GetShotIdInCircleA2(ObjMove_GetX(obj), ObjMove_GetY(obj), 32 + 16*size + 10, TARGET_ENEMY);
+
+		if(length(shots) > 0){ //converts bullets into season items
+			ascent(i in 0 .. length(shots)){
+				if(!ObjShot_IsSpellResist(shots[i]) && !Obj_GetValueD(shots[i], "ItemCheck", false)){
+					SeasonItem(ObjMove_GetX(shots[i]), ObjMove_GetY(shots[i]), GetAngle(ObjMove_GetX(shots[i]), ObjMove_GetY(shots[i]), ObjMove_GetX(obj), ObjMove_GetY(obj)));
+					Obj_SetValue(shots[i], "ItemCheck", true);
+				}
+			}
+		}
+
+		CollectAllItems;
+
+		ObjShot_SetIntersectionCircleA1(obj, 32 + 16*size);
+		ObjShot_SetPenetration(obj, 1000);
+
+		ObjRender_SetPosition(renderBorder, ObjMove_GetX(obj), ObjMove_GetY(obj), 0);
+		ObjRender_SetScaleXYZ(renderBorder, 2 + size, 2 + size, 0);
+		ObjRender_SetAngleZ(renderBorder, z);
+
+		ObjRender_SetPosition(render, ObjMove_GetX(obj), ObjMove_GetY(obj), 0);
+		ObjRender_SetScaleXYZ(render, 2 + size, 2 + size, 0);
+		ObjRender_SetAngleZ(render, z);
+
+		size += 0.02;
+		z += 10;
+		yield;
+	}
+	Obj_Delete(obj);
+	ascent(i in 0 .. 21){
+		ObjRender_SetAlpha(renderBorder, linear(255, 0, i/20));
+		ObjRender_SetColor(render, 0, linear(160, 0, i/20), linear(160, 0, i/20));
+		yield;
+	}
+	Obj_Delete(renderBorder);
+	Obj_Delete(render);
+	loop(60){yield;}
+
+	SetForbidPlayerRelease(false);
+	releasing = false;
+	subOptionAlive = true;
+}
+
+task SpawnSeasonOptions(num){
+	let dir = 90;
+	loop(num){
+		SubOption(24*cos(dir), 24*sin(dir), 270 - 5*cos(dir), num);
+		dir += 360/num;
+	}
+}
+
+
+
+task SubOption(x, y, lasa, level){
+	let objOption = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(objOption, 41);
+	ObjRender_SetBlendType(objOption, BLEND_ALPHA);
+	ObjPrim_SetTexture(objOption, imgOption);
+	ObjSprite2D_SetSourceRect(objOption, 0, 0, 16, 16);
+	ObjSprite2D_SetDestCenter(objOption);
+	ObjRender_SetPosition(objOption, GetPlayerX, GetPlayerY, 0);
+	ObjRender_SetScaleXYZ(objOption, 0.5, 0.5, 0.5);
+
+	let destX;
+	let destY;
+	let dist;
+	let dir;
+
+	let a = 0;
+	let lasersactive = false;
+	let laserObj = ID_INVALID;
+
+	let count = 0;
+	let animCount = 0;
+	while(!Obj_IsDeleted(objOption)){
+		if(!optionAlive || trunc(seasonGauge/100) != level){
+			Obj_Delete(objOption);
+			Obj_Delete(laserObj);
+		}
+
+		destX = GetPlayerX + x;
+		destY = GetPlayerY + y;
+
+		let opX = ObjRender_GetX(objOption);
+		let opY = ObjRender_GetY(objOption);
+		dist = GetDist(opX, opY, destX, destY);
+		dir = GetAngle(opX, opY, destX, destY);
+		opX += 0.25 * dist * cos(dir);
+		opY += 0.25 * dist * sin(dir);
+		ObjRender_SetPosition(objOption, opX, opY, 0);
+
+		if(GetVirtualKeyState(VK_SHOT) != KEY_FREE){
+			if(CanShoot && !IsPlayerSpellActive){
+				if(!lasersactive){
+					laserObj = TLaser(objOption, lasa, damage*0.5);
+					lasersactive = true;
+				}
+			}
+		}
+
+		if(GetVirtualKeyState(VK_SHOT) == KEY_FREE || !CanShoot || IsPlayerSpellActive){
+			Obj_Delete(laserObj);
+			lasersactive = false;
+		}
+
+		count++;
+		a += 2;
+		yield;
+	}
+}
+
+
+
+function SetForbidPlayerRelease(bool){
+	releaseBlock = bool;
+}
+
+function IsPermitPlayerRelease{
+	return !releaseBlock;
+}
+
+function IsReleasing{
+	return releasing;
+}

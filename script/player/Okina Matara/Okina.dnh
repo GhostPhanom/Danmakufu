@@ -1,0 +1,643 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#ID["Okina"]
+#Title["Okina Matara"]
+#Text["Speed: 4.5 / 1.25[r]Shot: Four Seasons[r]Sub-Shot: Hidden Star[r]Spell: Halo of the Secret God[r][r]Press C for a season release"]
+#Image["./Image/OkinaCut.png"]
+#ReplayName["Okina"]
+#include "./Functions.dnh"
+#include "./SeasonFunctions.dnh"
+#include "./ShotFunctions.dnh"
+#include "./SoundFunctions.dnh"
+
+let current = GetCurrentScriptDirectory();
+
+let objPlayer = GetPlayerObjectID();
+//let GetPlayerObjectID = ObjPrim_Create(OBJ_SPRITE_2D);
+let playerdead = false;
+let IsPlayerSpawning = false;
+let IsHitboxActive = false;
+let optionAlive = true;
+let CanShoot = true;
+
+let isvisible = true;
+let spellActive = false;
+
+let imgPlayer = current ~ "Image/Okina.png";
+let imgOption = current ~ "Image/option.png";
+let snowflake = current ~ "Image/Focus.png";
+
+let level = 1;
+let damage = 1; //bullet damage factor
+
+let seasonGauge = 100;
+let releaseBlock = false;
+
+let VK_RELEASE = 99;
+
+@Initialize{
+	LoadPlayerShotData(current ~ "Shotdata.dnh");
+	LoadItemData(current ~ "Itemdata.dnh");
+	SetPlayerAutoItemCollectLine(130);
+	ObjPlayer_AddIntersectionCircleA1(objPlayer, 0, 0, 0.5, 20); 
+
+	SetPlayerSpeed(4.5, 1.25);
+	SetPlayerClip(11,11,GetStgFrameWidth-11,GetStgFrameHeight-18);
+	RenderPlayerImage(GetPlayerObjectID, 0);
+
+	AddVirtualKey(VK_RELEASE, KEY_C, KEY_INVALID); //season release key
+
+	Shoot;
+	Options;
+	SpawnSeasonOptions(trunc(seasonGauge/100));
+	TMagicCircle;
+	SeasonGauge;
+}
+
+@Event{
+	alternative(GetEventType())
+		case(EV_REQUEST_SPELL)
+		{	
+			let spell = GetPlayerSpell();
+			if(spell >= 1 && IsPermitPlayerSpell() && !spellActive){
+				Spell_Okina;
+				SetScriptResult(true);
+				SetPlayerSpell(spell-1);
+			}else{
+				SetScriptResult(false);
+			}
+		}
+		case(EV_GRAZE){
+			let num = GetEventArgument(0);
+			let obj = GetEventArgument(1);
+
+			PlaySoundA1(3, 70, 0);
+			SetAreaCommonData("System", "PointValue", GetAreaCommonData("System", "PointValue", 10000) + 0.5);
+			
+			ascent(i in 0 .. num){
+				GrazePiece;
+
+				let a = GetAngle(GetPlayerX, GetPlayerY, ObjRender_GetX(obj[i]), ObjRender_GetY(obj[i]));
+				SeasonItem(GetPlayerX, GetPlayerY, a);
+			}
+		}
+		case(EV_HIT)
+		{
+			PlaySoundA1(8, 70, 0);
+			PlayerExplode(current ~ "Image/Explode.png");
+		}
+		case(EV_PLAYER_SHOOTDOWN){
+			playerdead = true;
+			IsHitboxActive = false;
+			optionAlive = false;
+		}
+		case(EV_PLAYER_REBIRTH)
+		{
+			SetPlayerSpell(3 + GetAreaCommonData("System", "SpellFragmentNum", 0)*GetAreaCommonData("System", "SpellFragmentValue", [1/5, 5])[0]);
+			optionAlive = true;
+			playerdead = false;
+
+			Options;
+			SpawnSeasonOptions(trunc(seasonGauge/100));
+
+			SetPlayerInvincibilityFrame(180);
+			DeleteShotAll(TYPE_SHOT, TYPE_IMMEDIATE);
+		}
+		case(EV_GET_ITEM)
+		{
+			let itemType = GetEventArgument(0);
+
+			alternative(itemType)
+			case(ITEM_1UP){
+				PlaySoundA1(2, 70, 0);
+				SetPlayerLife(GetPlayerLife + 1);
+				WriteLog("ITEM_1UP");
+			}
+			case(ITEM_1UP_S){
+				PlaySoundA1(2, 70, 0);
+				SetPlayerLife(GetPlayerLife + 1);
+				WriteLog("ITEM_1UP_S");
+			}
+			case(ITEM_SPELL){
+				PlaySoundA1(1, 70, 0);
+				SetPlayerSpell(GetPlayerSpell + 1);
+				WriteLog("ITEM_SPELL");
+			}
+			case(ITEM_SPELL_S){
+				PlaySoundA1(1, 70, 0);
+				SetPlayerSpell(GetPlayerSpell + 1);
+				WriteLog("ITEM_SPELL_S");
+			}
+			case(ITEM_POWER){
+				PlaySoundA1(4, 70, 0);
+				WriteLog("ITEM_POWER");
+			}
+			case(ITEM_POWER_S){
+				PlaySoundA1(4, 70, 0);
+				WriteLog("ITEM_POWER_S");
+			}
+			case(ITEM_POINT){
+				PlaySoundA1(4, 70, 0);
+				WriteLog("ITEM_POWER");
+			}
+			case(ITEM_POINT_S){
+				PlaySoundA1(4, 70, 0);
+				WriteLog("ITEM_POWER_S");
+			}
+		}
+}
+
+@Loading{
+}
+
+@MainLoop{
+	if(GetPlayerState==STATE_DOWN || IsPermitPlayerShot==false){CanShoot = false;}
+	if(GetPlayerState==STATE_NORMAL && IsPermitPlayerShot==true){CanShoot = true;}
+
+	SetPlayerClip(11,11,GetStgFrameWidth-11,GetStgFrameHeight-18);
+	if(GetVirtualKeyState(VK_SLOWMOVE)!=KEY_FREE){CollectItemsInCircle(GetPlayerX, GetPlayerY, 48);}else{CollectItemsInCircle(GetPlayerX, GetPlayerY, 16);}
+	if(GetVirtualKeyState(VK_SLOWMOVE)==KEY_HOLD&&!IsHitboxActive){RenderHitboxImage(objPlayer, 0, 1);}
+
+	SetForbidPlayerRelease(!IsPermitPlayerSpell);
+	yield;
+}
+
+@Finalize{
+
+}
+
+task Shoot{
+	let count = 0;
+	loop{
+		if(GetVirtualKeyState(VK_SHOT) != KEY_FREE && count%2 == 0){
+			if(CanShoot && !IsPlayerSpellActive){
+				//Regular shots
+				PlaySoundA1(9, 70, 0);
+				TShotRegular(GetPlayerX + 8, GetPlayerY, 30, 270, 5, damage*3.5);
+				TShotRegular(GetPlayerX - 8, GetPlayerY, 30, 270, 5, damage*3.5);
+			}
+		}
+		count++;
+		yield;
+	}
+}
+
+task Options{
+	Option(-32, 0, -24, -16, -40, 4, [0, 0, 255]);
+	Option(-16, -32, -12, -32, -20, 3, [255, 128, 0]);
+
+	Option(16, -32, 12, -32, 20, 2, [0, 255, 0]);
+	Option(32, 0, 24, -16, 40, 1, [255, 0, 255]);
+}
+
+task Option(x, y, focx, focy, shota, g, color){
+	let objOption = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(objOption, 31);
+	ObjRender_SetBlendType(objOption, BLEND_ALPHA);
+	ObjPrim_SetTexture(objOption, imgOption);
+	ObjSprite2D_SetSourceRect(objOption, 0, 0, 16, 16);
+	ObjSprite2D_SetDestCenter(objOption);
+	ObjRender_SetPosition(objOption, GetPlayerX, GetPlayerY, 0);
+
+	let objOptionBack = ObjPrim_Create(OBJ_SPRITE_2D);
+	Obj_SetRenderPriorityI(objOptionBack, 30);
+	ObjRender_SetBlendType(objOptionBack, BLEND_ADD_ARGB);
+	ObjPrim_SetTexture(objOptionBack, imgOption);
+	ObjSprite2D_SetSourceRect(objOptionBack, 0, 0, 16, 16);
+	ObjSprite2D_SetDestCenter(objOptionBack);
+	ObjRender_SetPosition(objOptionBack, GetPlayerX, GetPlayerY, 0);
+	ObjRender_SetColor(objOptionBack, color[0], color[1], color[2]);
+
+	let destX;
+	let destY;
+	let dist;
+	let dir;
+
+	let a = 0;
+
+	let count = 0;
+	let animCount = 0;
+	while(!Obj_IsDeleted(objOption)){
+		if(!optionAlive){Obj_Delete(objOption); Obj_Delete(objOptionBack);}
+
+		if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_FREE){
+			destX = GetPlayerX + x;
+			destY = GetPlayerY + y
+		}else{
+			destX = GetPlayerX + focx;
+			destY = GetPlayerY + focy;
+		}
+
+		let opX = ObjRender_GetX(objOption);
+		let opY = ObjRender_GetY(objOption);
+		dist = GetDist(opX, opY, destX, destY);
+		dir = GetAngle(opX, opY, destX, destY);
+		opX += 0.25 * dist * cos(dir);
+		opY += 0.25 * dist * sin(dir);
+		ObjRender_SetPosition(objOption, opX, opY, 0);
+		ObjRender_SetPosition(objOptionBack, opX, opY, 0);
+
+		if(GetVirtualKeyState(VK_SHOT) != KEY_FREE && count%5 == 0){
+			if(CanShoot && !IsPlayerSpellActive){
+				if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_FREE){
+					TShotHome(opX, opY, 10, 270 + shota, g, damage*3.5, -1);
+				}else{
+					TShotHome(opX, opY, 10, 270 + shota/5, g, damage*3.5, -1);
+				}
+			}
+		}
+
+		ObjRender_SetAngleZ(objOption, 15*sin(count*2));
+		ObjRender_SetAngleZ(objOptionBack, 15*sin(count*2));
+		ObjRender_SetScaleXYZ(objOptionBack, (|cos(count*2)*0.5|) + 1, (|cos(count*2)*0.5|) + 1, 0);
+
+		count++;
+		a += 2;
+		yield;
+	}
+}
+
+task RenderPlayerImage(ObjectRender, offset){
+	let anim_count = 0;
+	let anim_type = 0;
+	let Uber = 0;
+	let Uberblink = 0;
+	
+	let x = 32;
+	let y = 48;
+	let ri = 6;
+	let rm = 4;
+	let bn = 0;
+	
+	ObjPrim_SetTexture(ObjectRender, imgPlayer);
+	Obj_SetRenderPriority(ObjectRender, 0.45);
+	
+	loop{
+		if(Obj_IsDeleted(ObjectRender)){return;}
+
+		if(GetPlayerState!=STATE_DOWN && isvisible){
+			ObjRender_SetAlpha(ObjectRender, 255);
+		}
+		if(GetPlayerState==STATE_DOWN || playerdead || !isvisible){ObjRender_SetAlpha(ObjectRender, 0);}
+		
+		
+		ObjRender_SetPosition(ObjectRender, GetPlayerX, GetPlayerY, 0);
+		if(!IsPlayerSpawning){
+			if(GetPlayerState!=STATE_HIT){
+				Blink;
+				if(GetVirtualKeyState(VK_RIGHT) == KEY_FREE && GetVirtualKeyState(VK_LEFT) == KEY_FREE){
+					if(anim_type != 0){
+						bn = 0;
+						anim_count = 0;
+						anim_type = 0;
+					}
+				}
+				if(GetVirtualKeyState(VK_LEFT) == KEY_PUSH || GetVirtualKeyState(VK_LEFT) == KEY_HOLD){
+					if(GetVirtualKeyState(VK_RIGHT) != KEY_HOLD && anim_type != 1){
+						bn = 0;
+						anim_count = 0;
+						anim_type = 1;
+					}
+				}
+				if(GetVirtualKeyState(VK_RIGHT) == KEY_PUSH || GetVirtualKeyState(VK_RIGHT) == KEY_HOLD){
+					if(anim_type != 2){
+						bn = 0;
+						anim_count = 0;
+						anim_type = 2;
+					}
+				}
+				anim_count+=(1+bn);
+				if(floor(anim_count) != anim_count && bn == 0){
+					anim_count = floor(anim_count);
+				}
+			}
+		}else{
+			Blink;
+			anim_count+=1;
+			if(anim_type != 0){
+				anim_count = 0;
+				anim_type = 0;
+			}
+		}
+		//0 - Idle; 1 - Left; 2 - Right
+	
+		if(anim_type==0){
+			if(round(anim_count) >= 0){ObjSprite2D_SetSourceRect(ObjectRender, 0, 0+offset, x, y+offset);}
+			if(round(anim_count) >= ri){ObjSprite2D_SetSourceRect(ObjectRender, x, 0+offset, x*2, y+offset);}
+			if(round(anim_count) >= ri*2){ObjSprite2D_SetSourceRect(ObjectRender, x*2, 0+offset, x*3, y+offset);}
+			if(round(anim_count) >= ri*3){ObjSprite2D_SetSourceRect(ObjectRender, x*3, 0+offset, x*4, y+offset);}
+			if(round(anim_count) >= ri*4){ObjSprite2D_SetSourceRect(ObjectRender, x*4, 0+offset, x*5, y+offset);}
+			if(round(anim_count) >= ri*5){ObjSprite2D_SetSourceRect(ObjectRender, x*5, 0+offset, x*6, y+offset);}
+			if(round(anim_count) >= ri*6){ObjSprite2D_SetSourceRect(ObjectRender, x*6, 0+offset, x*7, y+offset);}
+			if(round(anim_count) >= ri*7){ObjSprite2D_SetSourceRect(ObjectRender, x*7, 0+offset, x*8, y+offset);}
+			if(round(anim_count) >= ri*8-1){anim_count = ri-1;}
+		}
+		if(anim_type==1){
+			if(round(anim_count) >= 0){ObjSprite2D_SetSourceRect(ObjectRender, 0, y+offset, x, y*2+offset);}
+			if(round(anim_count) >= ri){ObjSprite2D_SetSourceRect(ObjectRender, x, y+offset, x*2, y*2+offset);}
+			if(round(anim_count) >= ri*2){ObjSprite2D_SetSourceRect(ObjectRender, x*2, y+offset, x*3, y*2+offset);}
+			if(round(anim_count) >= ri*3){ObjSprite2D_SetSourceRect(ObjectRender, x*3, y+offset, x*4, y*2+offset);}
+			if(round(anim_count) >= ri*4){ObjSprite2D_SetSourceRect(ObjectRender, x*4, y+offset, x*5, y*2+offset);}
+			if(round(anim_count) >= ri*5){ObjSprite2D_SetSourceRect(ObjectRender, x*5, y+offset, x*6, y*2+offset);}
+			if(round(anim_count) >= ri*6){ObjSprite2D_SetSourceRect(ObjectRender, x*6, y+offset, x*7, y*2+offset);}
+			if(round(anim_count) >= ri*7){ObjSprite2D_SetSourceRect(ObjectRender, x*7, y+offset, x*8, y*2+offset);}
+			if(round(anim_count) >= ri*8-1){anim_count = ri*4-1;}
+		}
+		if(anim_type==2){
+			if(round(anim_count) >= 0){ObjSprite2D_SetSourceRect(ObjectRender, 0, y*2+offset, x, y*3+offset);}
+			if(round(anim_count) >= ri){ObjSprite2D_SetSourceRect(ObjectRender, x, y*2+offset, x*2, y*3+offset);}
+			if(round(anim_count) >= ri*2){ObjSprite2D_SetSourceRect(ObjectRender, x*2, y*2+offset, x*3, y*3+offset);}
+			if(round(anim_count) >= ri*3){ObjSprite2D_SetSourceRect(ObjectRender, x*3, y*2+offset, x*4, y*3+offset);}
+			if(round(anim_count) >= ri*4){ObjSprite2D_SetSourceRect(ObjectRender, x*4, y*2+offset, x*5, y*3+offset);}
+			if(round(anim_count) >= ri*5){ObjSprite2D_SetSourceRect(ObjectRender, x*5, y*2+offset, x*6, y*3+offset);}
+			if(round(anim_count) >= ri*6){ObjSprite2D_SetSourceRect(ObjectRender, x*6, y*2+offset, x*7, y*3+offset);}
+			if(round(anim_count) >= ri*7){ObjSprite2D_SetSourceRect(ObjectRender, x*7, y*2+offset, x*8, y*3+offset);}
+			if(round(anim_count) >= ri*8-1){anim_count = ri*4-1;}
+		}
+		
+		ObjSprite2D_SetDestCenter(ObjectRender);
+		yield;
+	}	
+	task Blink{
+		if(GetPlayerInvincibilityFrame>0){
+			if(Uber==0){ObjRender_SetColor(ObjectRender, 255, 255, 255);}
+			if(Uber!=0){ObjRender_SetColor(ObjectRender, 32, 32, 255);}
+			Uberblink+=1;
+			if(Uberblink>1){Uberblink=0;Uber++;if(Uber>1){Uber=0}}
+		}else{
+			ObjRender_SetColor(ObjectRender, 255, 255, 255);
+		}
+	}
+}
+
+task RenderHitboxImage(plobj, offx, hitboxnum){
+	if(IsHitboxActive){return;}
+	while(playerdead){
+		if(GetVirtualKeyState(VK_SLOWMOVE)!=KEY_FREE){return;}
+		yield;
+	}
+	IsHitboxActive = true;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj, BLEND_ALPHA);
+	Obj_SetRenderPriority(obj, 0.39);
+	ObjRender_SetAlpha(obj, 220);
+	ObjPrim_SetTexture(obj, snowflake);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 64, 64);
+	ObjSprite2D_SetDestCenter(obj);
+	
+	let obj2 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj2, BLEND_ALPHA);
+	Obj_SetRenderPriority(obj2, 0.69);
+	ObjRender_SetAlpha(obj2, 220);
+	ObjPrim_SetTexture(obj2, snowflake);
+	ObjSprite2D_SetSourceRect(obj2, 0, 0, 64, 64);
+	ObjSprite2D_SetDestCenter(obj2);
+	
+	
+	let ObjTime = 0;
+	
+	let AlphaSet = 0;
+	let ObjAlpha = 0;
+	let ObjScale = 1;
+	
+	while(GetVirtualKeyState(VK_SLOWMOVE)==KEY_HOLD){
+		if(!isvisible){ObjRender_SetAlpha(obj, 0); ObjRender_SetAlpha(obj2, 0);}else{ObjRender_SetAlpha(obj, 255); ObjRender_SetAlpha(obj2, 255);}
+
+		ObjPrim_SetTexture(obj, snowflake);
+		ObjPrim_SetTexture(obj2, snowflake);
+
+		if(ObjScale<1.4&&!playerdead){
+			ObjTime+=8;
+			ObjScale += 0.125;
+			PositionSet;
+		}else{break;}
+		yield;
+	}
+	while(GetVirtualKeyState(VK_SLOWMOVE)==KEY_HOLD){
+		if(!isvisible){ObjRender_SetAlpha(obj, 0); ObjRender_SetAlpha(obj2, 0);}else{ObjRender_SetAlpha(obj, 255); ObjRender_SetAlpha(obj2, 255);}
+
+		ObjPrim_SetTexture(obj, snowflake);
+		ObjPrim_SetTexture(obj2, snowflake);
+
+		if(ObjScale>1&&!playerdead){
+			ObjTime+=8;
+			ObjScale -= 0.1;
+			PositionSet;
+		}else{break;}
+		yield;
+	}
+	ObjScale = 1;
+	yield;
+	while(GetVirtualKeyState(VK_SLOWMOVE)==KEY_HOLD){
+		if(!isvisible){ObjRender_SetAlpha(obj, 0); ObjRender_SetAlpha(obj2, 0);}else{ObjRender_SetAlpha(obj, 255); ObjRender_SetAlpha(obj2, 255);}
+
+		ObjPrim_SetTexture(obj, snowflake);
+		ObjPrim_SetTexture(obj2, snowflake);
+
+		if(!playerdead){
+			ObjTime+=3;
+			PositionSet;
+		}else{break;}
+		yield;
+	}
+	IsHitboxActive = false;
+	while(ObjScale>0){
+		if(!isvisible){ObjRender_SetAlpha(obj, 0); ObjRender_SetAlpha(obj2, 0);}else{ObjRender_SetAlpha(obj, 255); ObjRender_SetAlpha(obj2, 255);}
+
+		ObjPrim_SetTexture(obj, snowflake);
+		ObjPrim_SetTexture(obj2, snowflake);
+
+		ObjTime+=3;
+		ObjScale -= 0.25;
+		PositionSet;
+		yield;
+	}
+
+	Obj_Delete(obj);
+	Obj_Delete(obj2);
+	IsHitboxActive = false;
+	
+	task PositionSet{
+		ObjRender_SetPosition(obj, GetPlayerX, GetPlayerY, 0);
+		ObjRender_SetAngleZ(obj, ObjTime);
+		ObjRender_SetPosition(obj2, GetPlayerX, GetPlayerY, 0);
+		ObjRender_SetScaleXYZ(obj, ObjScale, ObjScale, ObjScale);
+		ObjRender_SetScaleXYZ(obj2, ObjScale, ObjScale, ObjScale);
+	}
+	
+}
+
+task Spawn{
+	let obj = GetPlayerObjectID;
+	let y = 0;
+	ObjRender_SetX(obj, GetStgFrameWidth/2);
+	ObjRender_SetY(obj, GetStgFrameHeight-32);
+	SetPlayerSpeed(0,0);
+	IsPlayerSpawning = true;
+	while(y<82){
+		SetPlayerClip(11,11,GetStgFrameWidth-11,GetStgFrameHeight+64);	
+		SetPlayerSpeed(0,0);
+		ObjRender_SetY(obj, GetStgFrameHeight+32-y);
+		y+=2;
+		yield;
+	}
+	IsPlayerSpawning = false;
+	SetPlayerSpeed(4.5, 1.25);
+}
+
+task Spell_Okina{
+	SetForbidPlayerRelease(true);
+	SetPlayerInvincibilityFrame(420);
+	PlaySoundA1(7, 90, 0);
+
+	let manage = GetSpellManageObject;
+	CanShoot = false;
+
+	let shots = [];
+
+	ScreenShakeA1(300, 4);
+	DarkenTintScreen(GetPlayerX, GetPlayerY, 40, [160, 0, 160], 300);
+
+	let dir = 0;
+	loop(12){
+		Laser(48, dir, dir + 110, dir - 110);
+		dir += 360/12;
+	}
+
+	CaptureShots(240);
+
+	loop(210){yield;}
+	CanShoot = true;
+	Obj_Delete(manage);
+	SetForbidPlayerRelease(false);
+
+	task Laser(distplayer, angleplayer, starta, enda){
+		let obj = CreateStraightLaserA1(GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), starta, 0, 48, 3600, 6, 0);
+		ObjShot_SetEraseShot(obj, true);
+		ObjShot_SetDamage(obj, 6*damage);
+		ObjShot_SetSpellFactor(obj, true);
+
+		let laserbase = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(laserbase, GetCurrentScriptDirectory ~ "Image/laser_base.png");
+		ObjSprite2D_SetSourceRect(laserbase, 0, 0, 256, 256);
+		ObjSprite2D_SetDestCenter(laserbase);
+		ObjRender_SetBlendType(laserbase, BLEND_ADD_ARGB);
+		ObjRender_SetScaleXYZ(laserbase, 0, 0, 0);
+		ObjRender_SetPosition(laserbase, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+		let laserbase2 = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(laserbase2, GetCurrentScriptDirectory ~ "Image/laser_base.png");
+		ObjSprite2D_SetSourceRect(laserbase2, 0, 0, 256, 256);
+		ObjSprite2D_SetDestCenter(laserbase2);
+		ObjRender_SetBlendType(laserbase2, BLEND_ADD_ARGB);
+		ObjRender_SetScaleXYZ(laserbase2, 0, 0, 0);
+		ObjRender_SetAlpha(laserbase2, 128);
+		ObjRender_SetPosition(laserbase2, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+		ConvertToSeasonItems;
+
+		let z = 0;
+		ascent(i in 0 .. 31){
+			ObjMove_SetPosition(obj, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer));
+			ObjRender_SetPosition(laserbase, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+			ObjRender_SetPosition(laserbase2, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+			ObjStLaser_SetAngle(obj, linear(starta, enda, i/240));
+
+			ObjLaser_SetLength(obj, linear(0, 150, i/90));
+
+			ObjLaser_SetRenderWidth(obj, linear(0, 32, i/30));
+			ObjLaser_SetIntersectionWidth(obj, linear(0, 26, i/30));
+
+			ObjRender_SetScaleXYZ(laserbase, linear(0, 0.3, i/30), linear(0, 0.3, i/30), 0);
+			ObjRender_SetScaleXYZ(laserbase2, linear(0, 0.35, i/30), linear(0, 0.35, i/30), 0);
+
+			ObjRender_SetAngleZ(laserbase, z);
+			ObjRender_SetAngleZ(laserbase2, -z);
+
+			z += 9;
+			yield;
+		}
+		ascent(i in 30 .. 91){
+			ObjMove_SetPosition(obj, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer));
+			ObjRender_SetPosition(laserbase, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+			ObjRender_SetPosition(laserbase2, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+			ObjStLaser_SetAngle(obj, linear(starta, enda, i/240));
+
+			ObjLaser_SetLength(obj, linear(0, 150, i/90));
+
+			ObjRender_SetAngleZ(laserbase, z);
+			ObjRender_SetAngleZ(laserbase2, -z);
+
+			z += 9;
+			yield;
+		}
+		ascent(i in 90 .. 211){
+			ObjMove_SetPosition(obj, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer));
+			ObjRender_SetPosition(laserbase, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+			ObjRender_SetPosition(laserbase2, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+			ObjStLaser_SetAngle(obj, linear(starta, enda, i/240));
+
+			ObjRender_SetAngleZ(laserbase, z);
+			ObjRender_SetAngleZ(laserbase2, -z);
+
+			z += 9;
+			yield;
+		}
+		ascent(i in 210 .. 241){
+			ObjMove_SetPosition(obj, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer));
+			ObjRender_SetPosition(laserbase, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+			ObjRender_SetPosition(laserbase2, GetPlayerX + distplayer*cos(angleplayer), GetPlayerY + distplayer*sin(angleplayer), 0);
+
+			ObjStLaser_SetAngle(obj, linear(starta, enda, i/240));
+
+			ObjLaser_SetRenderWidth(obj, linear(32, 0, (i - 210)/30));
+			ObjLaser_SetIntersectionWidth(obj, linear(26, 0, (i - 210)/30));
+
+			ObjRender_SetScaleXYZ(laserbase, linear(0.3, 0, (i - 210)/30), linear(0.3, 0, (i - 210)/30), 0);
+			ObjRender_SetScaleXYZ(laserbase2, linear(0.35, 0, (i - 210)/30), linear(0.35, 0, (i - 210)/30), 0);
+
+			ObjRender_SetAngleZ(laserbase, z);
+			ObjRender_SetAngleZ(laserbase2, -z);
+
+			z += 9;
+			yield;
+		}
+		Obj_Delete(obj);
+		Obj_Delete(laserbase);
+		Obj_Delete(laserbase2);
+
+		task ConvertToSeasonItems{
+			let objpos = [ObjMove_GetX(obj), ObjMove_GetY(obj)];
+			let angle = ObjStLaser_GetAngle(obj);
+			let len = ObjLaser_GetLength(obj);
+			while(!Obj_IsDeleted(obj)){
+				objpos = [ObjMove_GetX(obj), ObjMove_GetY(obj)];
+				angle = ObjStLaser_GetAngle(obj);
+				len = ObjLaser_GetLength(obj);
+
+				if(length(shots) > 0){ //converts bullets into season items
+					ascent(i in 0 .. length(shots)){
+						if(!ObjShot_IsSpellResist(shots[i]) && !Obj_GetValueD(shots[i], "ItemCheck", false)){
+							if(IsIntersected_Line_Circle(objpos[0] - 32*cos(angle), objpos[1] - 32*sin(angle), objpos[0] + len*cos(angle), objpos[1] + len*sin(angle), 36, ObjMove_GetX(shots[i]), ObjMove_GetY(shots[i]), 8)){
+								if(round(rand(0, 5)) == 0){SeasonItem(ObjMove_GetX(shots[i]), ObjMove_GetY(shots[i]), GetAngle(ObjMove_GetX(shots[i]), ObjMove_GetY(shots[i]), objpos[0], objpos[1]));}
+								Obj_SetValue(shots[i], "ItemCheck", true);
+							}
+						}
+					}
+				}
+
+				yield;
+			}
+		}
+	}
+
+	task CaptureShots(t){
+		loop(t){
+			shots = GetShotIdInCircleA2(GetPlayerX, GetPlayerY, 250, TARGET_ENEMY);
+			yield;
+		}
+	}
+}

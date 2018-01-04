@@ -1,0 +1,12 @@
+shot_image = "./PlayerSprite.png"
+
+// A typical shotdata. Parameters: (id, texture location, render type, alpha value, collision radius)
+ShotData{
+id=1
+rect = (2,143,13,203) 
+render=ALPHA 
+collision = (3, 0, 0) 
+angular_velocity = 0 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=250 }

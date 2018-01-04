@@ -1,0 +1,80 @@
+shot_image = "./PlayerSprite.png"
+
+// A typical shotdata. Parameters: (id, texture location, render type, alpha value, collision radius)
+ShotData
+{
+	id = 1
+	rect = (76,0,86,57)
+	render = ALPHA
+	alpha = 64
+	collision = 16
+}
+ShotData{ 
+id=2
+rect = (76,0,86,57)
+render=ALPHA 
+collision = (10, 0, 0) 
+angular_velocity = 0 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=255 }
+
+ShotData{ 
+id=3
+rect = (93,0,103,16)
+render=ALPHA 
+collision = (3, 0, 0) 
+angular_velocity = 0 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=100 }
+
+ShotData{ 
+id=4
+rect = (104,0,130,26)
+render=ALPHA 
+collision = (6, 0, 0) 
+angular_velocity = 8 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=200 }
+
+ShotData{ 
+id=5
+rect = (140,0,147,6)
+render=ALPHA 
+collision = (6, 0, 0) 
+angular_velocity = 3 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=200 }
+
+ShotData{ 
+id=6
+rect = (148,0,155,6)
+render=ALPHA 
+collision = (6, 0, 0) 
+angular_velocity = 3 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=200 }
+
+ShotData{ 
+id=7
+rect = (156,0,162,6)
+render=ALPHA 
+collision = (6, 0, 0) 
+angular_velocity = 3 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=200 }
+
+ShotData{ 
+id=8
+rect = (164,0,170,6)
+render=ALPHA 
+collision = (6, 0, 0) 
+angular_velocity = 3 
+delay_color= (127, 127, 127) 
+fixed_angle=false 
+alpha=200 }

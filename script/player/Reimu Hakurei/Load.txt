@@ -1,0 +1,24 @@
+function Load() {
+	let dir = GetCurrentScriptDirectory;
+
+//Common
+	LoadTexture(dir ~ "Default_Player_MagicCircle.png");
+	LoadTexture(dir ~ "hitbox.png");
+	LoadTexture(dir ~ "hitboxcircle.png");
+	LoadTexture(dir ~ "graze_eff.png");
+	LoadTexture(dir ~ "spellattack.png");
+
+//Player
+	LoadTexture(dir ~ "reimu_cutin.png");
+	LoadTexture(dir ~ "Player_Reimu.png");
+	LoadTexture(dir ~ "ReimuSpell.png");
+	LoadTexture(dir ~ "reimu_spell.png");	
+	LoadTexture(dir ~ "bgreimu.png");	
+
+//Sound
+	LoadSound(dir ~ "seBomb.wav");
+	LoadSound(dir ~ "seScore.wav");
+	LoadSound(dir ~ "seGraze.wav");
+	LoadSound(dir ~ "seDeath.wav");
+	LoadSound(dir ~ "seShot.wav");
+}

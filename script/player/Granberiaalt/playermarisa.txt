@@ -1,0 +1,639 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#ID["MARISA_A"]
+#Title["Granberia"]
+#Text["Granberia"]
+#ReplayName["Granberia"]
+
+let CSD = GetCurrentScriptDirectory;
+let playerID= GetPlayerObjectID;
+let playerObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let hitboxObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let count = -1;
+let isFocus = false;
+let playerisdead = false;
+let GetCenterX=GetStgFrameWidth/2;
+let GetCenterY=GetStgFrameHeight/2;
+
+// Shot Sheet
+let shotMarisa = CSD ~ "playershot.txt";
+
+// Texture Sheet
+let playerSprite = CSD ~ "granberiasprite.png";
+
+// Spell Texture
+let spellTexture = CSD ~ "ring.png";
+
+@Initialize
+{
+// Load Player Shot Data
+LoadPlayerShotData(shotMarisa);
+
+// Set player unfocussed and focusse speed
+SetPlayerSpeed(5,2.5);
+
+//Set Player hitbox parameters = (playerobject, location x, location y, radius, grazerradius);
+ObjPlayer_AddIntersectionCircleA1(playerID,0,0,2,16);
+
+// Set the boundrary box for the game field
+// Standart = x:384, y:448
+SetPlayerClip(0+6,0+24,384-6,448-16);
+
+// Set how long the player is "gone" upon Pichuun.
+SetPlayerDownStateFrame(60);
+
+// Counterbomb time frame
+SetPlayerRebirthFrame(30);
+
+// Set Y coordinate where the player starts auto-collecting.
+SetPlayerAutoItemCollectLine(120);
+
+// Launch two tasks to handle the sprinte animation
+renderPlayer;
+renderHitBox(GetPlayerX,GetPlayerY);
+}
+
+@Event
+{
+alternative(GetEventType)
+
+// Spell card
+case(EV_REQUEST_SPELL)
+{
+	if(GetPlayerSpell > 0)
+	{
+		SetScriptResult(true);
+		SetPlayerSpell(GetPlayerSpell-1);
+		Bomb;
+	}
+	else
+	{
+	SetScriptResult(false);
+	}
+	
+	
+	//If the Player has no Bomb, use this
+/*	if(GetPlayerSpell > 0)
+	{
+	SetScriptResult(true);
+	}
+	else
+	{
+	SetScriptResult(false);
+	}*/
+}
+
+// Player is pichuun (after the counterbomb timer)
+case(EV_PLAYER_SHOOTDOWN)
+{
+	SetForbidPlayerShot(true);
+	SetForbidPlayerSpell(true);
+	ObjRender_SetAlpha(playerObj,0);
+	playerisdead=true;
+}
+
+// Player is reviving
+case(EV_PLAYER_REBIRTH)
+{
+	SetForbidPlayerShot(false);
+	SetForbidPlayerSpell(false);
+	SetPlayerInvincibilityFrame(120);
+	SetPlayerSpell(2);
+	ObjRender_SetAlpha(playerObj,255);
+	playerisdead=false;
+}
+
+}
+
+@MainLoop
+{
+	if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_PUSH || GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD)
+	{
+		isFocus = true;
+	}
+	if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_PULL)
+	{
+		isFocus = false;
+	}
+	
+	//Shoot function
+	
+	if(GetVirtualKeyState(VK_SHOT) == KEY_PUSH || GetVirtualKeyState(VK_SHOT) == KEY_HOLD)
+	{
+	count++;
+	if(count >=15){count=0;}
+	}
+	if(GetVirtualKeyState(VK_SHOT) == KEY_PULL)
+	{
+	count = -1;
+	}
+	
+	// Focus shot
+	if(isFocus)
+	{
+		if(count >3)
+		{
+			// Location x, location y, speed, angle, damage, penetration, id
+			CreatePlayerShotA1(GetPlayerX-8, GetPlayerY -20, 20, 270, 0.45, 1, 6);
+			CreatePlayerShotA1(GetPlayerX+8, GetPlayerY -20, 20, 270, 0.45, 1, 6);
+			CreateLooseLaserA1(GetPlayerX,GetPlayerY,0,270,200,40,6,1);
+		}
+	}
+	
+	// Regular shot
+	else 
+	{
+		if(count == 3)
+		{
+			let x=+16;
+			let y=-20;
+			let obj=CreatePlayerShotA1(GetPlayerX+x, GetPlayerY+y, 0, 240, 0.45, 1, 3);
+			if (IsPermitPlayerShot){delete(obj,x,y);fire(2,1);}
+			task delete (obj,x,y)
+			{
+				let time=0;
+				while(!Obj_IsDeleted(obj)&&time<8){
+				ObjMove_SetPosition(obj,GetPlayerX+x, GetPlayerY+y);
+				time+=1; yield;}
+				Obj_Delete(obj);
+			}
+
+		}
+		if(count == 9)
+		{
+			let x=-16;
+			let y=-20;
+			let obj2=CreatePlayerShotA1(GetPlayerX+x, GetPlayerY+y, 0, 300, 0.45, 1, 4);
+			if (IsPermitPlayerShot){delete(obj2,x,y);fire(2,-1)}
+			task delete (obj2,x,y)
+			{
+				let time=0;
+				while(!Obj_IsDeleted(obj2)&&time<8){
+				ObjMove_SetPosition(obj2,GetPlayerX+x, GetPlayerY+y);
+				time+=1; yield;}
+				Obj_Delete(obj2);
+			}
+		}
+		
+	}
+	yield;
+}
+
+task fire(n,d)//d==1 right, d==-1 left
+{
+	let speed=6;
+	let obj1=CreatePlayerShotA1(GetPlayerX+(4*d), GetPlayerY-30, speed, 270, 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj1,270);
+	let obj2=CreatePlayerShotA1(GetPlayerX+(6*d), GetPlayerY-25, speed, 270+(10*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj2,270);
+	let obj3=CreatePlayerShotA1(GetPlayerX+(8*d), GetPlayerY-20, speed, 270+(20*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj3,270);
+	let obj4=CreatePlayerShotA1(GetPlayerX+(10*d), GetPlayerY-15, speed, 270+(30*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj4,270);
+	let obj5=CreatePlayerShotA1(GetPlayerX+(12*d), GetPlayerY-10, speed, 270+(50*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj5,270);
+	let obj6=CreatePlayerShotA1(GetPlayerX+(14*d), GetPlayerY-5, speed, 270+(70*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj6,270);
+	let obj7=CreatePlayerShotA1(GetPlayerX+(16*d), GetPlayerY-0, speed, 270+(90*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj7,270);
+	let obj8=CreatePlayerShotA1(GetPlayerX+(14*d), GetPlayerY+5, speed, 270+(110*d), 0.45, 5, 5);
+	ObjRender_SetAngleZ(obj8,270);
+	let av=-0.6;
+	//ObjMove_SetAngularVelocity(obj1,av*d);
+	ObjMove_SetAngularVelocity(obj2,(av*d/2));
+	ObjMove_SetAngularVelocity(obj3,av*d);
+	ObjMove_SetAngularVelocity(obj4,av*d);
+	ObjMove_SetAngularVelocity(obj5,av*d);
+	ObjMove_SetAngularVelocity(obj6,av*d);
+	ObjMove_SetAngularVelocity(obj7,av*d);
+	ObjMove_SetAngularVelocity(obj8,av*d);
+	let RED=255;
+	let GREEN=240;
+	let BLUE=200;
+	ObjRender_SetColor(obj1,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj2,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj3,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj4,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj5,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj6,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj7,RED,GREEN,BLUE);
+	ObjRender_SetColor(obj8,RED,GREEN,BLUE);
+}
+
+task Bomb
+{
+	// Prepare
+		SetForbidPlayerShot(true);
+		SetForbidPlayerSpell(true);
+		SetPlayerInvincibilityFrame(180);
+		SetPlayerSpeed(1,1);
+	// A spellcard object
+		let spellObject = ObjSpell_Create();
+		ObjSpell_Regist(spellObject);
+		ObjSpell_SetEraseShot(spellObject,true);
+	// Bomb
+		createvapfire(180,20);
+		wait(20);
+		createvaplaser(80,2,160);
+		createvaplaser(180,2,160);
+		creategranberiacutin(80,160,60);
+		creategranberiacutinfire(120,60);
+		wait(40);
+		PlaySound("slashvap",100,70);
+		createtextcutin(300,45,90,45);
+		wait(90);
+		/*PlaySound("slashvap",70,0);
+		PlaySound("slashvap",70,5);
+		PlaySound("slashvap",70,10);
+		PlaySound("slashvap",70,15);
+		PlaySound("slashvap",70,20);
+		PlaySound("slashvap",70,25);*/
+		Vap (vapslash1,6,195,-8,315,458,88,-3,-3,135);
+		wait(8);
+		Vap (vapslash2,6,70,-8,192,458,390,309,292,454);
+		wait(8);
+		Vap (vapslash3,6,314,-8,196,458,-6,309,91,454);
+		wait(8);
+		Vap (vapslash4,6,186,-8,68,458,292,-6,390,140);
+		wait(8);
+		Vap (vapslash1,16,195,-8,315,458,88,-3,-3,135);
+		Vap (vapslash2,16,70,-8,192,458,390,309,292,454);
+		Vap (vapslash3,16,314,-8,196,458,-6,309,91,454);
+		Vap (vapslash4,16,186,-8,68,458,292,-6,390,140);
+		loop(20)
+		{
+		ObjSpell_SetIntersectionCircle(spellObject,GetCenterX,GetCenterY,1024);
+		ObjSpell_SetDamage(spellObject,10);
+		yield;
+		}
+		task Vap(texture,time,bigslashx1,bigslashy1,bigslashx2,bigslashy2,smallslashx1,smallslashy1,smallslashx2,smallslashy2)
+		{
+			SE_Play(slashvapSFX,100);
+			//PlaySound("slashvap",70,0);
+			createvapslash(texture,time);
+			ObjSpell_SetIntersectionLine(spellObject,bigslashx1,bigslashy1,bigslashx2,bigslashy2,38);
+			ObjSpell_SetDamage(spellObject,30);
+			yield;
+			ObjSpell_SetIntersectionLine(spellObject,smallslashx1,smallslashy1,smallslashx2,smallslashy2,12);
+			ObjSpell_SetDamage(spellObject,10);
+		}
+	// Cleanup and reset
+	SetForbidPlayerShot(false);
+	SetForbidPlayerSpell(false);
+	SetPlayerSpeed(5,2.5);
+	Obj_Delete(GetSpellManageObject);
+}
+
+let granberiacutin=CSD ~ "granberiacutin.png";
+let textcutin=CSD ~ "textcutin.png";
+let vapslash1=CSD ~ "vap1.png";
+let vapslash2=CSD ~ "vap2.png";
+let vapslash3=CSD ~ "vap3.png";
+let vapslash4=CSD ~ "vap4.png";
+let vapfire=CSD ~ "vapfire.png";
+let vaplaser=CSD ~ "granberiacutinlaser.png";
+
+task Fadeout(obj,n)
+{
+	let alpha=255;
+	loop(n)
+	{
+	ObjRender_SetAlpha(obj,alpha);
+	alpha-=255/n;
+	yield;
+	}
+	Obj_Delete(obj);
+}
+
+task createtextcutin(y,n,f,ft)
+{
+	let x=384;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,textcutin);
+	ObjRender_SetBlendType(obj,BLEND_ALPHA);
+	ObjRender_SetAlpha(obj,255);
+	Obj_SetRenderPriorityI(obj,59);
+	ObjSprite2D_SetSourceRect(obj,1,1,150,40);
+	ObjSprite2D_SetDestRect(obj,x,y-20,x+150,y+20);
+	loop(n+1)
+	{
+		ObjSprite2D_SetDestRect(obj,x,y-20,x+150,y+20);
+		x-=150/n;
+		yield;
+	}
+	wait(f);
+	Fadeout(obj,ft);
+}
+
+
+task creategranberiacutinfire(y,s)
+{
+	Fire(-30,y-50,s);
+	Fire(-30,y-40,s);
+	Fire(-30,y-30,s);
+	Fire(-30,y-20,s);
+	Fire(-30,y-10,s);
+	Fire(-30,y,s);
+	Fire(-30,y+10,s);
+	Fire(-30,y+20,s);
+	Fire(-30,y+30,s);
+	Fire(-30,y+40,s);
+	task Fire(startX,startY,s)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj,playerSprite);
+		ObjRender_SetBlendType(obj,BLEND_ALPHA);
+		ObjRender_SetAlpha(obj,255);
+		Obj_SetRenderPriorityI(obj,59);
+		ObjSprite2D_SetSourceRect(obj,0,0,0,0);
+		ObjSprite2D_SetDestCenter(obj);
+		Movement(obj,startX,startY,s);
+		Animation(obj);
+		task Movement(obj,startX,startY,s)
+		{
+		let x=startX;
+		let y=startY;
+		let n=100;
+		loop(n)
+		{
+			ObjSprite2D_SetDestRect(obj,x,y,x+63,y+31);
+			x+=384/s;
+			yield;
+			
+		}
+		Obj_Delete(obj);
+		}
+		task Animation(obj)
+		{
+			let counter=0;
+			let speed=1;
+			ObjSprite2D_SetSourceRect(obj,320,0,383,31);
+			while(!Obj_IsDeleted(obj))
+			{
+			if(counter<=3){ObjSprite2D_SetSourceRect(obj,320,0,383,31);}
+			else if(counter<=7){ObjSprite2D_SetSourceRect(obj,320,32,383,63);}
+			else if(counter<=11){ObjSprite2D_SetSourceRect(obj,320,64,383,95);}
+			else if(counter<=15){ObjSprite2D_SetSourceRect(obj,320,96,383,127);}
+			else if(counter<=19){ObjSprite2D_SetSourceRect(obj,320,128,383,159);}
+			else if(counter<=23){ObjSprite2D_SetSourceRect(obj,320,160,383,191);}
+			else if(counter<=27){ObjSprite2D_SetSourceRect(obj,320,192,383,223);}
+			else if(counter<=31){ObjSprite2D_SetSourceRect(obj,320,224,383,255);}
+			else if(counter>=32){counter=0;}
+			counter+=1*speed;
+			yield;
+			}
+		}
+	}
+}
+
+task creategranberiacutin(y,n,s)
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,granberiacutin);
+	ObjRender_SetBlendType(obj,BLEND_ALPHA);
+	ObjRender_SetAlpha(obj,255);
+	Obj_SetRenderPriorityI(obj,59);
+	ObjSprite2D_SetSourceRect(obj,0,0,384,100);
+	Fadein(obj,y,s);
+	wait(n);
+	Fadeout(obj,60);
+	task Fadein(obj,y,s)
+	{
+		let x=0;
+		loop(s+1)
+		{
+		ObjSprite2D_SetSourceRect(obj,0,0,x,100);
+		ObjSprite2D_SetDestRect(obj,0,y,x,y+100);
+		x+=384/s;
+		yield;
+		}
+	}
+}
+
+task createvaplaser(y,s,n)
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,vaplaser);
+	ObjRender_SetBlendType(obj,BLEND_ALPHA);
+	ObjRender_SetAlpha(obj,0);
+	Obj_SetRenderPriorityI(obj,60);
+	ObjSprite2D_SetSourceRect(obj,0,0,420,31);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj,GetCenterX,y,0);
+	Fadein(obj,10);
+	Change(obj,s);
+	wait(n);
+	Fadeout(obj,60);
+	task Fadein(obj,n2)
+	{
+		let alpha=0;
+		loop(n)
+		{
+			ObjRender_SetAlpha(obj,alpha);
+			alpha+=255/n2;
+			yield;
+		}
+		ObjRender_SetAlpha(obj,255);
+	}
+	task Change(obj,s)
+	{
+		let counter=0;
+		while(!Obj_IsDeleted(obj))
+		{
+		if(counter<=7){ObjSprite2D_SetSourceRect(obj,0,0,420,31);}
+		else if(counter<=15){ObjSprite2D_SetSourceRect(obj,0,32,420,63);}
+		else if(counter<=23){ObjSprite2D_SetSourceRect(obj,0,64,420,95);}
+		else if(counter<=31){ObjSprite2D_SetSourceRect(obj,0,96,420,127);}
+		else{counter=0;}
+		counter+=1*s;
+		yield;
+		}
+	}
+}
+
+task createvapfire(time,fadespeed)
+{
+	let alpha = 0;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,vapfire);
+	ObjRender_SetBlendType(obj,BLEND_ALPHA);
+	ObjRender_SetAlpha(obj,alpha);
+	Obj_SetRenderPriorityI(obj,42);
+	ObjSprite2D_SetSourceRect(obj,0,0,384,448);
+	ObjSprite2D_SetDestRect(obj,0,0,384,448);
+	
+	loop(fadespeed)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		alpha+=255/fadespeed;
+		yield;
+	}
+	wait(time);
+	loop(fadespeed)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		alpha-=255/fadespeed;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task createvapslash(texture,time)
+{
+	let scale = 1;
+	let alpha = 255;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,texture);
+	ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+	ObjRender_SetAlpha(obj,alpha);
+	Obj_SetRenderPriorityI(obj,42);
+	ObjSprite2D_SetSourceRect(obj,0,0,384,448);
+	ObjSprite2D_SetDestRect(obj,0,0,384,448);
+	//ObjSprite2D_SetDestCenter(obj);
+	//ObjRender_SetPosition(obj,GetPlayerX,GetPlayerY,0);
+	
+	//ObjRender_SetColor(obj, truncate(rand(128,255)), truncate(rand(128,255)), truncate(rand(128,255)));
+	
+	/*while(alpha > 0)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		
+		scale+=0.4;
+		alpha-=2;
+		
+		yield;
+	}*/
+	wait(time);
+	Obj_Delete(obj);
+}
+
+
+// Render the Player
+task renderPlayer
+{
+	ObjPrim_SetTexture(playerObj,playerSprite);
+	Obj_SetRenderPriorityI(playerObj,31);
+	ObjRender_SetBlendType(playerObj,BLEND_ALPHA);
+	ObjRender_SetAngleXYZ(playerObj,0,0,0);
+	ObjRender_SetScaleXYZ(playerObj,1,1,0);
+	ObjRender_SetAlpha(playerObj,255);
+	ObjSprite2D_SetSourceRect(playerObj,0,0,32,48);
+	ObjSprite2D_SetDestCenter(playerObj);
+	ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+	
+	while(!Obj_IsDeleted(playerObj))
+	{
+		ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+		
+		//Player is pressing left
+		if(GetVirtualKeyState(VK_LEFT) == KEY_PUSH || GetVirtualKeyState(VK_LEFT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleY(playerObj,0);
+			ObjRender_SetAngleZ(playerObj,-20);
+			ObjSprite2D_SetSourceRect(playerObj,35,7,60,38);
+		}
+		//Player is pressing right
+		else if (GetVirtualKeyState(VK_RIGHT) == KEY_PUSH || GetVirtualKeyState(VK_RIGHT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleY(playerObj,180);
+			ObjRender_SetAngleZ(playerObj,-20);
+			ObjSprite2D_SetSourceRect(playerObj,35,7,60,38);
+		}
+		// Idle animation or moving forward/backward
+		else
+		{
+			ObjRender_SetAngleZ(playerObj,0);
+			ObjSprite2D_SetSourceRect(playerObj,4,6,29,38);
+		}
+		yield;
+	}
+}
+
+// Render the hitbox
+task renderHitBox(x,y)
+{
+	let alpha = 0;
+	let spin = 0;
+	
+	ObjPrim_SetTexture(hitboxObj,playerSprite);
+	ObjRender_SetBlendType(hitboxObj,BLEND_ALPHA);
+	Obj_SetRenderPriorityI(hitboxObj,50);
+	ObjRender_SetAlpha(hitboxObj,0);
+	ObjRender_SetScaleXYZ(hitboxObj,1,1,0);
+	ObjSprite2D_SetSourceRect(hitboxObj,0,64,64,128);
+	ObjSprite2D_SetDestCenter(hitboxObj);
+	
+	while(!Obj_IsDeleted(hitboxObj))
+	{
+		// update the hitbox position, angle and alpha
+		ObjRender_SetPosition(hitboxObj,GetPlayerX,GetPlayerY,0);
+		ObjRender_SetAngleZ(hitboxObj,spin);
+		ObjRender_SetAlpha(hitboxObj,alpha);
+		
+		if(isFocus&& !playerisdead)
+		{
+			alpha=255;
+		}
+		else
+		{
+			alpha=0;
+		}
+		
+		// increase spin to make it roteate
+		spin+=2; 
+		
+		yield;
+	}
+}
+
+function wait(w)
+{
+	loop(w)
+	{
+	yield;
+	}
+}
+
+let soundarr = [];
+let se;
+let s = ObjSound_Create;
+let firevapSFX = GetCurrentScriptDirectory ~ "fire2vap.wav";
+let slashvapSFX = GetCurrentScriptDirectory ~ "slashvap.wav";
+
+task SE_Play(let path, let vl){
+let seobj = ObjSound_Create;
+ObjSound_Load(seobj,path);
+ObjSound_Play(seobj);
+ObjSound_SetVolumeRate(seobj,vl);
+loop(120){yield;}
+RemoveSound(path);
+}
+
+task PlaySound(str,v,w)//Name(as a string),volume,delay before playing
+{
+	if(str == "seShot"){ObjSound_Load(s,CSD ~ "seShot.wav");}
+	if(str == "seDeath"){ObjSound_Load(s,CSD ~ "seDeath.wav");}
+	if(str == "fire2vap"){ObjSound_Load(s,CSD ~ "fire2vap.wav");}
+	if(str == "slashvap"){ObjSound_Load(s,CSD ~ "slashvap.wav");}
+
+	loop(w){yield;}
+	ObjSound_SetSoundDivision(s,SOUND_SE);
+	ObjSound_SetVolumeRate(s,v);
+	ObjSound_Play(s);
+	soundarr = soundarr ~ [s];
+	if(str=="item")
+	{
+		yield;
+		Obj_Delete(s);
+	}
+}
+
+
+task LoadSE{
+	LoadSound(CSD ~ "seShot.wav");
+	LoadSound(CSD ~ "seDeath.wav");
+	LoadSound(CSD ~ "fire2vap.wav");
+	LoadSound(CSD ~ "slashvap.wav");
+	}

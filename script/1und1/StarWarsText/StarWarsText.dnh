@@ -1,0 +1,94 @@
+task CreateStarWarsLogo
+{
+	PlayStarWarsMusic;
+	SetCameraZero;
+	CreateStarWarsText(520, 3900);
+	wait(120);
+	let path = CSD ~ "./StarWarsText/Logo.png";
+	LoadTexture(path);
+	let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite3D_SetSourceDestRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjRender_SetAngleZ(obj, 180);
+	ObjRender_SetAngleY(obj, 180);
+	ObjRender_SetZWrite(obj, true);
+	Obj_SetRenderPriorityI(obj, 71);
+	let n = 300;
+	let dis2 = 0.3;
+	let dis = 0.0008;
+	let dis1 = dis / n;
+	dis = 0;
+	loop(n)
+	{
+		dis += dis1;
+		dis2 -= dis;
+		ObjRender_SetScaleXYZ(obj, dis2, dis2, 1);
+		if(dis2 < 0){break;}
+		yield;
+	}
+	while(dis2 > 0)
+	{
+		dis2 -= dis;
+		ObjRender_SetScaleXYZ(obj, dis2, dis2, 1);
+		yield;
+	}
+	
+	Obj_Delete(obj);
+}
+
+task PlayStarWarsMusic
+{
+	let path = CSD ~ "./StarWarsText/Intro.ogg";
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_SetVolumeRate(obj, 100);
+	ObjSound_Play(obj);
+}
+
+
+
+task CreateStarWarsText(w, w2)
+{
+	wait(w);
+	let path = CSD ~ "./StarWarsText/Text.png";
+	LoadTexture(path);
+	let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite3D_SetSourceDestRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjRender_SetAngleZ(obj, 180);
+	ObjRender_SetAngleY(obj, 180);
+	ObjRender_SetZWrite(obj, true);
+	Obj_SetRenderPriorityI(obj, 71);
+	FadeDeleteDelay(obj, w2, 180);
+	
+	ObjRender_SetAngleX(obj, -70);
+	ObjRender_SetY(obj, -100);
+	ObjRender_SetScaleX(obj, 0.7);
+	
+	let speed = 0.3;
+	
+	let disy2 = -140;
+	let disy = 0.15 * speed;
+	
+	let disz2 = -200;
+	let disz = 0.5 * speed;
+	
+	loop
+	{
+		disz2 += disz;
+		disy2 += disy;
+		ObjRender_SetZ(obj, disz2);
+		ObjRender_SetY(obj, disy2);
+		yield;
+	}
+	
+}
+
+task SetCameraZero
+{
+	SetCameraAzimuthAngle(0);
+	SetCameraElevationAngle(0);
+	SetCameraRadius(0);
+	SetCameraFocusXYZ(0, 0, -100);
+	
+}

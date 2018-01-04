@@ -1,0 +1,40 @@
+shot_image = "./MarisaWEWS2.png"
+
+// A typical shotdata. Parameters: (id, texture location, render type, alpha value, collision radius)
+ShotData
+{
+	id = 1
+	rect = (64,0,96,64)
+	render = ALPHA
+	alpha = 64
+	collision = 16
+}
+//Monster
+ShotData
+{
+	id = 2
+	rect = (110,0,140,64)
+	render = ALPHA
+	alpha = 180
+	collision = 16
+}
+//Chilli
+ShotData
+{
+	id = 3
+	rect = (155,0,185,40)
+	render = ALPHA
+	alpha = 160
+	collision = 16
+	angular_velocity = 60
+}
+//Ravioli
+ShotData
+{
+	id = 4
+	rect = (200,0,230,44)
+	render = ALPHA
+	alpha = 200
+	scaley = 0.1S
+	collision = 16
+}

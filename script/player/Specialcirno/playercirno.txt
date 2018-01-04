@@ -1,0 +1,1074 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#ID["SPECIALCIRNO"]
+#Title["Specialcirno"]
+#Text["The Strongest!!!"]
+#ReplayName["Specialcirno"]
+
+let CSD = GetCurrentScriptDirectory;
+let playerID= GetPlayerObjectID;
+let playerObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let hitboxObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let count = -1;
+let isFocus = false;
+let isbombing = false;
+let playerisdead = false;
+let GetCenterX=GetStgFrameWidth/2;
+let GetCenterY=GetStgFrameHeight/2;
+let UFO1;
+let UFO2;
+let Focusshottimer=0;
+
+// Shot Sheet
+let shotMarisa = CSD ~ "playershot.txt";
+
+// Texture Sheet
+let playerSprite = CSD ~ "PlayerSprite.png";
+
+// Spell Texture
+let spellTexture = CSD ~ "ring.png";
+
+// Death Texture
+let deathTexture = CSD ~ "enm5b.png";
+
+//default render priority
+let renderpriority=31;
+
+@Initialize
+{
+// Load Player Shot Data
+LoadPlayerShotData(shotMarisa);
+
+// Set player unfocussed and focusse speed
+SetPlayerSpeed(5,2.5);
+
+//Set Player hitbox parameters = (playerobject, location x, location y, radius, grazerradius);
+ObjPlayer_AddIntersectionCircleA1(playerID,0,0,2,16);
+
+// Set the boundrary box for the game field
+// Standart = x:384, y:448
+SetPlayerClip(0+6,0+24,384-6,448-16);
+
+// Set how long the player is "gone" upon Pichuun.
+SetPlayerDownStateFrame(60);
+
+// Counterbomb time frame
+SetPlayerRebirthFrame(30);
+
+// Set Y coordinate where the player starts auto-collecting.
+SetPlayerAutoItemCollectLine(120);
+
+// Launch two tasks to handle the sprinte animation
+renderPlayer;
+renderHitBox(GetPlayerX,GetPlayerY);
+
+// Initialise Familiars
+UFO1=SpawnFamiliar(0);
+UFO2=SpawnFamiliar(180);
+}
+
+@Event
+{
+alternative(GetEventType)
+
+// Spell card
+case(EV_REQUEST_SPELL)
+{
+	if(GetPlayerSpell > 0)
+	{
+		SetScriptResult(true);
+		SetPlayerSpell(GetPlayerSpell-1);
+		Bomb;
+		isbombing=true;
+		//TestMode;
+	}
+	else
+	{
+	SetScriptResult(false);
+	}
+	
+	
+	//If the Player has no Bomb, use this
+	/*if(GetPlayerSpell > 0)
+	{
+	SetScriptResult(true);
+	}
+	else
+	{
+	SetScriptResult(false);
+	}*/
+}
+
+case(EV_HIT)
+{
+	PlaySound("seDeath",50,0);
+}
+
+// Player is pichuun (after the counterbomb timer)
+case(EV_PLAYER_SHOOTDOWN)
+{
+	SetForbidPlayerShot(true);
+	SetForbidPlayerSpell(true);
+	playerisdead=true;
+	Deathexplosion;
+}
+
+// Player is reviving
+case(EV_PLAYER_REBIRTH)
+{
+	SetForbidPlayerShot(false);
+	SetForbidPlayerSpell(false);
+	SetPlayerInvincibilityFrame(120);
+	SetPlayerSpell(2);
+	ObjRender_SetAlpha(playerObj,255);
+	SetPlayerSpeed(5,2.5);
+	playerisdead=false;
+}
+}
+
+let startshot=false;
+	let dirx=0;
+	let diry=0;
+	let dirangle=270;
+let focusshot=false;
+let focussworddirection=0; //0 left, 1 right
+
+task TestMode
+{
+	loop
+	{
+		SetPlayerInvincibilityFrame(999);
+		yield;
+	}
+}
+
+@MainLoop
+{
+	if(GetVirtualKeyState(VK_USER2)==KEY_PUSH){
+		TestMode;
+	}
+	if(GetVirtualKeyState(VK_USER1)==KEY_PUSH&&IsPermitPlayerSpell()&&!IsPlayerSpellActive()){
+		Specialbomb;
+	}
+	if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_PUSH || GetVirtualKeyState(VK_SLOWMOVE) == KEY_HOLD)
+	{
+		isFocus = true;
+	}
+	if(GetVirtualKeyState(VK_SLOWMOVE) == KEY_PULL)
+	{
+		isFocus = false;
+	}
+	
+	//Shoot function
+	
+	if(GetVirtualKeyState(VK_SHOT) == KEY_PUSH || GetVirtualKeyState(VK_SHOT) == KEY_HOLD)
+	{
+	count++;
+	if (count >=30){count=0;}
+	}
+	if(GetVirtualKeyState(VK_SHOT) == KEY_PULL)
+	{
+	startshot=false;
+	count = -1;
+	}
+	let randdirx1=-16;
+	let randdirx2=-8;
+	let randdirx3=0;
+	let randdirx4=+8;
+	let randdirx5=+16;
+	let randdir=rand(0,4.99);
+	if(randdir<1){dirx=-16;diry=+10;}
+	else if(randdir<2){dirx=-8;diry=+15;}
+	else if(randdir<3){dirx=0;diry=+20;}
+	else if(randdir<4){dirx=8;diry=+15;}
+	else if(randdir<5){dirx=16;diry=+10;}
+	let damage=25;
+	let penetration=1;
+	let id=8;
+	let speed=20;
+	
+	
+	// Focus shot
+	if(isFocus)
+	{
+		if(count ==9&&!isbombing&&IsPermitPlayerShot){FocusShot;}
+	
+		task FocusShot
+		{
+		let n=30;
+		let angle=180;
+		let angle1=angle/n;
+		let angledir=1;
+		let dis=100;
+		let lengt=60;
+		let width=20;
+		let scale=0.5;
+		let picturelength=400;
+		let picturewidth=87;
+		if(focussworddirection==1){angle=0;angledir=-1;}
+		let obj=ObjShot_Create(OBJ_SHOT);
+		ObjShot_Regist(obj);
+		ObjShot_SetGraphic(obj,10);
+		ObjRender_SetScaleXYZ(obj,scale,scale,scale);
+		ObjShot_SetIntersectionLine(obj,ObjMove_GetX(obj)+((picturelength/2)*scale)*cos(angle),ObjMove_GetY(obj)+((picturelength/2)*scale)*sin(angle),ObjMove_GetX(obj)-((picturelength/2)*scale)*cos(angle),ObjMove_GetY(obj)-((picturelength/2)*scale)*sin(angle),picturewidth*scale);
+		ObjShot_SetAutoDelete(obj,false);
+		//ObjShot_SetEraseShot(obj,true);
+		ObjShot_SetDamage(obj,20);
+		ObjShot_SetPenetration(obj,999);
+		if(focussworddirection==1){focussworddirection=0;}
+		else{focussworddirection=1;}
+		//CreatePlayerShotA1(GetPlayerX()+dis*cos(angle),GetPlayerY()+dis*sin(angle),2,270,10,1,3);
+		ObjMove_SetPosition(obj,GetPlayerX()+dis*cos(angle),GetPlayerY()+dis*sin(angle));
+		loop(n+1)
+		{
+			if(!IsPermitPlayerShot){Obj_Delete(obj);return;}
+			ObjShot_SetIntersectionLine(obj,ObjMove_GetX(obj)+((picturelength/2)*scale)*cos(angle),ObjMove_GetY(obj)+((picturelength/2)*scale)*sin(angle),ObjMove_GetX(obj)-((picturelength/2)*scale)*cos(angle),ObjMove_GetY(obj)-((picturelength/2)*scale)*sin(angle),picturewidth*scale);
+			ObjMove_SetPosition(obj,GetPlayerX()+dis*cos(angle),GetPlayerY()+dis*sin(angle));
+			ObjMove_SetAngle(obj,angle);
+			angle+=angle1*angledir;
+			yield;
+		}
+		Obj_Delete(obj);
+		}
+	}
+
+
+	// Regular shot
+	else 
+	{
+		if(count ==5||count ==20&&!isbombing&&!focusshot)
+		{
+			if(IsPermitPlayerShot){UFOShot(UFO1);UFOShot(UFO2);}
+		}
+	task UFOShot(obj)
+	{
+	let x=ObjMove_GetX(obj);
+	let y=ObjMove_GetY(obj);
+	let speed=5;
+	let damage=5;
+	let dis=8;
+	let CX1=9.2;
+	let CY1=-1;
+	let CX2=3;
+	let CY2=3;
+	let n=5;
+	let cone=20;
+	let cone1=cone/n;
+	let cones=270-(cone/2);
+	ascent(i in 0..n)
+	{
+		let obj1=CreatePlayerShotA1((ObjMove_GetX(obj)-CX1)+dis*cos(cones+(i*cone1)),(ObjMove_GetY(obj)-CY1)+dis*sin(cones+(i*cone1)),speed,cones+(i*cone1),damage,1,3);
+		let obj2=CreatePlayerShotA1((ObjMove_GetX(obj)-CX2)+dis*cos(cones+(i*cone1)),(ObjMove_GetY(obj)-CY2)+dis*sin(cones+(i*cone1)),speed,cones+(i*cone1),damage,1,3);
+		let obj3=CreatePlayerShotA1((ObjMove_GetX(obj)+CX1)+dis*cos(cones+(i*cone1)),(ObjMove_GetY(obj)+CY1)+dis*sin(cones+(i*cone1)),speed,cones+(i*cone1),damage,1,3);
+		let obj4=CreatePlayerShotA1((ObjMove_GetX(obj)+CX2)+dis*cos(cones+(i*cone1)),(ObjMove_GetY(obj)+CY2)+dis*sin(cones+(i*cone1)),speed,cones+(i*cone1),damage,1,3);
+		ObjRender_SetScaleXYZ(obj1,0.5,0.5,1);
+		ObjRender_SetScaleXYZ(obj2,0.5,0.5,1);
+		ObjRender_SetScaleXYZ(obj3,0.5,0.5,1);
+		ObjRender_SetScaleXYZ(obj4,0.5,0.5,1);
+	}
+	}
+	}
+	yield;
+}
+
+let Specialattackactive=false;
+
+task Specialbomb
+{
+	Specialattackactive=true;
+	let obj=ObjShot_Create(OBJ_SHOT);
+	ObjShot_Regist(obj);
+	ObjShot_SetGraphic(obj,10);
+	ObjShot_SetDamage(obj,0);
+	ObjShot_SetPenetration(obj,999);
+	ObjMove_SetSpeed(obj,2);
+	ObjMove_SetPosition(obj,GetPlayerX(),GetPlayerY());
+	ObjMove_SetAngle(obj,270);
+	ObjRender_SetScaleXYZ(obj,0.7,0.3,0);
+    /*loop(100)
+    {
+    	yield;
+    }
+    SetPlayerSpell(GetPlayerSpell()-1);
+	Specialattack(GetEnemyBossObjectID());
+	Obj_Delete(obj);
+	return;*/
+
+	while(!Obj_IsDeleted(obj))
+	{
+		if(length(GetEnemyBossObjectID)>0&&GetObjectDistance(obj,GetEnemyBossObjectID[0])<=40&&ObjEnemy_GetInfo(GetEnemyBossObjectID[0],INFO_DAMAGE_RATE_SPELL)>0&&ObjEnemy_GetInfo(GetEnemyBossObjectID[0],INFO_DAMAGE_RATE_SHOT)>0
+			&&IsPermitPlayerShot()&&IsPermitPlayerSpell()&&GetPlayerSpell()>=1&&!IsPlayerSpellActive())
+		{
+			SetPlayerSpell(GetPlayerSpell()-1);
+			Specialattack(GetEnemyBossObjectID());
+			Obj_Delete(obj);
+		}
+		yield;
+	}
+
+	task Specialattack (obj)
+	{
+		Specialattackactive=true;
+		//n1=Coloured blend in
+		//n2=wait till move away
+		//n3=how long move away takes
+		SetForbidPlayerShot(true);
+		SetForbidPlayerSpell(true);
+		let PlayerPosition=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(PlayerPosition);
+		let PlayerX=GetPlayerX;
+		let PlayerY=GetPlayerY;
+		let n1=60;
+		let n2=50;
+		let n3=80;
+		let playercopy=CreatePlayerCopy;
+		Stopplayer(playercopy,PlayerPosition);
+		Stoptime;
+		CreateHiteffect(n1,n2,n3);
+		CreateSpecialBackground;
+		Special(playercopy);
+		yield;
+		ObjMove_SetPosition(playercopy,GetCenterX,GetCenterY);
+		while(Specialattackactive)
+		{yield;}
+		SetForbidPlayerShot(false);
+		SetForbidPlayerSpell(false);
+	}
+	
+	task Damagecalculation(objBoss)
+	{
+		let n=60;
+		let damage=2000;
+		let damage1=damage/n;
+		loop(n)
+		{
+			let life=ObjEnemy_GetInfo(objBoss, INFO_LIFE)-damage1;
+			if(life<50){life=50;}
+			ObjEnemy_SetLife(objBoss,life);
+		}
+	}
+	
+	task Special(obj)
+	{
+		let objBoss=GetEnemyBossObjectID[0];
+		let priority=76;
+		let formerbosspriority=Obj_GetRenderPriorityI(objBoss);
+		ObjMove_SetPosition(objBoss,384/2,448/2);
+		Obj_SetRenderPriorityI(objBoss,priority);
+		wait(200);
+		//Cuteffect(objBoss,45);
+		let n=30;
+		let n1=2;
+		let n2=n/n1;
+		let dis=120;
+		loop(n2)
+		{
+			Specialmovethroughboss(obj,objBoss,n,dis);
+			Specialmovebesideboss(obj,objBoss,n,dis,rand(0,360));
+			n-=n1;
+			//wait(30);
+		}
+		let copyarmy=[9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9];
+		let copyarmycounter=0;
+		let angle=GetAngleTo(objBoss,obj);
+		let angle1=360/(length(copyarmy)+1);
+		n=30;
+		
+		loop(length(copyarmy))
+		{
+			angle+=angle1;
+			copyarmy[copyarmycounter]=CreatePlayerCopy;
+			ObjMove_SetPosition(copyarmy[copyarmycounter],ObjMove_GetX(objBoss)+dis*cos(angle),ObjMove_GetY(objBoss)+dis*sin(angle));
+			ObjRender_SetAngleZ(copyarmy[copyarmycounter],GetAngleTo(copyarmy[copyarmycounter],objBoss)+90);
+			ObjMove_SetDestAtFrame(copyarmy[copyarmycounter],ObjMove_GetX(objBoss)+dis*cos(GetAngleTo(objBoss,copyarmy[copyarmycounter])+180),ObjMove_GetY(objBoss)+dis*sin(GetAngleTo(objBoss,copyarmy[copyarmycounter])+180),n);
+			copyarmycounter+=1;
+		}
+		Specialmovethroughboss(obj,objBoss,n,dis);
+		Damagecalculation(objBoss);
+		wait(200);
+		loop(length(copyarmy))
+		{
+		copyarmycounter-=1;
+		Obj_Delete(copyarmy[copyarmycounter])
+		}
+		Obj_Delete(obj);
+		Obj_SetRenderPriorityI(objBoss,formerbosspriority);
+		Specialattackactive=false;
+	}
+	
+	function Specialmovethroughboss(obj,objBoss,n,dis) //n how long, dis how far away to the boss
+	{
+		ObjMove_SetDestAtFrame(obj,ObjMove_GetX(objBoss)+dis*cos(GetAngleTo(objBoss,obj)+180),ObjMove_GetY(objBoss)+dis*sin(GetAngleTo(objBoss,obj)+180),n);
+		loop(n){yield;}
+	}
+	
+	function Specialmovebesideboss(obj,objBoss,n,dis,angle)
+	{
+		let posspinspeed=rand(60,90);
+		let graspinspeed=60;
+		let posangle=GetAngleTo(objBoss,obj);	
+		loop(n)
+		{
+			ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+graspinspeed);
+			posangle+=posspinspeed;
+			ObjMove_SetPosition(obj,ObjMove_GetX(objBoss)+dis*cos(posangle),ObjMove_GetY(objBoss)+dis*sin(posangle));
+			yield;
+		}
+		ObjMove_SetPosition(obj,ObjMove_GetX(objBoss)+dis*cos(angle),ObjMove_GetY(objBoss)+dis*sin(angle));
+		ObjRender_SetAngleZ(obj,GetAngleTo(obj,objBoss)+90);
+	}
+	
+	function Specialmovebesideboss2(obj,objBoss,n,dis,angle)
+	{
+		let spinspeed=60;
+		let posangle=GetAngleTo(objBoss,obj);
+		let posangle1=(posangle-angle)/n;
+		let posangledir=1; //1 targetangle is smaler than originangle; -1 targetangle is bigger than originangle;
+		if(angle>=posangle){posangledir=-1;}		
+		loop(n)
+		{
+			ObjRender_SetAngleZ(obj,ObjMove_GetAngle(obj)+spinspeed);
+			posangle+=posangle1*posangledir;
+			ObjMove_SetPosition(obj,ObjMove_GetX(objBoss)+dis*cos(posangle),ObjMove_GetY(objBoss)+dis*sin(posangle));
+			yield;
+		}
+		ObjMove_SetPosition(obj,ObjMove_GetX(objBoss)+dis*cos(angle),ObjMove_GetY(objBoss)+dis*sin(angle));
+		ObjRender_SetAngleZ(obj,GetAngleTo(obj,objBoss)+90);
+	}
+	
+	task Cuteffect(obj,angle)
+	{
+		let n1=10;
+		let n2=60;
+		let x2=127;
+		let alpha=0;
+		let alpha1=255/n1;
+		let effslash=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(effslash);
+		ObjPrim_SetTexture(effslash,CSD~"./Effects/Blau.png");
+		ObjSprite2D_SetSourceRect(effslash,0,0,x2,63);
+		ObjSprite2D_SetDestCenter(effslash);
+		ObjMove_SetPosition(effslash,ObjMove_GetX(obj),ObjMove_GetY(obj));
+		ObjRender_SetAngleZ(effslash,angle);
+		Obj_SetRenderPriorityI(effslash,77);
+		ObjRender_SetBlendType(effslash,BLEND_ADD_ARGB);
+		Ringeffect(obj,0);
+		loop(n1)
+		{
+			alpha+=alpha1;
+			ObjRender_SetAlpha(effslash,alpha);
+			yield;
+		}
+		alpha=255;
+		alpha1=255/n2;
+		loop(n2)
+		{
+			ObjRender_SetAlpha(effslash,alpha);
+			alpha-=alpha1;
+			yield;
+		}
+		Obj_Delete(effslash);
+		
+		task Ringeffect (obj,t)
+		{
+			loop(t){yield;}
+			let n=60;
+			let scale=0;
+			let scale1=3/n;
+			let alpha=255;
+			let alpha1=alpha/n;
+			let effring=ObjEnemy_Create(OBJ_ENEMY);
+			ObjEnemy_Regist(effring);
+			ObjPrim_SetTexture(effring,CSD~"./Effects/Blau.png");
+			ObjSprite2D_SetSourceRect(effring,128,0,255,127);
+			ObjSprite2D_SetDestCenter(effring);
+			ObjMove_SetPosition(effring,ObjMove_GetX(obj),ObjMove_GetY(obj));
+			Obj_SetRenderPriorityI(effring,77);
+			ObjRender_SetBlendType(effring,BLEND_ADD_ARGB);
+			loop(n)
+			{
+				ObjRender_SetScaleXYZ(effring,scale,scale,scale);
+				ObjRender_SetAlpha(effring,alpha);
+				alpha-=alpha1;
+				scale+=scale1;
+				yield;
+			}
+			Obj_Delete(effring);
+		}
+	}
+	
+	function CreatePlayerCopy
+	{
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		ObjPrim_SetTexture(obj,playerSprite);
+		Obj_SetRenderPriorityI(obj,76);
+		ObjRender_SetBlendType(obj,BLEND_ALPHA);
+		ObjRender_SetAngleXYZ(obj,0,0,0);
+		ObjRender_SetScaleXYZ(obj,1,1,0);
+		ObjRender_SetAlpha(obj,255);
+		ObjSprite2D_SetSourceRect(obj,0,0,32,48);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjMove_SetPosition(obj,-100,-100);
+		CreateSpecialIce(obj);
+		return(obj);
+	}
+	
+	task CreateSpecialBackground
+	{
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		ObjPrim_SetTexture(obj,CSD~"background.bmp");
+		ObjSprite2D_SetSourceRect(obj,0,0,800,600);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjMove_SetPosition(obj,GetCenterX,GetCenterY);
+		Obj_SetRenderPriorityI(obj,75);
+		//ObjRender_SetColor(obj,255,0,0);
+		while(Specialattackactive)
+		{yield;}
+		Obj_Delete(obj);
+	}
+	
+	task CreateSpecialIce(obj1)
+	{
+		let angle=270;
+		let dis=50;
+		let scale=1;
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		ObjPrim_SetTexture(obj,CSD~"./PlayerSprite.png");
+		ObjSprite2D_SetSourceRect(obj,76,2,86,58);
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj,76);
+		ObjRender_SetAngleZ(obj,180);
+		while(!Obj_IsDeleted(obj1)&&Specialattackactive)
+		{
+			ObjMove_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(ObjRender_GetAngleZ(obj1)+angle),ObjMove_GetY(obj1)+dis*sin(ObjRender_GetAngleZ(obj1)+angle));
+			ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj1)+180);
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+	
+	task CreateHiteffect(n1,n2,n3)
+	{
+		//n1=Coloured blend in
+		//n2=wait till move away
+		//n3=how long move away takes
+		SaveSnapShotA2(CSD~"./Screenshot.png",32, 16, 416, 464);
+		let obj1=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj1);
+		ObjPrim_SetTexture(obj1,CSD~"./Screenshot.png");
+		ObjSprite2D_SetSourceRect(obj1,0,0,384,448);
+		ObjSprite2D_SetDestCenter(obj1);
+		ObjMove_SetPosition(obj1,GetCenterX,GetCenterY);
+		//ObjRender_SetColor(obj,color[0],color[1],color[2]);
+		Obj_SetRenderPriorityI(obj1,77);
+		ObjRender_SetAlpha(obj1,255);
+
+		SaveSnapShotA2(CSD~"./Screenshot.png",32, 16, 416, 464);
+		let obj2=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj2);
+		//ObjPrim_SetTexture(obj2,GetMainStgScriptDirectory()~"./cutin/cutin_ilias.png");
+		ObjPrim_SetTexture(obj2,CSD~"./Screenshot.png");
+		ObjSprite2D_SetSourceRect(obj2,0,0,384,448);
+		//ObjSprite2D_SetDestCenter(obj2);
+		//ObjMove_SetPosition(obj2,GetCenterX,GetCenterY);
+		ObjRender_SetBlendType(obj2,BLEND_ALPHA);
+		ObjRender_SetColor(obj2,0,0,255);
+		Obj_SetRenderPriorityI(obj2,78);
+		ObjRender_SetAlpha(obj2,255);
+		//Shader;
+		Pictureblendin(obj1,obj2,n1,n2,n3);
+
+		task Pictureblendin(obj1,obj2,n1,n2,n3)
+		{
+			//n1=Coloured blend in
+			//n2=wait till move away
+			//n3=how long move away takes
+			let pic1x1=0;
+			let pic1y1=0;
+			let pic1x2=0;
+			let pic1y2=0;
+			let pic2x1=0;
+			let pic2y1=GetCenterY;
+			let pic2x2=GetStgFrameWidth;
+			let pic2y2=GetCenterY;
+			loop(n1)
+			{
+				ObjSprite2D_SetDestRect(obj2,pic2x1,pic2y1,pic2x2,pic2y2);
+				ObjSprite2D_SetSourceRect(obj2,pic2x1,pic2y1,pic2x2,pic2y2);
+				pic2y1+=GetCenterY/n2;
+				pic2y2-=GetCenterY/n2;
+				yield;
+			}
+			loop(n2){yield;}
+			ObjMove_SetDestAtFrame(obj1,ObjMove_GetX(obj1)+GetStgFrameWidth(),ObjMove_GetY(obj1),n3);
+			ObjMove_SetDestAtFrame(obj2,ObjMove_GetX(obj2)+GetStgFrameWidth(),ObjMove_GetY(obj2),n3);
+			let alpha=255;
+			loop(n3)
+			{
+				ObjRender_SetAlpha(obj1,alpha);
+				ObjRender_SetAlpha(obj2,alpha);
+				alpha-=255/n3;
+				yield;
+			}
+			Obj_Delete(obj1);
+			Obj_Delete(obj2);
+			
+		}
+		/*task Pictureblendin (obj1,obj2)
+		{
+			let n1=100;
+			let n2=100;
+			let pictureangleX=90;
+			let pictureangleX1=pictureangleX/n1;
+			loop(n1+1)
+			{
+				ObjRender_SetAngleX(obj2,pictureangleX);
+				pictureangleX-=pictureangleX1;
+				yield;
+			}
+		}*/
+		
+		task Shader 
+		{
+			let pathShader = CSD ~ "Shader.txt";
+			let objShader = ObjShader_Create();
+			let picturepath = CSD ~ "Shadermask.png";
+			ObjShader_SetShaderF(objShader, pathShader);
+			ObjShader_SetTechnique(objShader, "TecMask");
+			ObjShader_SetTexture(objShader, "textureMask_", picturepath);
+			SetShaderI(objShader, 71, 71);
+			
+			let x=0;
+	let y=0;
+	let plus=0.001;
+	let plusx=0.017;
+	let plusy=-0.005;
+	let plus2=20;
+	let divides=500;
+	let Screenwidth=640;
+	let Screenheight=480;
+	
+	loop(100)
+	{
+		ObjShader_SetFloat(objShader,"POS_X",x);
+		ObjShader_SetFloat(objShader,"POS_Y",y);
+		ObjShader_SetFloat(objShader,"SCREEN_WIDTH",Screenwidth);
+		ObjShader_SetFloat(objShader,"SCREEN_HEIGHT",Screenheight);
+		//x+=(((1/divides)*-1)/2)+plus;
+		//y+=(((1)/divides))+plus;
+		//Screenheight+=4;
+		y+=plusx;
+		x+=plusy;
+		Screenwidth+=plus2;
+		Screenheight+=plus2;
+		wait(1);
+	}
+			
+			/*let n=120;
+			let ShaderX=640;
+			let ShaderX1=0;
+			let ShaderY=480;
+			let ShaderY1=0/n;
+			loop(n)
+			{
+				ShaderX+=ShaderX1;
+				ObjShader_SetFloat(objShader, "SCREEN_WIDTH_", ShaderX);
+				ShaderY+=ShaderY1;
+				ObjShader_SetFloat(objShader, "SCREEN_HEIGHT_", ShaderY);
+				yield;
+			}*/
+		}
+	}
+
+	task Stopplayer(playercopy,PlayerPosition)
+	{
+		let PlayerX=GetPlayerX;
+		let PlayerY=GetPlayerY;
+		while(Specialattackactive)
+		{
+			ObjMove_SetPosition(GetPlayerObjectID,PlayerX,PlayerY);
+			//ObjMove_SetPosition(playercopy,ObjMove_GetX(PlayerPosition),ObjMove_GetY(PlayerPosition));
+			yield;
+		}
+		
+		Obj_Delete(PlayerPosition);
+	}
+	
+	task Stoptime
+	{
+		while(Specialattackactive)
+		{
+			SetPlayerInvincibilityFrame(60);
+			let sceneid=GetEnemyBossSceneObjectID();
+			let time=ObjEnemyBossScene_GetInfo(sceneid,INFO_TIMERF);
+			time+=1;
+			ObjEnemyBossScene_SetSpellTimer(sceneid,time);
+			yield;
+		}
+	}
+	function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}
+}
+
+task Bombblock
+{
+	loop
+	{
+		SetForbidPlayerSpell(true);
+		SetForbidPlayerShot(true);
+		yield;
+	}
+}
+
+task Bomb
+{
+	// Prepare
+		//SetForbidPlayerShot(true);
+		SetForbidPlayerSpell(true);
+		SetPlayerInvincibilityFrame(120);
+		SetPlayerSpeed(5,2.5);
+	// A spellcard object
+		let spellObject = ObjSpell_Create();
+		ObjSpell_Regist(spellObject);
+		ObjSpell_SetEraseShot(spellObject,true);
+	// Bomb
+		PlaySound("bomb",70,0);
+		let IceRockets = [];
+		loop(30)
+		{
+			let ice=[0];
+			ice[0]=CreateSpellIce(rand(0,360));
+			IceRockets=IceRockets~ice;
+			wait(2);
+		}
+		let alldeleted=false;
+		while(!alldeleted)
+		{
+		alldeleted=true;
+		let numberrockets=length(IceRockets);
+		ascent(i in 0..numberrockets)
+		{
+			if(!Obj_IsDeleted(IceRockets[i]))
+			{
+			alldeleted=false;
+			}
+		}
+		SetPlayerInvincibilityFrame(10);
+		yield;
+		}
+	// Cleanup and reset
+	SetForbidPlayerShot(false);
+	SetForbidPlayerSpell(false);
+	SetPlayerSpeed(5,2.5);
+	isbombing=false;
+	Obj_Delete(GetSpellManageObject);
+}
+
+function CreateSpellIce(angle)
+{
+	let obj=CreatePlayerShotA1(ObjRender_GetX(playerObj),ObjRender_GetY(playerObj),2,angle,1,9999,2);
+	SpellIce(obj);
+	return(obj);
+	
+	task SpellIce(obj)
+	{
+	ObjShot_SetSpellFactor(obj,true);
+	ObjShot_SetEraseShot(obj,true);
+	ObjMove_SetAcceleration(obj,-0.05);
+	ObjMove_SetMaxSpeed(obj,0);
+	while(ObjMove_GetSpeed(obj)>0){yield;}
+	wait(20);
+	Deletecheck(obj);
+	let allenemy=GetIntersectionRegistedEnemyID();
+	let randenemy=truncate(rand(0,length(allenemy)));
+	let randenemyID=0;
+	let noenemy=false;
+	if(length(allenemy)==0){noenemy=true;}
+	else{randenemyID=allenemy[randenemy];}
+	let angle=rand(50,60);
+	loop(60)
+	{
+	ObjMove_SetAngle(obj,ObjMove_GetAngle(obj)+angle);
+	yield;
+	}
+	if(!noenemy)
+	{
+		ObjMove_SetAngle(obj,GetAngleTo(obj,randenemyID));
+		wait(30);
+		ObjMove_SetDestAtFrame(obj,ObjMove_GetX(randenemyID),ObjMove_GetY(randenemyID),GetObjectDistance(obj,randenemyID)/6);
+		while(GetObjectDistance(obj,randenemyID)>=4)
+		{ObjMove_SetDestAtFrame(obj,ObjMove_GetX(randenemyID),ObjMove_GetY(randenemyID),GetObjectDistance(obj,randenemyID)/6); yield;}
+		let shotX=ObjMove_GetX(obj);
+		let shotY=ObjMove_GetY(obj);
+		let dis=5;
+		Obj_Delete(obj);
+		if(shotX==0&&shotY==0){return;}
+		loop(5)
+		{
+			if(!IsPermitPlayerShot){return;}
+			let n=1;
+			ascent(i in 0..n)
+			{
+			let angle=rand(i*360/n,(i+1)*360/n);
+			let ice=CreatePlayerShotA1(shotX+dis*cos(angle),shotY+dis*sin(angle),5,angle,1,9999,truncate(rand(4,8.99)));
+			Fade(ice,30,255,1);
+			}
+		}
+		task Fade(obj,n,alpha,scale)
+		{
+			let alpha1=alpha/n;
+			let scale1=scale/n;
+			loop(n)
+			{
+			ObjRender_SetAlpha(obj,alpha);
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			alpha-=alpha1;
+			scale-=scale1;
+			yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	else
+	{
+		ObjMove_SetAngle(obj,rand(0,360));
+		ObjMove_SetMaxSpeed(obj,5);
+		ObjMove_SetSpeed(obj,5);
+	}
+	}
+	
+	task Deletecheck(obj)
+	{
+	wait(300);
+	Obj_Delete(obj);
+	}
+}
+
+task createRingEffect
+{
+	let scale = 0;
+	let alpha = 200;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,spellTexture);
+	ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+	ObjRender_SetAlpha(obj,alpha);
+	Obj_SetRenderPriorityI(obj,41);
+	ObjRender_SetScaleXYZ(obj,scale,scale,0);
+	ObjSprite2D_SetSourceRect(obj,0,0,128,128);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj,GetPlayerX,GetPlayerY,0);
+	
+	ObjRender_SetColor(obj, truncate(rand(128,255)), truncate(rand(128,255)), truncate(rand(128,255)));
+	
+	while(alpha > 0)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		
+		scale+=0.4;
+		alpha-=2;
+		
+		yield;
+	}
+	
+	Obj_Delete(obj);
+}
+
+function SpawnFamiliar(Startangle)
+{
+	let obj=ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obj);
+	ObjPrim_SetTexture(obj,CSD~"Gun.png");
+	Obj_SetRenderPriorityI(obj,31);
+	ObjSprite2D_SetSourceRect(obj,0,1,60,54);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj,0.4,0.4,1);
+	ObjRender_SetAlpha(obj,180);
+	UFOMovement(obj,Startangle);
+	return obj;
+	
+	task UFOMovement(obj,Startangle)
+	{
+	let dis=23;
+	let angle=Startangle;
+	let angle1=360/240;
+	loop
+	{
+	ObjMove_SetPosition(obj,ObjRender_GetX(playerObj)+dis*cos(angle),ObjRender_GetY(playerObj)+dis/1.8*sin(angle));
+	angle+=angle1;
+	if(playerisdead){ObjRender_SetAlpha(obj,0);}
+	else{ObjRender_SetAlpha(obj,180);}
+	yield;
+	}
+	}
+}
+
+task Deathexplosion
+{
+	let scale = 0;
+	let alpha = 200;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj,deathTexture);
+	ObjRender_SetBlendType(obj,BLEND_ADD_RGB);
+	ObjRender_SetAlpha(obj,alpha);
+	Obj_SetRenderPriorityI(obj,79);
+	ObjRender_SetScaleXYZ(obj,scale,scale,0);
+	ObjSprite2D_SetSourceRect(obj,0,0,128,128);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj,GetPlayerX,GetPlayerY,0);
+	
+	ObjRender_SetColor(obj,0,0,255);
+	
+	while(alpha > 0)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjRender_SetAlpha(playerObj,0);
+		scale+=0.2;
+		alpha-=4;
+		
+		yield;
+	}
+	
+	Obj_Delete(obj);
+
+}
+
+// Render the Player
+task renderPlayer
+{
+	ObjPrim_SetTexture(playerObj,playerSprite);
+	Obj_SetRenderPriorityI(playerObj,31);
+	ObjRender_SetBlendType(playerObj,BLEND_ALPHA);
+	ObjRender_SetAngleXYZ(playerObj,0,0,0);
+	ObjRender_SetScaleXYZ(playerObj,1,1,0);
+	ObjRender_SetAlpha(playerObj,255);
+	ObjSprite2D_SetSourceRect(playerObj,0,0,32,48);
+	ObjSprite2D_SetDestCenter(playerObj);
+	ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+	
+	while(!Obj_IsDeleted(playerObj))
+	{
+		ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+		Obj_SetRenderPriorityI(playerObj,renderpriority);
+		//Player is pressing left
+		if(GetVirtualKeyState(VK_LEFT) == KEY_PUSH || GetVirtualKeyState(VK_LEFT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleY(playerObj,0);
+			ObjRender_SetAngleZ(playerObj,-20);
+			ObjSprite2D_SetSourceRect(playerObj,35,7,60,38);
+		}
+		//Player is pressing right
+		else if (GetVirtualKeyState(VK_RIGHT) == KEY_PUSH || GetVirtualKeyState(VK_RIGHT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleY(playerObj,180);
+			ObjRender_SetAngleZ(playerObj,-20);
+			ObjSprite2D_SetSourceRect(playerObj,35,7,60,38);
+		}
+		// Idle animation or moving forward/backward
+		else
+		{
+			ObjRender_SetAngleZ(playerObj,0);
+			ObjSprite2D_SetSourceRect(playerObj,4,6,29,38);
+		}
+		yield;
+	}
+}
+
+// Render the hitbox
+task renderHitBox(x,y)
+{
+	let alpha = 0;
+	let spin = 0;
+	
+	ObjPrim_SetTexture(hitboxObj,playerSprite);
+	ObjRender_SetBlendType(hitboxObj,BLEND_ALPHA);
+	Obj_SetRenderPriorityI(hitboxObj,renderpriority+15);
+	ObjRender_SetAlpha(hitboxObj,0);
+	ObjRender_SetScaleXYZ(hitboxObj,1,1,0);
+	ObjSprite2D_SetSourceRect(hitboxObj,0,64,64,128);
+	ObjSprite2D_SetDestCenter(hitboxObj);
+	
+	while(!Obj_IsDeleted(hitboxObj))
+	{
+		Obj_SetRenderPriorityI(hitboxObj,renderpriority+15);
+		// update the hitbox position, angle and alpha
+		ObjRender_SetPosition(hitboxObj,GetPlayerX,GetPlayerY,0);
+		ObjRender_SetAngleZ(hitboxObj,spin);
+		ObjRender_SetAlpha(hitboxObj,alpha);
+		
+		if(isFocus&& !playerisdead)
+		{
+			alpha=255;
+		}
+		else
+		{
+			alpha=0;
+		}
+		
+		// increase spin to make it roteate
+		spin+=2; 
+		
+		yield;
+	}
+}
+
+function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}
+
+function wait(w)
+{
+	loop(w)
+	{
+	yield;
+	}
+}
+
+let soundarr = [];
+let se;
+let s = ObjSound_Create;
+let blasterSFX = GetCurrentScriptDirectory ~ "blaster.wav";
+let slashvapSFX = GetCurrentScriptDirectory ~ "slashvap.wav";
+
+task SE_Play(let path, let vl){
+let seobj = ObjSound_Create;
+ObjSound_Load(seobj,path);
+ObjSound_Play(seobj);
+ObjSound_SetVolumeRate(seobj,vl);
+loop(120){yield;}
+RemoveSound(path);
+}
+
+task PlaySound(str,v,w)//Name(as a string),volume,delay before playing
+{
+	if(str == "seShot"){ObjSound_Load(s,CSD ~ "seShot.wav");}
+	if(str == "bomb"){ObjSound_Load(s,CSD ~ "bomb.wav");}
+	if(str == "seDeath"){ObjSound_Load(s,CSD ~ "seDeath.wav");}
+	if(str == "blaster2"){ObjSound_Load(s,CSD ~ "blaster2.wav");}
+	if(str == "fire2vap"){ObjSound_Load(s,CSD ~ "fire2vap.wav");}
+	if(str == "slashvap"){ObjSound_Load(s,CSD ~ "slashvap.wav");}
+
+	loop(w){yield;}
+	ObjSound_SetSoundDivision(s,SOUND_SE);
+	ObjSound_SetVolumeRate(s,v);
+	ObjSound_Play(s);
+	soundarr = soundarr ~ [s];
+	if(str=="item")
+	{
+		yield;
+		Obj_Delete(s);
+	}
+}
+
+
+task LoadSE{
+	LoadSound(CSD ~ "seShot.wav");
+	LoadSound(CSD ~ "bomb.wav");
+	LoadSound(CSD ~ "seDeath.wav");
+	LoadSound(CSD ~ "blaster2.wav");
+	LoadSound(CSD ~ "fire2vap.wav");
+	LoadSound(CSD ~ "slashvap.wav");
+	}

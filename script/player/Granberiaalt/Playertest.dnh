@@ -1,0 +1,374 @@
+#TouhouDanmakufu[Single]
+#ScriptVersion[3]
+#Title["Player System"]
+#Text["Player System" ]
+#BGM["./ilias.ogg"]
+#include "./Bulletsheet/Shotconstants.dnh"
+
+
+let DCSD= GetCurrentScriptDirectory;
+let DGetCenterX = GetStgFrameWidth/2;
+let DGetCenterY = GetStgFrameHeight/2;
+let objDiaBox= ObjPrim_Create(OBJ_SPRITE_2D);
+let objDiaNameBox= ObjPrim_Create(OBJ_SPRITE_2D);
+//let objDiaFaceBox;
+let objDFace=ObjPrim_Create(OBJ_SPRITE_2D);
+let objDName=ObjText_Create();
+let objDText=ObjText_Create();
+let granberiaFace = DCSD ~ "./dialog/face_e002.png";//120x120
+let sylph = DCSD ~ "./dialog/sylph.png";
+let Untitled2 = DCSD ~ "./dialog/Untitled2.png";
+
+let objBoss;
+let animFrame = 0;
+let animFrame2 = 0;
+let objScene = GetEnemyBossSceneObjectID();
+let GetCenterX = GetStgFrameWidth/2;
+let GetCenterY = GetStgFrameHeight/2;
+
+let bossX=0;
+let bossY=0;
+
+
+@Event
+{
+    alternative(GetEventType())
+    case(EV_REQUEST_LIFE)
+    {
+        SetScriptResult(5000);
+    }
+    case(EV_REQUEST_TIMER)
+    {
+        SetScriptResult(60);
+    }
+    case(EV_REQUEST_SPELL_SCORE)
+    {
+        SetScriptResult(1000000);
+    }
+}
+
+@Initialize
+{
+	InstallFont(GetCurrentScriptDirectory() ~ "dialog/consola.ttf");
+    objBoss = ObjEnemy_Create(OBJ_ENEMY_BOSS);
+    ObjEnemy_Regist(objBoss);
+    ObjMove_SetX(objBoss,360);
+    ObjMove_SetDestAtFrame(objBoss, 384/2, 100, 60); //Move the boss to the specified location
+SetPlayerLife(99);
+TDrawLoop;
+TFinalize;
+MainTask;
+}
+
+
+
+@MainLoop
+{
+    bossX = ObjMove_GetX(objBoss);
+    bossY = ObjMove_GetY(objBoss);
+    DeleteShotInCircle(TYPE_SHOT,TYPE_IMMEDIATE,0,0,2);
+    ObjEnemy_SetIntersectionCircleToShot(objBoss,ObjMove_GetX(objBoss),ObjMove_GetY(objBoss),32);
+    ObjEnemy_SetIntersectionCircleToPlayer(objBoss,ObjMove_GetX(objBoss),ObjMove_GetY(objBoss),24);
+    yield;
+}
+
+//CreateMagicalCircle(Object,Scale,Spindirection(1 or -1),startangle,speed(higher number means slower speed),alpha,color[RED,GREEN,BLUE])
+
+task MainTask
+{
+    /*Dwait(120);
+	SetForbidPlayerShot(true);
+	CreateDiaBox(90);
+	CreateDiaNameBox(120);*/
+	CreateMagicalCircle(objBoss,0.4,1,0,300,150,[255,255,255]);
+	CreateMagicalCircle(objBoss,0.4,1,180,360,200,[255,255,255]);
+	/*Dwait(60);
+	cutin(640,480);
+	DiaText("Granberia",granberiaFace,"...wirklich? Ich kämpfe jetzt [r] gegen einen super nuklearen [r] Mega Vogel?"); //Name, Bild, Text
+	DiaText("Blaze",Untitled2,"Der Vogel ist nur der[r]Midboss");
+	DiaText("Sylph",sylph,"Ich bin auch wichtig!");
+	HideDia;
+	SetForbidPlayerShot(false);**/
+}
+
+let cutpicture= DCSD~ "./cutin/cutin_ilias.png";
+
+
+task cutin(Xmax, Ymax)
+{
+	let Height=1;
+	let Xpart=Xmax/50;
+	let Ypart=Ymax/50;
+	let counterReihe=1;
+	let counterSpalte=1;
+	loop(2500)
+	{
+		let obj = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,75);
+		ObjPrim_SetTexture(obj,cutpicture);
+		ObjSprite2D_SetSourceRect(obj,Xpart*(counterSpalte-1) ,(Ypart*(counterReihe-1)) ,(Xpart*counterSpalte) ,(Ypart*counterReihe));
+		ObjSprite2D_SetDestRect(obj,Xpart*(counterSpalte-1) ,((Ypart*(counterReihe-1))+Height) ,(Xpart*counterSpalte) ,((Ypart*counterReihe)+Height));
+		CreateShotA1((Xpart*counterSpalte) ,((Ypart*counterReihe)+Height),0,0,202,0);
+		counterSpalte+=1;
+		if(counterSpalte>50){counterSpalte=1;counterReihe+=1;}
+		Fly(obj);
+	}
+}
+task Fly(obj)
+{
+	let randdis=240;
+	ObjRender_SetPosition(obj,rand((randdis*-1),randdis),rand((randdis*-1),randdis),0);
+	Alpha(obj,60,1);
+	ObjMove_SetDestAtWeight(obj,0,0,10,8);
+	Dwait(60);
+	ObjMove_SetDestAtFrame(obj,0,0,10);
+	Dwait(120);
+	ObjMove_SetAngle(obj,rand(10,30));
+	ObjMove_SetAcceleration(obj,rand(0.1,0.12));
+	ObjMove_SetSpeed(obj,0.5);
+	ObjMove_SetMaxSpeed(obj,10);
+	Alpha(obj,200,-1);
+	Dwait(120);
+	Obj_Delete(obj);
+}
+task Alpha(obj,n,l)
+{
+	let alpha=0;
+	if(l!=1){alpha=255;}
+	loop(n)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		if(l!=1){alpha-=255/n;}
+		else{alpha+=255/n;}
+		Dwait(1);
+	}
+}
+
+function CreateMagicalCircle(obj1,scale,dir,angle,speed,alpha,color)
+{
+	let magicalcircle = DCSD ~ "./m_circle11.png";
+    let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	let RED = color[0];
+	let GREEN = color[1];
+	let BLUE = color [2];
+    Obj_SetRenderPriorityI(obj,30);
+    ObjPrim_SetTexture(obj,magicalcircle);
+    ObjSprite2D_SetSourceRect(obj,0 ,0 ,400 ,400 );
+    ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetColor(obj,RED,GREEN,BLUE);
+	ObjRender_SetAlpha(obj,alpha);
+	ObjRender_SetScaleXYZ(obj,scale,scale,0);
+    ObjRender_SetPosition(obj,ObjRender_GetX(obj1),ObjRender_GetY(obj1), 1);
+	Spellspin(obj,dir,angle,speed,scale,obj1);
+	yield;
+	return obj;
+	task Spellspin(obj,dir,angle,speed,scale,obj1)
+	{
+		let spellcount=0;
+		while(!Obj_IsDeleted(obj))
+		{
+			ObjRender_SetAngleZ(obj,angle);
+			ObjRender_SetScaleXYZ(obj,scale+(0.05*sin(spellcount)),scale+(0.05*sin(spellcount)),0);
+			ObjRender_SetPosition(obj,ObjRender_GetX(obj1),ObjRender_GetY(obj1), 1);
+			angle+=360/(speed*dir);
+			spellcount++;
+			yield;
+		}
+	}
+}
+
+function CreateDiaBox(n)
+{
+	let diaBox = DCSD ~ "./dialog/Dialog_Box3.png";
+    objDiaBox = ObjPrim_Create(OBJ_SPRITE_2D);
+    Obj_SetRenderPriorityI(objDiaBox,70);
+    ObjPrim_SetTexture(objDiaBox,diaBox);
+    ObjSprite2D_SetSourceRect(objDiaBox,0 ,0 ,384 ,130 );
+    ObjSprite2D_SetDestCenter(objDiaBox);
+    ObjRender_SetPosition(objDiaBox,DGetCenterX,GetStgFrameHeight-65, 1);
+	let angleX=90;
+	ObjRender_SetAngleX(objDiaBox,angleX);
+	loop (n)
+	{
+		angleX-=90/n;
+		ObjRender_SetAngleX(objDiaBox,angleX);
+		Dwait(1);
+	}
+}
+
+function CreateDiaNameBox(n)
+{
+	let endposition=DGetCenterX-115;
+	let diaNameBox = DCSD ~ "./dialog/Dialog_NameBox.png";
+    Obj_SetRenderPriorityI(objDiaNameBox,70);
+    ObjPrim_SetTexture(objDiaNameBox,diaNameBox);
+    ObjSprite2D_SetSourceRect(objDiaNameBox,0 ,0 ,150 ,20 );
+    ObjSprite2D_SetDestCenter(objDiaNameBox);
+	let p=200;
+    ObjRender_SetPosition(objDiaNameBox,endposition-p,GetStgFrameHeight-140, 1);
+	loop(n)
+	{
+		p-=200/n;
+		ObjRender_SetPosition(objDiaNameBox,endposition-p,GetStgFrameHeight-140, 1);
+		Dwait(1);
+	}
+}
+
+//DiaText("Granberia",granberiaFace,"Hi");//Name, Bild, Text
+
+function DiaText (Name, Face, Text)
+{
+	//Name
+	let maxwidth=130;
+    ObjText_SetText(objDName, Name);
+    ObjText_SetFontSize(objDName, 20);
+    ObjText_SetFontType(objDName, "Consolas");
+    ObjText_SetFontBold(objDName, true);
+    ObjText_SetFontColorTop(objDName, 255, 255, 255);
+    ObjText_SetFontColorBottom(objDName, 255, 255, 255);
+	ObjText_SetHorizontalAlignment(objDName, ALIGNMENT_CENTER);
+    ObjText_SetMaxWidth(objDName, maxwidth);
+    /*ObjText_SetFontBorderType(objText, BORDER_FULL);
+    ObjText_SetFontBorderColor(objText, 224, 64, 192);
+    ObjText_SetFontBorderWidth(objText, 1);*/
+	Obj_SetRenderPriorityI(objDName, 72);
+	ObjRender_SetAlpha(objDName,220);
+	ObjRender_SetPosition(objDName,ObjRender_GetX(objDiaNameBox)-(maxwidth/2),ObjRender_GetY(objDiaNameBox)-10,0);
+	
+	//Bild
+    Obj_SetRenderPriorityI(objDFace,72);
+    ObjPrim_SetTexture(objDFace,Face);
+    ObjSprite2D_SetSourceRect(objDFace,0 ,0 ,120 ,120 );
+    ObjSprite2D_SetDestCenter(objDFace);
+    ObjRender_SetPosition(objDFace,DGetCenterX-125,GetStgFrameHeight-65, 1);
+	
+	//Text
+	maxwidth=250;
+    ObjText_SetText(objDText, Text);
+    ObjText_SetFontSize(objDText, 16);
+    ObjText_SetFontType(objDText, "Consolas");
+    ObjText_SetFontBold(objDText, false);
+    ObjText_SetFontColorTop(objDText, 255, 255, 255);
+    ObjText_SetFontColorBottom(objDText, 255, 255, 255);
+	ObjText_SetHorizontalAlignment(objDText, ALIGNMENT_LEFT);
+    ObjText_SetMaxWidth(objDText, maxwidth);
+    /*ObjText_SetFontBorderType(objText, BORDER_FULL);
+    ObjText_SetFontBorderColor(objText, 224, 64, 192);
+    ObjText_SetFontBorderWidth(objText, 1);*/
+	Obj_SetRenderPriorityI(objDText, 72);
+	ObjRender_SetAlpha(objDText,220);
+	ObjRender_SetPosition(objDText,130,GetStgFrameHeight-125,0);
+	
+	while(GetVirtualKeyState(VK_SHOT)!=KEY_PUSH){yield;}
+	yield;
+}
+
+function HideDia
+{
+	ObjRender_SetAlpha(objDiaBox,0);
+	ObjRender_SetAlpha(objDiaNameBox,0);
+	ObjRender_SetAlpha(objDFace,0);
+	ObjRender_SetAlpha(objDName,0);
+	ObjRender_SetAlpha(objDText,0);
+}
+
+
+
+
+
+
+
+
+
+function Dwait (n)
+{
+	loop (n)
+	{
+	yield;
+	}
+}
+
+task TDrawLoop
+{
+    let dir;
+    let speed;
+    let imgBoss = GetCurrentScriptDirectory() ~ "Sprite/Utsuho.png";
+    ObjPrim_SetTexture(objBoss, imgBoss);
+    ObjSprite2D_SetSourceRect(objBoss,2,2,128,128);
+    ObjSprite2D_SetDestCenter(objBoss);
+    ObjRender_SetScaleXYZ(objBoss, 0.5, 0.5, 0);
+   
+   while(!Obj_IsDeleted(objBoss))
+   {
+        dir = ObjMove_GetAngle(objBoss);
+        speed = ObjMove_GetSpeed(objBoss);
+
+        if(speed == 0)
+        {
+            ObjRender_SetAngleXYZ(objBoss,0 ,0 ,0 );
+            if(animFrame < 10) {ObjSprite2D_SetSourceRect(objBoss,2992,2,3118,128);}
+            if(animFrame >= 10 && animFrame < 20) {ObjSprite2D_SetSourceRect(objBoss,132,2,258,128);}
+            if(animFrame >= 20 && animFrame < 30) {ObjSprite2D_SetSourceRect(objBoss,262,2,388,128);}
+            if(animFrame >= 30 && animFrame < 40) {ObjSprite2D_SetSourceRect(objBoss,392,2,518,128);}
+            if(animFrame >= 40 && animFrame < 50) {ObjSprite2D_SetSourceRect(objBoss,522,2,648,128);}
+            if(animFrame >= 50 && animFrame < 60) {ObjSprite2D_SetSourceRect(objBoss,652,2,778,128);}
+            if(animFrame >= 60 && animFrame < 70) {ObjSprite2D_SetSourceRect(objBoss,782,2,908,128);}
+            if(animFrame >= 70 && animFrame < 80) {ObjSprite2D_SetSourceRect(objBoss,912,2,1038,128);}
+            if(animFrame >= 80 && animFrame < 90) {ObjSprite2D_SetSourceRect(objBoss,1042,2,1168,128);}
+            if(animFrame >= 90 && animFrame < 100) {ObjSprite2D_SetSourceRect(objBoss,1172,2,1298,128);}
+            if(animFrame >= 100 && animFrame < 110) {ObjSprite2D_SetSourceRect(objBoss,1302,2,1428,128);}
+            if(animFrame >= 110 && animFrame < 120) {ObjSprite2D_SetSourceRect(objBoss,1432,2,1558,128);}
+            if(animFrame >= 120 && animFrame < 130) {ObjSprite2D_SetSourceRect(objBoss,1562,2,1688,128);}
+            if(animFrame >= 130 && animFrame < 140) {ObjSprite2D_SetSourceRect(objBoss,1692,2,1818,128);}
+            if(animFrame >= 140 && animFrame < 150) {ObjSprite2D_SetSourceRect(objBoss,1822,2,1948,128);}
+            if(animFrame >= 150 && animFrame < 160) {ObjSprite2D_SetSourceRect(objBoss,1952,2,2078,128);}
+            if(animFrame >= 160 && animFrame < 170) {ObjSprite2D_SetSourceRect(objBoss,2082,2,2208,128);}
+            if(animFrame >= 170 && animFrame < 180) {ObjSprite2D_SetSourceRect(objBoss,2212,2,2338,128);}
+            if(animFrame >= 180 && animFrame < 190) {ObjSprite2D_SetSourceRect(objBoss,2342,2,2468,128);}
+            if(animFrame >= 190 && animFrame < 200) {ObjSprite2D_SetSourceRect(objBoss,2472,2,2598,128);}
+            if(animFrame >= 200 && animFrame < 210) {ObjSprite2D_SetSourceRect(objBoss,2602,2,2728,128);}
+            if(animFrame >= 210 && animFrame < 220) {ObjSprite2D_SetSourceRect(objBoss,2732,2,2858,128);}
+            if(animFrame >= 220 && animFrame < 230) {ObjSprite2D_SetSourceRect(objBoss,2862,2,2988,128);}
+            if(animFrame == 230) {ObjSprite2D_SetSourceRect(objBoss,2992,2,3118,128);}
+            //animFrame2=0;
+        }
+        else if(cos(dir) < 0)
+        {
+             ObjRender_SetAngleXYZ(objBoss,0,180,0);
+             if(animFrame2 < 10) {ObjSprite2D_SetSourceRect(objBoss,3122,2,3248,128);}
+             if(animFrame2 >= 10 && animFrame2 < 20) {ObjSprite2D_SetSourceRect(objBoss,3252,2,3378,128);}
+             if(animFrame2 >= 20 && animFrame2 < 30) {ObjSprite2D_SetSourceRect(objBoss,3382,2,3508,128);}
+             if(animFrame2 > 30) {ObjSprite2D_SetSourceRect(objBoss,3512,2,3638,128);}
+        }
+        else if(cos(dir) > 0)
+        {
+             ObjRender_SetAngleXYZ(objBoss,0,0,0);
+             if(animFrame2 < 10) {ObjSprite2D_SetSourceRect(objBoss,3122,2,3248,128);}
+             if(animFrame2 >= 10 && animFrame2 < 20) {ObjSprite2D_SetSourceRect(objBoss,3252,2,3378,128);}
+             if(animFrame2 >= 20 && animFrame2 < 30) {ObjSprite2D_SetSourceRect(objBoss,3382,2,3508,128);}
+             if(animFrame2 > 30) {ObjSprite2D_SetSourceRect(objBoss,3512,2,3638,128);}
+        }
+        animFrame+=2;
+        animFrame2+=2;
+        if(animFrame > 230){animFrame = 0;}
+        if(animFrame2 > 40){animFrame2 = 20;}//auskommentieren wenn die animation nicht loopen soll
+        yield;
+   }
+}
+
+task TFinalize 
+{
+    while(ObjEnemy_GetInfo(objBoss, INFO_LIFE) > 0){yield;}
+    Obj_Delete(objBoss);
+    DeleteShotAll(TYPE_ALL, TYPE_IMMEDIATE);
+    SetAutoDeleteObject(true);
+    CloseScript(GetOwnScriptID());
+    
+    if(ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SHOOTDOWN_COUNT) +ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SPELL_COUNT) == 0)
+    {
+        AddScore(ObjEnemyBossScene_GetInfo(objScene, INFO_SPELL_SCORE));
+    }
+    return;
+}
+
