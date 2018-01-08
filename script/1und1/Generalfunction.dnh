@@ -132,9 +132,32 @@ let GetFullCenterX =640/2;
 let GetFullCenterY =480/2;
 function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}
 
-function CO_GetAngleToObjectMove(x,y,obj){
+function GetAngleToObjectMove(x,y,obj){
 	let angle = atan2(ObjMove_GetY(obj)-y,ObjMove_GetX(obj)-x);
 	return angle;
+}
+
+//(Blargel)
+function NormalizeAngle(angle){
+	angle %= 360;
+ 
+	if(angle<0){
+  		angle += 360;
+ 	}
+ 
+ 	return angle
+}
+
+//(Blargel)
+function AngularDistance(angle1, angle2){
+	let distance = NormalizeAngle(angle2 - angle1);
+	if(distance>180){ distance-=360; }
+	return distance;
+}
+
+//Calculates the reflection angle based on the angle of the object and the angle of the mirror
+function ReflectionAngle (angle, mirror){
+   return 2*mirror-angle;
 }
 
 function sqrt (input)
@@ -179,6 +202,8 @@ function CreateTestCounter(x, y)
 	return obj;
 }
 
+
+
 /*
 function GetClipMinX
 {
@@ -204,23 +229,7 @@ function GetClipMaxY
 }
 */
 
-//(Blargel)
-function NormalizeAngle(angle){
-	angle %= 360;
- 
-	if(angle<0){
-  		angle += 360;
- 	}
- 
- 	return angle
-}
 
-//(Blargel)
-function AngularDistance(angle1, angle2){
-	let distance = NormalizeAngle(angle2 - angle1);
-	if(distance>180){ distance-=360; }
-	return distance;
-}
 
 //Returns the intersection point of two lines (Naut)
 function GetLineIntersectionPoint(let x1, let y1, let x2, let y2, let x3, let y3, let x4, let y4){
@@ -248,10 +257,7 @@ function GetLineBorderPoint(px, py, tx, ty){
     }
 }
 */
-//Calculates the reflection angle based on the angle of the object and the angle of the mirror
-function ReflectionAngle (angle, mirror){
-   return 2*mirror-angle;
-}
+
 
 //Makes the screen shake (gt_bot)
 task ScreenShakeA1(shaketime, intensity){
