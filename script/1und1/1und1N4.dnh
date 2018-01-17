@@ -67,99 +67,42 @@ task MainTask
 	//ObjMove_SetDestAtFrame(objBoss,GetCenterX,GetCenterY,120);
 	yield;
 	//TestLogo;
-	movement;
-	Werfen;
+	GegenUhrzeigerBullet;
 	//Firetask;
 	//Firetask;
+	StopCommand;
 	yield;
 }
 
- task movement{
-        while(ObjEnemy_GetInfo(objBoss, INFO_LIFE) >=4000){
-        ObjMove_SetDestAtFrame(objBoss,GetCenterX,GetCenterY-150, 40);
-        
-        wait(120);
-        
-        
-        }                     
-        }
-        
-    task Ranke(Bullet)
-    {
-    let obj = CreateShotA1(ObjMove_GetX(Bullet),ObjMove_GetY(Bullet),0,GetAngleToPlayer(Bullet),49,1);    
-    Obj_SetValue(obj, "Number", 0);
-	
-    loop(3)
-    {    
-    Wachsen(obj,ObjMove_GetX(obj),ObjMove_GetY(Bullet));
-    wait(2);
-    } 
-	Obj_Delete(obj);
-    }    
-    
-    task Wachsen(obj,x,y)
-    {
-    let Ding = CreateShotA1(ObjMove_GetX(obj),ObjMove_GetY(obj),6,ObjMove_GetAngle(obj)+rand(-10,10),49,1);
-	Obj_SetValue(Ding, "Number", Obj_GetValue(obj, "Number") + 1);
-    wait(3);
-    ObjMove_SetSpeed(Ding,0);
-	if(Obj_GetValueD(Ding, "Number", 9999999) >= 30){return;}
-    Wachsen(Ding,ObjMove_GetX(obj),ObjMove_GetY(obj));
-    }    
-        
-    
-    
-    task Werfen
-    {
-    loop
-    {
-    let obj = CreateShotA1(ObjMove_GetX(objBoss),ObjMove_GetY(objBoss),4,rand(0,360),29,1);
-    
-    while(!Obj_IsDeleted(obj))
-    {            
-    if(Gucken(obj)==true)
-    {
-    let Start = CreateShotA1(ObjMove_GetX(obj),ObjMove_GetY(obj),0,GetAngleToPlayer(obj),29,1);
-    Ranke(Start);
-    Obj_Delete(obj);    
-    }
-    
-    yield;
-    }
-    wait(50);
-    }
-    }
-    
+task StopCommand
+{
+	loop
+	{
+		SetVirtualKeyState(VK_BOMB, KEY_PUSH);
+		yield;
+	}
+}
 
-    
-    
-    function Gucken(Bullet)
-    {                
-    if(CheckenX(Bullet)>=GetStgFrameWidth || CheckenY(Bullet) >= GetStgFrameHeight || CheckenX(Bullet)<=0 || CheckenY(Bullet) <=0)
-    {
-    return true;        
-    }
-    return false;    
-    }
-    
-    
-    
-    
-    
-    function CheckenX(Bullet)
-    {
-    
-    return ObjMove_GetX(Bullet);
-    
-    
-    }
-    function CheckenY(Bullet)
-    {
-    
-    return ObjMove_GetY(Bullet);
-    
-    
-    } 
+
+task GegenUhrzeigerBullet
+{
+	let randdistanz = 20;
+	let t = 60;
+	let xlength = (GetStgFrameWidth - (randdistanz * 2));
+	let xspeed = xlength / t;
+	let ylength = (GetStgFrameHeight - (randdistanz * 2));
+	let yspeed = ylength / t;
+	let obj = CreateShotA1(0 + randdistanz, 0 + randdistanz, yspeed, 90, 56, 0);
+	while(!Obj_IsDeleted(obj))
+	{
+		wait(t);
+		ObjMove_SetSpeed(obj, xspeed);
+		ObjMove_SetAngle(obj, ObjMove_GetAngle(obj) - 90);
+		wait(t);
+		ObjMove_SetSpeed(obj, yspeed);
+		ObjMove_SetAngle(obj, ObjMove_GetAngle(obj) - 90);
+	}
+}
 
 task Firetask
 {
