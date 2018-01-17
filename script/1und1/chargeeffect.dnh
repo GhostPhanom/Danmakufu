@@ -1,3 +1,133 @@
+task PerfectPosession(obj)
+{
+	let scale = 1;
+	let priority = 40;
+	
+	let n = 60;
+	let targetscale = scale + 1;
+	
+}
+
+task LenenSpellcardring(obj1,number,active,dis,t)
+{
+	/*
+	let number=10;
+	let active=7;
+	let dis=50;
+	let t=120;
+	*/
+	
+	let scale=0.7;
+	let roundtime=120; //time for one card to make a 360° Spin around the object
+	let roundtime1=360/roundtime;
+	let roundtime2=roundtime;
+	let spawntime=roundtime/number;
+	let spawntime2=t;
+	let spincount=5;
+	let spintime=roundtime/spincount;//spintime at spawn before being still
+	let spintime1=360/spintime;
+	
+	let priority=Obj_GetRenderPriorityI(obj1)-1;
+	
+	loop (active-1)
+	{
+		let obj=CreateLenenSpellcard("USED",scale);
+		Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+		spawntime2+=spawntime;
+	}
+	
+	let obj=CreateLenenSpellcard("ACTIVE",scale);
+	Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+	spawntime2+=spawntime;
+	
+	loop (number-active)
+	{
+		let obj=CreateLenenSpellcard("UNUSED",scale);
+		Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+		spawntime2+=spawntime;
+	}
+	
+	task Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,t)
+	{
+		let spintime2=0;
+		let spintime3=spincount*spintime*spintime1;
+		let roundtime2=90;
+		ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+		
+		loop(t)
+		{
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+		
+		while(spintime2<spintime3&&!Obj_IsDeleted(obj1))
+		{
+			spintime2+=spintime1;
+			roundtime2+=roundtime1;
+			
+			ObjRender_SetAngleZ(obj,spintime2);
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+		
+		let angle=0;
+		let angle1=roundtime1;
+		
+		while(!Obj_IsDeleted(obj1))
+		{
+			roundtime2+=roundtime1;
+			angle+=angle1;
+			
+			ObjRender_SetAngleZ(obj,angle);
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+	}
+	
+	function CreateLenenSpellcard(Status,scale)
+	{
+		let path=CSD~"./effect/lenenspellcardunused.png";
+		let pathused=CSD~"./effect/lenenspellcardused.png";
+		let pathactive=CSD~"./effect/lenenspellcardactive.png";
+		LoadTexture(path);
+		let x=GetTextureWidth(path);
+		let y=GetTextureHeight(path);
+		let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+		
+		alternative(Status)
+		case("USED")
+		{
+			ObjPrim_SetTexture(obj,pathused);
+		}
+		case("ACTIVE")
+		{
+			ObjPrim_SetTexture(obj,pathactive);
+		}
+		others
+		{
+			ObjPrim_SetTexture(obj,path);
+		}
+		
+		
+		ObjSprite2D_SetSourceRect(obj,0,0,x,y);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		Obj_SetRenderPriorityI(obj,priority);
+		
+		
+		return obj;
+	}
+}
+
+/*task Spellring(obj,scale,speed)
+{
+	let angle=0;
+	while(!Obj_IsDeleted(obj))
+	{
+		
+	}
+}*/
+
 task Chargeeffect1 (obj)
 {
 let n=120;
@@ -104,7 +234,7 @@ wait(30);
 
 task Chargeeffect2 (obj)
 {
-let n=120;
+let n=90;
 let startdelayring=0;
 let startdelayspin=0;
 let shrinkdelayring=0;
@@ -265,7 +395,7 @@ wait(30);
 
 task Chargeeffect3 (obj)
 {
-let n=120;
+let n=90;
 let startdelayring=0;
 let startdelayspin=0;
 let shrinkdelayring=0;
@@ -273,7 +403,7 @@ let shrinkdelayspin=0;
 let alphatimering=60; 
 let alphatimespin=60; 
 let scale=1.5;
-let color=[128,0,200];
+let color=[255,90,0];
 loop(5)
 {
 //Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
@@ -426,7 +556,7 @@ wait(10);
 
 task Chargeeffect4 (obj)
 {
-let n=120;
+let n=70;
 let startdelayring=0;
 let startdelayspin=0;
 let shrinkdelayring=0;
@@ -435,7 +565,7 @@ let alphatimering=60;
 let alphatimespin=60; 
 let scale=1.5;
 let numbershines=10;
-let color=[128,0,200];
+let color=[255,90,0];
 loop(1)
 {
 Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
