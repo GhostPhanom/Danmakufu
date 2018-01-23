@@ -154,6 +154,10 @@ function AngularDistance(angle1, angle2){
 	if(distance>180){ distance-=360; }
 	return distance;
 }
+//These help avoid things behaving weirdly when, say, one angle is 15 degrees and the other is 330 degrees. 
+//If you just subtract the angles normally it'll probably end up going all the way around - this way you can easily determine the shorter way to turn.
+
+
 
 //Calculates the reflection angle based on the angle of the object and the angle of the mirror
 function ReflectionAngle (angle, mirror){
@@ -202,7 +206,29 @@ function CreateTestCounter(x, y)
 	return obj;
 }
 
+//Makes the screen shake (gt_bot)
+task ScreenShakeA1(shaketime, intensity){
+	let x = Get2DCameraX;
+	let y = Get2DCameraY;
+	while(shaketime>0){
+		Set2DCameraFocusX(GetStgFrameWidth/2 + rand(-intensity, intensity));
+		Set2DCameraFocusY(GetStgFrameHeight/2 + rand(-intensity, intensity));
+		shaketime--;
+		yield;
+	}
+	Set2DCameraFocusX(GetStgFrameWidth/2);
+	Set2DCameraFocusY(GetStgFrameHeight/2);
+	yield;
+}
 
+//0.12m style invincibility (AJS)
+task PlaytestInvincibility{
+	AddVirtualKey(VK_USER1,KEY_SPACE,KEY_INVALID);
+	loop{
+		if(GetVirtualKeyState(VK_USER1)==KEY_HOLD){
+		SetPlayerInvincibilityFrame(30);}
+	yield;}	
+}
 
 /*
 function GetClipMinX
@@ -259,29 +285,7 @@ function GetLineBorderPoint(px, py, tx, ty){
 */
 
 
-//Makes the screen shake (gt_bot)
-task ScreenShakeA1(shaketime, intensity){
-	let x = Get2DCameraX;
-	let y = Get2DCameraY;
-	while(shaketime>0){
-		Set2DCameraFocusX(GetStgFrameWidth/2 + rand(-intensity, intensity));
-		Set2DCameraFocusY(GetStgFrameHeight/2 + rand(-intensity, intensity));
-		shaketime--;
-		yield;
-	}
-	Set2DCameraFocusX(GetStgFrameWidth/2);
-	Set2DCameraFocusY(GetStgFrameHeight/2);
-	yield;
-}
 
-//0.12m style invincibility (AJS)
-task PlaytestInvincibility{
-	AddVirtualKey(VK_USER1,KEY_SPACE,KEY_INVALID);
-	loop{
-		if(GetVirtualKeyState(VK_USER1)==KEY_HOLD){
-		SetPlayerInvincibilityFrame(30);}
-	yield;}	
-}
 
 //Returns true if the object is within the given boundaries (gt_bot)
 function Obj_IsInArea(obj, left, top, right, bottom){

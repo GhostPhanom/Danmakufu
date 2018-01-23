@@ -1,10 +1,68 @@
 task PerfectPosession(obj)
 {
-	let scale = 1;
-	let priority = 40;
+	let scale = 0.3;
+	let priority = 30;
 	
-	let n = 60;
-	let targetscale = scale + 1;
+	let n = 20;
+	let n2 = 10;
+	let n3 = 10;
+	
+	let targetscale = scale + 1.2;
+	
+	let pathball = CSD ~ "./effect/possesion1.png";
+	let pathring = CSD ~ "./effect/possesion2.png";
+	LoadTexture(pathball);
+	LoadTexture(pathring);
+	
+	let ballalpha = 255;
+	let objball = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(objball, pathball);
+	ObjSprite2D_SetSourceRect(objball, 0, 0, GetTextureWidth(pathball), GetTextureHeight(pathball));
+	ObjSprite2D_SetDestCenter(objball);
+	ObjRender_SetPosition(objball, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+	Obj_SetRenderPriorityI(objball, priority);
+	ObjRender_SetBlendType(objball, BLEND_ADD_ARGB);
+	
+	let ringalpha = 255;
+	let objring = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(objring, pathring);
+	ObjSprite2D_SetSourceRect(objring, 0, 0, GetTextureWidth(pathball), GetTextureHeight(pathball));
+	ObjSprite2D_SetDestCenter(objring);
+	ObjRender_SetPosition(objring, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+	Obj_SetRenderPriorityI(objring, priority - 1);
+	ObjRender_SetBlendType(objring, BLEND_ADD_ARGB);
+	ObjRender_SetColor(objring, 321, 66, 208);
+	
+	loop(n)
+	{
+		scale += targetscale / n;
+		ballalpha -= 255 / (n + n2);
+		ObjRender_SetScaleXYZ(objball, scale, scale, 0);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objball, ballalpha);
+		yield;
+	}
+	loop(n2)
+	{
+		scale += targetscale / n;
+		ballalpha -= 255 / (n + n2);
+		ringalpha -= 255 / (n2 + n3);
+		ObjRender_SetScaleXYZ(objball, scale, scale, 0);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objball, ballalpha);
+		ObjRender_SetAlpha(objring, ringalpha);
+		yield;
+	}
+	Obj_Delete(objball);
+	loop(n3)
+	{
+		scale += targetscale / n;
+		ringalpha -= 255 / (n2 + n3);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objring, ringalpha);
+		yield;
+	}
+	Obj_Delete(objring);
 	
 }
 

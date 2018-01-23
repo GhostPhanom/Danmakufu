@@ -6,7 +6,7 @@
 
 #include"./Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
 #include"./Generalfunction.dnh"
-
+#include"./effectlibrary.dnh"
 let objBoss;
 let objBossSprite = 0;
 
@@ -67,20 +67,10 @@ task MainTask
 	//ObjMove_SetDestAtFrame(objBoss,GetCenterX,GetCenterY,120);
 	yield;
 	//TestLogo;
-	GegenUhrzeigerBullet;
 	//Firetask;
 	//Firetask;
-	StopCommand;
+	PerfectPosession(objBoss);
 	yield;
-}
-
-task StopCommand
-{
-	loop
-	{
-		SetVirtualKeyState(VK_BOMB, KEY_PUSH);
-		yield;
-	}
 }
 
 
