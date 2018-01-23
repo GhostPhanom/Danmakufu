@@ -33,6 +33,29 @@ task PerfectPosession(obj)
 	ObjRender_SetBlendType(objring, BLEND_ADD_ARGB);
 	ObjRender_SetColor(objring, 321, 66, 208);
 	
+	loop(30)
+	{
+		let anzahlbereiche = 20;
+		let winkelbereich = 360 / anzahlbereiche;
+		let cherryprobereich = 3;
+		ascent(i in 0..anzahlbereiche)
+		{
+			loop(cherryprobereich)
+			{
+				CreatePosessionPetal(i * winkelbereich, (i + 1) * winkelbereich);
+			}
+		}
+	}
+	
+	task CreatePosessionPetal(startbereich, endbereich)
+	{
+		let angle = rand(startbereich, endbereich);
+		let path = CSD ~ "./effect/Cherry.png";
+		let obj = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		
+	}
+	
 	loop(n)
 	{
 		scale += targetscale / n;
