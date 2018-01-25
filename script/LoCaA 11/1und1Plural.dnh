@@ -1,0 +1,60 @@
+#TouhouDanmakufu[Plural]
+#ScriptVersion[3]
+#Title["1und1 Marcel Davis"]
+#Text["1und1 Marcel Davis" ]
+#System["./System/Default_System.txt"]
+
+#include"./Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
+#include"./Generalfunction.dnh"
+
+//let objbgmdragon = CreateBGM(bgmdragon,100);
+
+
+function CreateBGM(bgm,v)
+{
+    let obj = ObjSound_Create;
+    ObjSound_SetLoopEnable(obj,true);
+    ObjSound_SetVolumeRate(obj,v);
+    ObjSound_SetSoundDivision(obj,SOUND_BGM);
+    ObjSound_Load(obj,bgm);
+    return obj;
+}
+
+
+// NotifyEvent(MyStageID, EV_USER, 0);
+@Event{
+alternative(GetEventType)   
+case(EV_USER) 
+{
+    let value=GetEventArgument(0);
+    //if (value[0]==0){NotifyEvent(MyStageID, EV_USER, [0,objBoss]);} //when objBoss is asked
+}
+}
+
+@Initialize{
+    TPlural;
+    //LoadSE;
+    SetCommonData("Main Stage Script ID", GetOwnScriptID());
+    SetCommonData("Player ID", GetPlayerScriptID());
+}
+@MainLoop{
+    yield;
+}
+
+
+task TPlural{
+    let dir = GetCurrentScriptDirectory();
+    let obj = ObjEnemyBossScene_Create();
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./1und1N1.dnh");
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./1und1S1.dnh");
+    /*ObjEnemyBossScene_Add(obj, 1, dir ~ "./1und1N2.dnh");
+    ObjEnemyBossScene_Add(obj, 1, dir ~ "./1und1S2.dnh");
+	ObjEnemyBossScene_Add(obj, 2, dir ~ "./1und1N3.dnh");
+    ObjEnemyBossScene_Add(obj, 2, dir ~ "./1und1S3.dnh");*/
+    ObjEnemyBossScene_LoadInThread(obj);
+    ObjEnemyBossScene_Regist(obj);
+    while(!Obj_IsDeleted(obj)){
+        yield;
+    }
+    CloseScript(GetOwnScriptID());
+}
