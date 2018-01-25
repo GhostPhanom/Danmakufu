@@ -33,11 +33,11 @@ task PerfectPosession(obj)
 	ObjRender_SetBlendType(objring, BLEND_ADD_ARGB);
 	ObjRender_SetColor(objring, 321, 66, 208);
 	
-	loop(30)
+	loop(10)
 	{
 		let anzahlbereiche = 20;
 		let winkelbereich = 360 / anzahlbereiche;
-		let cherryprobereich = 3;
+		let cherryprobereich = 1;
 		ascent(i in 0..anzahlbereiche)
 		{
 			loop(cherryprobereich)
@@ -49,10 +49,38 @@ task PerfectPosession(obj)
 	
 	task CreatePosessionPetal(startbereich, endbereich)
 	{
+		let scale = 0.2;
+		let color = [255, 0, 0];
+		
+		let dismin = 80;
+		let dismax = 180;
+		let targetdis = rand(dismin , dismax);
 		let angle = rand(startbereich, endbereich);
 		let path = CSD ~ "./effect/Cherry.png";
-		let obj = ObjEnemy_Create(OBJ_ENEMY);
-		ObjEnemy_Regist(obj);
+		LoadTexture(path);
+		let objpetal = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(objpetal);
+		ObjPrim_SetTexture(objpetal, path);
+		ObjSprite2D_SetSourceRect(objpetal, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestCenter(objpetal);
+		ObjRender_SetScaleXYZ(objpetal, scale, scale, 0);
+		ObjRender_SetColor(objpetal, color[0], color[1], color[2]);
+		ObjRender_SetBlendType(objpetal, BLEND_ADD_ARGB);
+		Obj_SetRenderPriorityI(objpetal, priority - 2);
+		
+		ObjRender_SetPosition(objpetal, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+		ObjMove_SetDestAtWeight(objpetal, ObjRender_GetX(obj) + targetdis * cos(angle), ObjRender_GetY(obj) + targetdis * sin(angle), 20, 4);
+		
+		let t = n + n2 + n3 * 1;
+		let alpha2 = 255;
+		let alpha = 255 / t;
+		loop(t)
+		{
+			alpha2 -= alpha;
+			ObjRender_SetAlpha(objpetal, alpha2);
+			yield;
+		}
+		Obj_Delete(objpetal);
 		
 	}
 	
