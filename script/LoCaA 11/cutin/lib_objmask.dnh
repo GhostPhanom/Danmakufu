@@ -2,62 +2,70 @@
 Mask object, for applying alpha masks to specific drawing layers.
 Use `ObjMask_AddSource` to designate render objects to draw for the specified mask.
 Applies mask on layers from `layer_min` to `layer_max`.
+Unmodified Script made by Drake
 -----------------*/
 
-let shader = CreateAlphaShaderMask(89, 91);//Black Base"BLACK" or White Base"WHITE" "NONE" for nothing
+//rendertest;
 
-task test(shader1)
+task rendertest
 {
-	let obj = 
-	SetAlphaShaderMask(shader1, renderobj, index);
+	let path1 = GetCurrentScriptDirectory  ~ "./Background1.png";
+	let path2 = GetCurrentScriptDirectory  ~ "./Background2.png";
+	LoadTexture(path1);
+	LoadTexture(path2);
+	let bg1 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(bg1,path1);
+	ObjSprite2D_SetSourceRect(bg1, 0, 0, 1024, 512);
+	ObjSprite2D_SetDestRect(bg1, 0, 0, 1024, 512);
+	Obj_SetRenderPriorityI(bg1, 87);
+	let bg2 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(bg2,path2);
+	ObjSprite2D_SetSourceRect(bg2, 0, 0,  1024, 512);
+	ObjSprite2D_SetDestRect(bg2, 0, 0,  1024, 512);
+	Obj_SetRenderPriorityI(bg2, 90);
+	testShader;
 }
 
-function CreateAlphaShaderMask(layer_min, layer_max)
+task testShader
 {
-	let testtexture = GetCurrentScriptDirectory ~ "./testtextureblack.png";
-	// Set up render target
-	CreateRenderTarget(testtexture);
+let mask = ObjMask_Create("WHITE", 89, 91); // applies to layers 26~28
+//Below not needed because of "WHITE"
+/*let canvas = ObjPrim_Create(OBJ_SPRITE_2D);
+ObjPrim_SetTexture(canvas, GetCurrentScriptDirectory ~ "./testtexturewhite.png"); // white pixel
+ObjSprite2D_SetSourceRect(canvas, 0, 0, 640, 480); // 1024x512 is render target size
+ObjSprite2D_SetDestRect(canvas, 0, 0, 640, 480);
+ObjMask_AddSource(mask, canvas);*/
 
-	// Set up shader
-	let shaderobj = ObjShader_Create;
-	ObjShader_SetShaderF(shaderobj, GetCurrentScriptDirectory() ~ "SamplePS02_HLSL.txt");
-	ObjShader_SetTechnique(shaderobj, "TecMask");
-	ObjShader_SetTexture(shaderobj, "textureMask_", testtexture);
-	SetShaderI(shaderobj, layer_min, layer_max);
-	
-	Obj_SetValue(shaderobj, "MASK_CONTENTS", []);
-	
-	run;
-	return shaderobj;
-	
-	task run
-	{
-		while(!Obj_IsDeleted(shaderobj))
-		{
-			let contents = Obj_GetValueD(shaderobj, "MASK_CONTENTS", []);
-			ascent(i in 0..length(contents)){
-				// Make visible when drawing to render target
-				Obj_SetVisible(contents[i], true); 
-				RenderToTextureB1(testtexture, contents[i], (i==0));
-				// Otherwise invisible
-				Obj_SetVisible(contents[i], false);
-			}
-			Obj_SetValue(shaderobj, "MASK_CONTENTS", contents);
-			yield;
-		}
-	}
+ascent(i in 0..20){
+	let texture = GetCurrentScriptDirectory() ~ "mask_subtract.png";
+	LoadTexture(texture);
+	let circle = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(circle, texture); // white circle on black
+	ObjSprite2D_SetSourceRect(circle, 0, 0, 256, 256);
+	ObjSprite2D_SetDestCenter(circle);
+	ObjRender_SetPosition(circle, GetCenterX + 32, GetCenterY + 16, 0); //32, 16 are for correction because the coordinates originate from window 0,0
+	ObjRender_SetScaleXYZ(circle, 1 + (0.1 * i), 1 + (0.1 * i), 1 + (0.1 * i));
+	ObjRender_SetBlendType(circle, BLEND_SUBTRACT); // white subtract white = black
+	AddAlphaShaderMask(mask, circle);
+	wait(4);
+}
 }
 
 function SetAlphaShaderMask(shaderobj, renderobj, index)
 {
-	let array = Obj_GetValueD(obj, "MASK_CONTENTS", []);
+	let array = Obj_GetValueD(shaderobj, "MASK_CONTENTS", []);
 	array[index] = renderobj;
-	Obj_SetValue(obj, "MASK_CONTENTS", array;
-	
+	Obj_SetValue(shaderobj, "MASK_CONTENTS", array);
+}
+
+function AddAlphaShaderMask(shaderobj, renderobj)
+{
+	Obj_SetValue(shaderobj, "MASK_CONTENTS", Obj_GetValueD(shaderobj, "MASK_CONTENTS", []) ~ [renderobj]);
 }
 
 function ObjMask_Create(texture_name, layer_min, layer_max){
 	// Set up render target
+
 	CreateRenderTarget(texture_name);
 
 	// Set up shader
@@ -69,6 +77,19 @@ function ObjMask_Create(texture_name, layer_min, layer_max){
 
 	Obj_SetValue(obj, "MASK_CONTENTS", []);
 
+	if(texture_name == "WHITE")
+	{
+		let canvas = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(canvas, GetCurrentScriptDirectory ~ "./white.png"); // white pixel
+		ObjSprite2D_SetSourceRect(canvas, 0, 0, 1024, 512); // 1024x512 is render target size MUST MATCH RENDER_HEIGHT/WIDTH FROM HLSL SCRIPT
+		ObjSprite2D_SetDestRect(canvas, 0, 0, 1024, 512);
+		ObjMask_AddSource(obj, canvas);
+	}
+	
+	run();
+
+	return obj;
+	
 	task run(){
 		while(!Obj_IsDeleted(obj)){
 			let contents = Obj_GetValueD(obj, "MASK_CONTENTS", []);
@@ -90,11 +111,9 @@ function ObjMask_Create(texture_name, layer_min, layer_max){
 		ascent(i in 0..length(contents)){ Obj_Delete(contents[i]); } 
 		RemoveTexture(texture_name);
 	}
-	run();
+}
 
-	return obj;
-
-	function remove_deleted_objs(a){
+function remove_deleted_objs(a){
 		let res = [0][0..0]; // typed array
 		let slices = [];
 		let prev = 0;
@@ -114,7 +133,6 @@ function ObjMask_Create(texture_name, layer_min, layer_max){
 		}
 		return res;
 	}
-}
 
 function ObjMask_AddSource(obj, src){
 	Obj_SetValue(obj, "MASK_CONTENTS", Obj_GetValueD(obj, "MASK_CONTENTS", []) ~ [src]);
@@ -123,32 +141,3 @@ function ObjMask_AddSource(obj, src){
 
 
 
-// Example with an alpha mask erasing random circles.
-// Texture setup is a white canvas with black circles on it.
-//testShader;
-
-task testShader
-{
-let mask = ObjMask_Create("Example_Mask", 89, 91); // applies to layers 26~28
-let canvas = ObjPrim_Create(OBJ_SPRITE_2D);
-ObjPrim_SetTexture(canvas, GetCurrentScriptDirectory() ~ "white.png"); // white pixel
-ObjSprite2D_SetSourceRect(canvas, 0, 0, 1024, 512); // 1024x512 is render target size
-ObjSprite2D_SetDestRect(canvas, 0, 0, 1024, 512);
-ObjMask_AddSource(mask, canvas);
-
-ascent(i in 0..10){
-	let correction = 16 / 9;
-	let texture = GetCurrentScriptDirectory() ~ "mask_subtract.png";
-	LoadTexture(texture);
-	let circle = ObjPrim_Create(OBJ_SPRITE_2D);
-	ObjPrim_SetTexture(circle, texture); // white circle on black
-	ObjSprite2D_SetSourceRect(circle, 0, 0, 256, 256);
-	ObjSprite2D_SetDestRect(circle, 100, 100, 100 + (100 * correction), 100 + 100);
-	ObjRender_SetScaleXYZ(circle, 2, 2, 0);
-	//ObjRender_SetPosition(circle, GetCenterX, GetCenterY, 0);
-	//ObjRender_SetScaleXYZ(circle, 1 + (0.1 * i), 1 + (0.1 * i), 1 + (0.1 * i));
-	ObjRender_SetBlendType(circle, BLEND_SUBTRACT); // white subtract white = black
-	ObjMask_AddSource(mask, circle);
-	wait(20);
-}
-}

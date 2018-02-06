@@ -44,9 +44,9 @@ function ObjRender_GetAlpha(obj){
 	return Obj_GetValueD(obj, "ALPHA", 256);
 }
 
-function IsBossLifeZero
+function IsBossLifeZero(obj) //Needs ObjBossID
 {
-	if(ObjEnemy_GetInfo(objBoss, INFO_LIFE) <= 0)
+	if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
 	{
 		return true;
 	}
@@ -56,9 +56,9 @@ function IsBossLifeZero
 	}
 }
 
-task BossZeroDelete(obj)
+task BossZeroDelete(obj, objb) //Needs ObjBossID
 {
-	while(!Obj_IsDeleted(obj) && ObjEnemy_GetInfo(objBoss, INFO_LIFE) <= 0)
+	while(!Obj_IsDeleted(obj) && ObjEnemy_GetInfo(objb, INFO_LIFE) <= 0)
 	{
 		yield;
 	}

@@ -6,8 +6,9 @@ sampler sampler0_ : register(s0);
 //--------------------------------
 //マスク用テクスチャ
 //画面幅(マスクテクスチャサイズ)
-const float SCREEN_WIDTH = 640;
-const float SCREEN_HEIGHT = 480;
+//DIMENSIONS MUST MATCH THE BASE RENDER TEXTURE
+const float Render_WIDTH = 1024;
+const float Render_HEIGHT = 512; 
 texture textureMask_;
 sampler samplerMask_ = sampler_state
 { 
@@ -59,8 +60,8 @@ PS_OUTPUT PsMask( PS_INPUT In ) : COLOR0
 		float2 maskUV;
 
 		//描画先からマスク用テクスチャの位置を計算
-		maskUV.x = In.vPos.x / SCREEN_WIDTH;
-		maskUV.y = In.vPos.y / SCREEN_HEIGHT;
+		maskUV.x = In.vPos.x / Render_WIDTH;
+		maskUV.y = In.vPos.y / Render_HEIGHT;
 		float4 colorMask = tex2D(samplerMask_, maskUV);
 
 		//マスクのRGB値を出力結果のα値として合成する
