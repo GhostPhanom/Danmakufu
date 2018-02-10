@@ -84,17 +84,18 @@ task Createcut
 	let cutpath = GetCurrentScriptDirectory() ~ "./cutin/cutmask.png";
 	LoadTexture(cutpath);
 	
-	let n1 = 20;
+	let n1 = 40;
 	let n2 = 25;
 	
 	let angle = GetPointAngle(0, 480, 384 + 16, 32) - 360;
-	let startdis = 850;
-	let enddis = 280;
+	let startdis = 2000; //850
+	let enddis = 200; //280
 	let dispart = (startdis - enddis) / n1;
-	
+	/*//Not used
 	let startscale = 1;
 	let endscale = 8;
 	let scalepart = (endscale - startscale) / n2;
+	*/
 	
 	/*
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
@@ -126,7 +127,7 @@ task Createcut
 		SetAlphaShaderMask(shaderobj, obj, 1);
 		yield;
 	}
-	
+	/*
 	ascent(i in 1..n2)
 	{
 		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
@@ -139,15 +140,8 @@ task Createcut
 		ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
 		SetAlphaShaderMask(shaderobj, obj, 1);
 		yield;
-	}
+	}*/
 	Obj_Delete(shaderobj);
-
-	
-//SetAlphaShaderMask(shaderobj, renderobj, index)
-
-
-//AddAlphaShaderMask(shaderobj, renderobj)
-
 
 }
 
