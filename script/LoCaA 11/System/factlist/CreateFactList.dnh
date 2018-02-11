@@ -6,7 +6,9 @@ function CreateFactList
 		"Underage drinking is[r]forbidden by law",
 		"You die if you get hit",
 		"If you die you lose a life",
-		"If you lose all lives[r]you get a Game Over"
+		"If you lose all lives[r]you get a Game Over",
+		"All TSA Games since 9.5[r]do not work properly[r]without an [r]enabled sound device",
+		"You are currently playing[r]Danmakufu PH3",
 	];
 	
 	CreateCommonDataArea("Factlistlength");
