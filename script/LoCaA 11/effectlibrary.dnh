@@ -1,2 +1,7 @@
 #include "./chargeeffect.dnh"
-#include "./cutineffect.dnh"
+/*
+if (GetCommonData("Cutincontrol Script ID", 999999) == 999999)
+{
+	LoadScript("./cutincontrol.dnh");
+	StartScript("./cutincontrol.dnh");
+}*/

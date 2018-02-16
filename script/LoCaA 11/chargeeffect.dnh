@@ -33,6 +33,18 @@ task PerfectPosession(obj)
 	ObjRender_SetBlendType(objring, BLEND_ADD_ARGB);
 	ObjRender_SetColor(objring, 321, 66, 208);
 	
+	PlayPerfectPosession;
+	
+	task PlayPerfectPosession
+	{
+		let path = GetCurrentScriptDirectory ~ "./effect/PerfectPossesion.wav";
+		let volume = 70;
+		let objsound = ObjSound_Create;
+		ObjSound_Load(objsound, path);
+		ObjSound_SetVolumeRate(objsound, volume);
+		ObjSound_Play(objsound);
+	}
+	
 	loop(10)
 	{
 		let anzahlbereiche = 20;
@@ -242,16 +254,8 @@ task LenenSpellcardring(obj1,number,active,dis,t)
 	}
 }
 
-/*task Spellring(obj,scale,speed)
-{
-	let angle=0;
-	while(!Obj_IsDeleted(obj))
-	{
-		
-	}
-}*/
 
-task Chargeeffect1 (obj)
+task Chargeeffect1 (obj) //Dont use it
 {
 let n=120;
 let scale=1.5;
@@ -355,28 +359,30 @@ wait(30);
 	}
 }
 
-task Chargeeffect2 (obj)
+task Chargeeffect2 (obj, n, scale, color)
 {
-let n=90;
-let startdelayring=0;
-let startdelayspin=0;
-let shrinkdelayring=0;
-let shrinkdelayspin=0;
-let alphatimering=60; 
-let alphatimespin=60; 
-let scale=1.5;
-let color=[128,0,200];
-loop(1)
-{
-Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
-Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
-Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
-wait(30);
-}
+	/*
+	let n=90;
+	let scale=1.5;
+	let color=[128,0,200];
+	*/
+	let startdelayring=0;
+	let startdelayspin=0;
+	let shrinkdelayring=0;
+	let shrinkdelayspin=0;
+	let alphatimering=60; 
+	let alphatimespin=60; 
+	loop(1)
+	{
+		Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		wait(30);
+	}
 
 	task Firering1 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
 	{
@@ -516,28 +522,30 @@ wait(30);
 	}
 }
 
-task Chargeeffect3 (obj)
+task Chargeeffect3 (obj, n, scale, color)
 {
-let n=90;
-let startdelayring=0;
-let startdelayspin=0;
-let shrinkdelayring=0;
-let shrinkdelayspin=0;
-let alphatimering=60; 
-let alphatimespin=60; 
-let scale=1.5;
-let color=[255,90,0];
-loop(5)
-{
-//Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
-Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
-Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
-Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
-wait(10);
-}
+	/*
+	let n=90;
+	let scale=1.5;
+	let color=[128,0,200];
+	*/
+	let startdelayring=0;
+	let startdelayspin=0;
+	let shrinkdelayring=0;
+	let shrinkdelayspin=0;
+	let alphatimering=60; 
+	let alphatimespin=60; 
+	loop(5)
+	{
+		//Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		wait(10);
+	}
 
 	task Firering1 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
 	{

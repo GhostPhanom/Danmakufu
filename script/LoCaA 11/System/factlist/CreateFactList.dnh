@@ -9,6 +9,7 @@ function CreateFactList
 		"If you lose all lives[r]you get a Game Over",
 		"All TSA Games since 9.5[r]do not work properly[r]without an [r]enabled sound device",
 		"You are currently playing[r]Danmakufu PH3",
+		"Laser can kill you too!"
 	];
 	
 	CreateCommonDataArea("Factlistlength");
