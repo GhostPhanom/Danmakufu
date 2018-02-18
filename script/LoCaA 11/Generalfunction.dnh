@@ -45,6 +45,12 @@ function ObjRender_GetAlpha(obj){
 	return Obj_GetValueD(obj, "ALPHA", 256);
 }
 
+function RandomChoice(Number, Array)
+{
+	let choice = rand_int(0, Number - 1);
+	return Array[choice];
+}
+
 function IsBossLifeZero(obj) //Needs ObjBossID
 {
 	if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
