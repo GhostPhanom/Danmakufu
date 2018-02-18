@@ -1523,12 +1523,16 @@ ShotData{ id=1058 rect=(936,168,944,184) render=ALPHA collision = (2, 0, 0) angu
 ShotData{ id=1059 rect=(944,168,952,184) render=ALPHA collision = (2, 0, 0) angular_velocity = 0 delay_color= (255, 63, 255) fixed_angle=false }
 ShotData{ id=1060 rect=(952,168,960,184) render=ALPHA collision = (2, 0, 0) angular_velocity = 0 delay_color= (255, 63, 192) fixed_angle=false }
 
+//Utsuho
+ShotData{ id=8001 rect=(960,1 ,1022,62) render=ADD_RGB collision = (6, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
+
 //Cirno
-ShotData{ id=9001 rect=(640,400,732,491) render=ALPHA collision = (8, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
+ShotData{ id=9001 rect=(640,401,732,491) render=ALPHA collision = (8, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
 ShotData{ id=9002 rect=(640,492,647,499) render=ALPHA collision = (1, 0, 0) angular_velocity = 2 delay_color= (127, 127, 127) fixed_angle=false }
 ShotData{ id=9003 rect=(647,492,654,499) render=ALPHA collision = (1, 0, 0) angular_velocity = 2 delay_color= (127, 127, 127) fixed_angle=false }
 ShotData{ id=9004 rect=(654,492,661,499) render=ALPHA collision = (1, 0, 0) angular_velocity = 2 delay_color= (127, 127, 127) fixed_angle=false }
-ShotData{ id=9005 rect=(732,400,744,456) render=ALPHA collision = (1, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
+ShotData{ id=9005 rect=(732,401,744,456) render=ALPHA collision = (1, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
+ShotData{ id=9006 rect=(747,401,811,464) render=ALPHA collision = (3, 0, 0) angular_velocity = 2 delay_color= (127, 127, 127) fixed_angle=false }
 
 //1UND1
 ShotData{ id=1111 rect=(640,402,649,417) render=ALPHA collision = (3, 0, 0) angular_velocity = 0 delay_color= (0, 0, 200) fixed_angle=false }
