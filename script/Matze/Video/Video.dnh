@@ -1,5 +1,4 @@
-//LoadScript(GetCurrentScriptDirectory ~ ./Video/Video.dnh);
-//StartScript(GetCurrentScriptDirectory ~ ./Video/Video.dnh);
+
 
 #include"../Generalfunction.dnh"
 
@@ -46,6 +45,10 @@ let videoSound = ObjSound_Create;
 {
     yield;
 }
+
+//StartScript(LoadScript(GetCurrentScriptDirectory() ~ "./Video/Video.dnh"));
+//NotifyEvent(GetCommonData("VideoScriptID", 0), EV_USER, ["CreateVideoPlayer"]);
+//NotifyEvent(GetCommonData("VideoScriptID", 999999), EV_USER, ["PlayVideo", "Video3", "215", "14.4"]);
 
 function PlaySound (path)
 {
