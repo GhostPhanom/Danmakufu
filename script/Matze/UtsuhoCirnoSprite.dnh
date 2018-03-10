@@ -1,0 +1,244 @@
+task ChangeCharakterTo(char)
+{
+	if(char == "Utsuho")
+	{
+		if(GetCommonData("BossSprite", 999) == 0){return;}
+		SetCommonData("BossSprite", 0);
+		PerfectPosession(objBoss);
+		ObjPrim_SetTexture(objBossSprite, imgBossUtsuho);
+		ObjSprite2D_SetSourceRect(objBossSprite, 0, 0, Utsuhoxpart * 1, Utsuhoypart);
+		ObjSprite2D_SetDestCenter(objBossSprite);
+		
+	}
+	if(char == "Cirno")
+	{
+		if(GetCommonData("BossSprite", 999) == 1){return;}
+		SetCommonData("BossSprite", 1);
+		PerfectPosession(objBoss);
+		ObjPrim_SetTexture(objBossSprite, imgBossCirno);
+		ObjSprite2D_SetSourceRect(objBossSprite, 0, 0, Cirnoxpart * 1, Cirnoypart);
+		ObjSprite2D_SetDestCenter(objBossSprite);
+	}
+}
+
+let imgBossCirno = GetCurrentScriptDirectory ~"./Sprite/enm1m.png";
+let imgBossUtsuho = GetCurrentScriptDirectory ~"./Sprite/stg6enm.png";
+LoadTexture(imgBossUtsuho);
+LoadTexture(imgBossCirno);
+let Utsuhoxpart = 96;
+let Utsuhoypart = 96;
+let Cirnoxpart = 64;
+let Cirnoypart = 80;
+
+let objBossSun = 0;
+UtsuhoSun;
+
+task UtsuhoSun
+{
+	yield;
+	let sundis = 31;
+	objBossSun = ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(objBossSun);
+	while(!Obj_IsDeleted(objBoss))
+	{
+		ObjMove_SetPosition(objBossSun, ObjMove_GetX(objBoss) - 2, ObjMove_GetY(objBoss) - sundis);
+		yield;
+	}
+	Obj_Delete(objBossSun);
+}
+
+task TDrawLoop
+{
+	//let scale=0.4;
+
+	let cyclespeed = 8;
+	let cyclecounter = 0;
+	let cyclephase = 0;
+	
+	let activemovementcount = 18;
+	let moveanimationparts = 3;
+	let moveanimationpartcount = activemovementcount / moveanimationparts; 
+	let moveanimationcounter = 0;
+	
+	let activeattackcount = 18;
+	let attackanimationparts = 3;
+	let attackanimationpartcount = activeattackcount / attackanimationparts; 
+	let attackanimationcounter = 0;
+	
+	Render;
+	
+	task Render
+	{
+		objBossSprite = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(objBossSprite);
+		ObjMove_SetPosition(objBossSprite,bossX,bossY);
+		//ObjRender_SetScaleXYZ(objBossSprite, scale, scale, scale);
+		
+		//Für Default Spriteauswahl
+		let activeboss = GetCommonData("BossSprite", 999);
+		if(activeboss == 1)
+		{
+			ObjPrim_SetTexture(objBossSprite, imgBossCirno);
+			ObjSprite2D_SetSourceRect(objBossSprite, 0, 0, Cirnoxpart * 1, Cirnoypart);
+			ObjSprite2D_SetDestCenter(objBossSprite);
+		}
+		else
+		{
+			SetCommonData("BossSprite", 0);
+			ObjPrim_SetTexture(objBossSprite, imgBossUtsuho);
+			ObjSprite2D_SetSourceRect(objBossSprite, 0, 0, Utsuhoxpart * 1, Utsuhoypart);
+			ObjSprite2D_SetDestCenter(objBossSprite);
+		}
+		
+		SetCommonData("BossSpriteAnimation", 0); //0 = idle 1 = attacking 
+		let bossanimationphase = 0;
+		
+		while(!Obj_IsDeleted(objBoss))
+		{
+			activeboss = GetCommonData("BossSprite", 0);
+			bossanimationphase = GetCommonData("BossSpriteAnimation", 0);
+			
+			if(ObjMove_GetSpeed(objBoss) != 0 && moveanimationcounter < activemovementcount)
+			{
+				moveanimationcounter++;
+			}
+			else if(moveanimationcounter > 0)
+			{
+				moveanimationcounter--;
+			}
+			
+			if(bossanimationphase == 0)
+			{
+				attackanimationcounter = 0;
+			}
+			else
+			{
+				attackanimationcounter++;
+			}
+			
+			if(activeboss == 0)//0 = Utsuho
+			{
+				if(attackanimationcounter > 0)
+				{
+					if(attackanimationcounter >= attackanimationpartcount * 3){attackanimationcounter -= attackanimationpartcount * 2;}
+					if(attackanimationcounter >= attackanimationpartcount * 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * 2, Utsuhoypart * 3, Utsuhoxpart * 3, Utsuhoypart * 4);
+					}
+					else if(attackanimationcounter >= attackanimationpartcount)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * 1, Utsuhoypart * 3, Utsuhoxpart * 2, Utsuhoypart * 4);
+					}
+					else if(attackanimationcounter >= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, 0, Utsuhoypart * 3, Utsuhoxpart * 1, Utsuhoypart * 4);
+					}
+				}
+				else if(moveanimationcounter == 0)
+				{	
+					if(cyclephase <= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * cyclephase, 0, Utsuhoxpart * (cyclephase + 1), Utsuhoypart);
+					}
+					else if(cyclephase <= 1)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * cyclephase, 0, Utsuhoxpart * (cyclephase + 1), Utsuhoypart);
+					}
+					else if(cyclephase <= 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * cyclephase, 0, Utsuhoxpart * (cyclephase + 1), Utsuhoypart);
+					}
+					else if(cyclephase <= 5)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * cyclephase, 0, Utsuhoxpart * (cyclephase + 1), Utsuhoypart);
+					}
+				}
+				else
+				{
+					if(moveanimationcounter >= moveanimationpartcount * 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * 2, Utsuhoypart, Utsuhoxpart * 3, Utsuhoypart * 2);
+					}
+					else if(moveanimationcounter >= moveanimationpartcount)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Utsuhoxpart * 1, Utsuhoypart, Utsuhoxpart * 2, Utsuhoypart * 2);
+					}
+					else if(moveanimationcounter >= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, 0, Utsuhoypart, Utsuhoxpart * 1, Utsuhoypart * 2);
+					}
+				}
+			}
+			else if(activeboss == 1)//1 = Cirno
+			{
+				ObjPrim_SetTexture(objBossSprite, imgBossCirno);
+				
+				if(attackanimationcounter > 0)
+				{
+					if(attackanimationcounter >= attackanimationpartcount * 3){attackanimationcounter -= attackanimationpartcount * 2;}
+					if(attackanimationcounter >= attackanimationpartcount * 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * 2, Cirnoypart * 2, Cirnoxpart * 3, Cirnoypart * 3);
+					}
+					else if(attackanimationcounter >= attackanimationpartcount)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * 1, Cirnoypart * 2, Cirnoxpart * 2, Cirnoypart * 3);
+					}
+					else if(attackanimationcounter >= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, 0, Cirnoypart * 2, Cirnoxpart * 1, Cirnoypart * 3);
+					}
+				}
+				else if(moveanimationcounter == 0)
+				{	
+					if(cyclephase <= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * cyclephase, 0, Cirnoxpart * (cyclephase + 1), Cirnoypart);
+					}
+					else if(cyclephase <= 1)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * cyclephase, 0, Cirnoxpart * (cyclephase + 1), Cirnoypart);
+					}
+					else if(cyclephase <= 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * cyclephase, 0, Cirnoxpart * (cyclephase + 1), Cirnoypart);
+					}
+					else if(cyclephase <= 5)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * cyclephase, 0, Cirnoxpart * (cyclephase + 1), Cirnoypart);
+					}
+				}
+				else
+				{
+					if(moveanimationcounter >= moveanimationpartcount * 2)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * 2, Cirnoypart, Cirnoxpart * 3, Cirnoypart * 2);
+					}
+					else if(moveanimationcounter >= moveanimationpartcount)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, Cirnoxpart * 1, Cirnoypart, Cirnoxpart * 2, Cirnoypart * 2);
+					}
+					else if(moveanimationcounter >= 0)
+					{
+						ObjSprite2D_SetSourceRect(objBossSprite, 0, Cirnoypart, Cirnoxpart * 1, Cirnoypart * 2);
+					}
+				}
+			}
+			
+			cyclecounter++;
+			if(cyclecounter >= cyclespeed)
+			{
+				cyclecounter = 0;
+				cyclephase += 1;
+			}
+			if(cyclephase >= 4)
+			{
+				cyclephase = 0;
+			}
+			ObjMove_SetPosition(objBossSprite,bossX,bossY);
+			yield;
+		}
+		Obj_Delete(objBossSprite);
+	}
+	yield;
+}

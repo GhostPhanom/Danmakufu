@@ -1,0 +1,194 @@
+#TouhouDanmakufu[Player]
+#ScriptVersion[3]
+#ID["MARISA_A"]
+#Title["Schlecht"]
+#Text["Schlechter Player"]
+#ReplayName["Schlecht"]
+
+let CSD = GetCurrentScriptDirectory;
+let playerID= GetPlayerObjectID;
+let playerObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let hitboxObj = ObjPrim_Create(OBJ_SPRITE_2D);
+let count = -1;
+let isFocus = false;
+let playerisdead = false;
+let GetCenterX=GetStgFrameWidth/2;
+let GetCenterY=GetStgFrameHeight/2;
+
+// Shot Sheet
+let shotMarisa = CSD ~ "playershot.txt";
+
+// Texture Sheet
+let playerSprite = CSD ~ "PlayerSprite.png";
+
+// Spell Texture
+let spellTexture = CSD ~ "ring.png";
+
+// Death Texture
+let deathTexture = CSD ~ "enm5b.png";
+
+//default render priority
+let renderpriority=31;
+
+@Initialize
+{
+// Load Player Shot Data
+LoadPlayerShotData(shotMarisa);
+
+// Set player unfocussed and focusse speed
+SetPlayerSpeed(3,3);
+
+//Set Player hitbox parameters = (playerobject, location x, location y, radius, grazerradius);
+ObjPlayer_AddIntersectionCircleA1(playerID,0,0,2,16);
+
+// Set the boundrary box for the game field
+// Standart = x:384, y:448
+SetPlayerClip(0+6,0+24,384-6,448-16);
+
+// Set how long the player is "gone" upon Pichuun.
+SetPlayerDownStateFrame(60);
+
+// Counterbomb time frame
+SetPlayerRebirthFrame(30);
+
+// Set Y coordinate where the player starts auto-collecting.
+SetPlayerAutoItemCollectLine(120);
+
+// Launch two tasks to handle the sprite animation
+renderPlayer;
+
+SetForbidPlayerShot(false);
+SetPlayerSpell(0);
+}
+
+@Event
+{
+alternative(GetEventType)
+
+case(EV_REQUEST_SPELL)
+{
+//If the Player has no Bomb, use this
+if(GetPlayerSpell > 0)
+{
+	SetScriptResult(true);
+}
+else
+{
+	SetScriptResult(false);
+}
+}
+
+case(EV_HIT)
+{
+	//Alles endet hier
+	playerisdead=true;
+}
+
+// Player is pichuun (after the counterbomb timer)
+case(EV_PLAYER_SHOOTDOWN)
+{
+
+}
+
+// Player is reviving
+case(EV_PLAYER_REBIRTH)
+{
+
+}
+
+case(EV_USER_PLAYER)
+{
+	let casefile=GetEventArgument(0);
+	if(casefile==0){SetPlayerClip(0-GetStgFrameWidth()*0.5,0-GetStgFrameHeight()*0.5,GetStgFrameWidth()*1.5,GetStgFrameHeight()*1.5);}
+}
+}
+
+let shotcooldown=0;
+
+
+@MainLoop
+{	
+	//Shoot function
+	if(GetVirtualKeyState(VK_SHOT) == KEY_HOLD&&shotcooldown==0)
+	{
+		let angle=270;
+		let damage=999;
+		let penetration=1;
+		let id=1;
+		let speed=20;
+		let dis=10;
+		let obj=CreatePlayerShotA1(GetPlayerX+dis*cos(angle), GetPlayerY+dis*sin(angle), speed, angle, damage, penetration, id);
+		if(IsPermitPlayerShot){PlayblasterSFX(obj);}
+		shotcooldown=30;
+	}
+	if(shotcooldown>0){shotcooldown--;}
+	yield;
+}
+
+
+task PlayblasterSFX(obj1)
+{
+	PlaySound("blaster2",50,0);
+}
+
+// Render the Player
+task renderPlayer
+{
+	ObjPrim_SetTexture(playerObj,playerSprite);
+	Obj_SetRenderPriorityI(playerObj,31);
+	ObjRender_SetBlendType(playerObj,BLEND_ALPHA);
+	ObjRender_SetAngleXYZ(playerObj,0,0,0);
+	ObjRender_SetScaleXYZ(playerObj,1,1,0);
+	ObjRender_SetAlpha(playerObj,255);
+	ObjSprite2D_SetSourceRect(playerObj,0,0,32,48);
+	ObjSprite2D_SetDestCenter(playerObj);
+	ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+	
+	while(!Obj_IsDeleted(playerObj))
+	{
+		ObjRender_SetPosition(playerObj,GetPlayerX,GetPlayerY,0);
+		Obj_SetRenderPriorityI(playerObj,renderpriority);
+		
+		ObjRender_SetAngleZ(playerObj,0);
+		ObjSprite2D_SetSourceRect(playerObj,4,6,29,38);
+		
+		yield;
+	}
+}
+
+// Render the hitbox
+
+function wait(w)
+{
+	loop(w)
+	{
+	yield;
+	}
+}
+
+let soundarr = [];
+let se;
+let s = ObjSound_Create;
+let blasterSFX = GetCurrentScriptDirectory ~ "blaster.wav";
+let slashvapSFX = GetCurrentScriptDirectory ~ "slashvap.wav";
+
+
+task PlaySound(str,v,w)//Name(as a string),volume,delay before playing
+{
+	if(str == "blaster2"){ObjSound_Load(s,CSD ~ "blaster2.wav");}
+	loop(w){yield;}
+	ObjSound_SetSoundDivision(s,SOUND_SE);
+	ObjSound_SetVolumeRate(s,v);
+	ObjSound_Play(s);
+	soundarr = soundarr ~ [s];
+	if(str=="item")
+	{
+		yield;
+		Obj_Delete(s);
+	}
+}
+
+
+task LoadSE{
+	LoadSound(CSD ~ "blaster2.wav");
+	}

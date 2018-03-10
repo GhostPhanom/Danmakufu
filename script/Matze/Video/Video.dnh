@@ -1,0 +1,144 @@
+//LoadScript(GetCurrentScriptDirectory ~ ./Video/Video.dnh);
+//StartScript(GetCurrentScriptDirectory ~ ./Video/Video.dnh);
+
+#include"../Generalfunction.dnh"
+
+@Initialize
+{
+	//PlayVideo30("Video4", 1507, 100.53);
+	//PlayVideo30("Video3", 215, 14.4);
+	LoadVideo("Video4", 1507);
+	LoadVideo("Video3", 215);
+	
+	SetCommonData("VideoScriptID", GetOwnScriptID());
+	CreateShotA1(100, 100, 2, 90, 31, 0);
+}
+
+@Event
+{
+    alternative(GetEventType())
+    case(EV_PAUSE_ENTER)
+    {
+        ObjSound_Stop(videoSound);
+    }
+    case(EV_PAUSE_LEAVE)
+    {
+        ObjSound_Play(videoSound);
+    }
+
+	case(EV_USER) 
+	{
+		let value=GetEventArgument(0);
+		if (value[0]=="CreateVideoPlayer")
+		{
+			CreateVideoPlayer;
+		} 
+		if (value[0]=="PlayVideo")
+		{
+			PlayVideo(value[1], atoi(value[2]), ator(value[3]));
+		} 
+	}
+}
+
+let videoSound = ObjSound_Create;
+
+@MainLoop
+{
+    yield;
+}
+
+function PlaySound (path)
+{
+	videoSound = ObjSound_Create;
+	ObjSound_Load(videoSound, path);
+	ObjSound_SetVolumeRate(videoSound, 100);
+	ObjSound_SetRestartEnable(videoSound, true);
+	
+	ObjSound_Play(videoSound);
+}
+
+let videoPlayer;
+let videoPlayerX = 454;
+let videoPlayerY = 310;
+
+let videoPlayerSize = 150; 
+
+function CreateVideoPlayer
+{
+	let path = GetCurrentScriptDirectory ~ "./Rahmen2.png";
+	let x = videoPlayerX;
+	let y = videoPlayerY;
+	
+	let size = videoPlayerSize;
+	
+	videoPlayer = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(videoPlayer, path);
+	ObjSprite2D_SetSourceRect(videoPlayer, 0, 0, size, size);
+	ObjSprite2D_SetDestRect(videoPlayer, x, y, x + size, y + size);
+	Obj_SetRenderPriorityI(videoPlayer, 10);
+}
+
+
+task PlayVideo(folder, frames, duration) //duration in sec / 30 FPS Version
+{
+	let videopath = GetCurrentScriptDirectory ~ folder ~ "/";
+	PlaySound(videopath ~ "Ton.ogg");
+
+	let x = videoPlayerX;
+	let y = videoPlayerY;
+	let size = videoPlayerSize;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, videopath ~ IntToString(0) ~ ".jpg");
+	ObjSprite2D_SetSourceRect(obj, 0, 0, size - 4, size - 4);
+	ObjSprite2D_SetDestRect(obj, x + 2, y + 2, x + size - 2, y + size - 2);
+	Obj_SetRenderPriorityI(obj, 10);
+	
+	let test = CreateTestCounter(-600, 200);
+	ObjText_SetText(test, videopath ~ IntToString(0) ~ ".jpg");
+	
+	
+	let timeinframes = CorrectTiming2(round(duration * 60), 45);
+	let timeperframe = timeinframes / frames;
+	let elapsedtime = 0;
+	
+	while(elapsedtime <= timeinframes)
+	{
+		let timecounter = truncate(elapsedtime / timeperframe);
+		ObjPrim_SetTexture(obj, videopath ~ IntToString(timecounter) ~ ".jpg");
+		
+		elapsedtime ++;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+function CreateVideoPlayer2
+{
+	let path = GetCurrentScriptDirectory ~ "Video1/0.jpg";
+	let x = videoPlayerX;
+	let y = videoPlayerY;
+	
+	
+	let test = CreateTestCounter(-600, 250);
+	ObjText_SetText(test, path);
+	
+	let size = videoPlayerSize;
+	
+	let videoPlayer2 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(videoPlayer2, path);
+	ObjSprite2D_SetSourceRect(videoPlayer2, 0, 0, size, size);
+	ObjSprite2D_SetDestRect(videoPlayer2, x, y, x + size, y + size);
+	Obj_SetRenderPriorityI(videoPlayer2, 10);
+}
+
+function LoadVideo(folder, frames)
+{
+
+	let videopath = GetCurrentScriptDirectory ~ folder ~ "/";
+	ascent(i in 0..frames + 1)
+	{
+		LoadTexture(videopath ~ IntToString(i) ~ ".jpg");
+	}
+}
+

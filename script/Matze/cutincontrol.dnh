@@ -1,0 +1,597 @@
+#include"./Generalfunction.dnh"
+
+
+
+@Initialize
+{
+	SetCommonData("Cutincontrol Script ID",GetOwnScriptID);
+}
+
+@Event 
+{
+	alternative(GetEventType)
+	case(EV_USER)
+	{
+		let casefile=GetEventArgument(0);
+		if(casefile[0]=="Cutin")
+		{
+			cutintest(casefile[1]);
+		}
+		if(casefile[0]=="Spellcardover")
+		{
+			Spellcardactive=false;
+		}
+	}
+}
+
+@MainLoop
+{
+	yield;
+}
+
+//Use NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Cutin"]);
+//In the @Finilize of the Script which runs before the one, that uses the Cutin (if the Cutin should happen right at the Scipt Start)
+
+let Spellcardactive=false;
+
+let alphashaderpath = GetCurrentScriptDirectory() ~ "./cutin/SamplePS02_HLSL.txt";
+
+task cutintest(text)
+{
+	Spellcardactive=true;
+	//Cutin Sprite
+	let path=CSD ~ "./Cutin/jiki_052.png";
+	let pathsilhouette=CSD ~ "./Cutin/jiki_052s.png";
+	LoadTexture(path);
+	LoadTexture(pathsilhouette);
+	let x=GetTextureWidth(path);
+	let y=GetTextureHeight(path);
+	let SpriteRGB=[255,255,0];
+	let Spritescale=0.75;
+	
+	
+	
+	//Spellcard Text
+	//let text="Yukari Sign, Super Spin Border of Death";
+	let FontColor1=[255,90,0];
+	let FontColor2=[255,180,120];
+	let FontBorderColor=[255,255,255];
+	
+	
+	
+	//Spellcard Sign	(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
+	let Xpartcount=50;
+	let Ypartcount=20;
+	let signx2=300;
+	let signy2=100;
+	let signxpos=50;
+	let signypos=150;
+	
+	
+	
+	Screencapture(0,0,384,448,60,0);
+	yield;
+	Createcut;
+	//CreateStrich(RGB); //Additional background sprite 
+	CreateSprite(path,pathsilhouette,x,y,Spritescale,SpriteRGB);
+	CreateSpellSign(Xpartcount, Ypartcount , signx2, signy2, signxpos, signypos); //(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
+	CreateSpellText(text,FontColor1,FontColor2,FontBorderColor);
+}
+
+task Createcut
+{
+	let shaderobj = ObjMask_Create("WHITE", 59, 61);
+	let cutpath = GetCurrentScriptDirectory() ~ "./cutin/cutmask.png";
+	LoadTexture(cutpath);
+	
+	let n1 = 40;
+	let n2 = 25;
+	
+	let angle = GetPointAngle(0, 480, 384 + 16, 32) - 360;
+	let startdis = 2000; //850
+	let enddis = 200; //280
+	let dispart = (startdis - enddis) / n1;
+	/*//Not used
+	let startscale = 1;
+	let endscale = 8;
+	let scalepart = (endscale - startscale) / n2;
+	*/
+	
+	/*
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, cutpath);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(cutpath), GetTextureHeight(cutpath));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 70);
+		ObjRender_SetPosition(obj, 384 + 32, 16 , 0);
+		AddAlphaShaderMask(shaderobj, obj);
+		*/
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, cutpath);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(cutpath), GetTextureHeight(cutpath));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 20);
+		ObjRender_SetPosition(obj, 384 + 32 + (startdis)  * cos(angle), 16 + (startdis) * sin(angle), 0);
+		ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
+		AddAlphaShaderMask(shaderobj, obj);
+	
+	ascent(i in 1..n1)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, cutpath);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(cutpath), GetTextureHeight(cutpath));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 20);
+		ObjRender_SetPosition(obj, 384 + 32 + (startdis - i * dispart)  * cos(angle), 16 + (startdis - i * dispart) * sin(angle), 0);
+		ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
+		SetAlphaShaderMask(shaderobj, obj, 1);
+		yield;
+	}
+	/*
+	ascent(i in 1..n2)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, cutpath);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(cutpath), GetTextureHeight(cutpath));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 20);
+		ObjRender_SetPosition(obj, 384 + 32 + enddis  * cos(angle), 16 + enddis * sin(angle), 0);
+		ObjRender_SetScaleXYZ(obj, startscale + scalepart * i, startscale + scalepart * i, 0);
+		ObjRender_SetBlendType(obj, BLEND_SUBTRACT);
+		SetAlphaShaderMask(shaderobj, obj, 1);
+		yield;
+	}*/
+	Obj_Delete(shaderobj);
+
+}
+
+task CreateSpellText(text,RGBTop,RGBBottom,RGBBorder)
+{
+	wait(10);
+	let y=20;
+	let size=19;
+	
+	let MaxWidth=448;
+	let BorderWidth=1;
+	InstallFont(CSD ~ "./Cutin/reve.ttf"); //Revue Schriftart
+	
+	let obje=ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obje);
+	let obj=ObjText_Create;
+	ObjText_SetText(obj,text);
+	ObjText_SetFontType(obj,"Revue");
+	ObjText_SetFontSize(obj,size);
+	ObjText_SetFontBold(obj,false);
+	ObjText_SetFontColorTop(obj,RGBTop[0],RGBTop[1],RGBTop[2]);
+	ObjText_SetFontColorBottom(obj,RGBBottom[0],RGBBottom[1],RGBBottom[2]);
+	ObjText_SetMaxWidth(obj,MaxWidth);
+	ObjText_SetFontBorderWidth(obj,BorderWidth);
+	ObjText_SetFontBorderType(obj,BORDER_FULL);
+	ObjText_SetFontBorderColor(obj,RGBBorder[0],RGBBorder[1],RGBBorder[2]);
+	ObjText_SetHorizontalAlignment(obj,ALIGNMENT_CENTER);
+	Obj_SetRenderPriorityI(obj,62);
+	
+	let y1=250;
+	Follow(obj,obje);
+	ObjRender_SetPosition(obje,GetCenterX-MaxWidth/2,y1,0);
+	
+	let n=60;
+	let scale=1;
+	let scale1=0;
+	let scale2=scale/n;
+	
+	loop(n*1.1)
+	{
+		scale1+=scale2;
+		ObjRender_SetScaleXYZ(obj,scale1,scale1,scale1);
+		yield;
+	}
+	loop(n*0.3)
+	{
+		scale1-=scale2/3;
+		ObjRender_SetScaleXYZ(obj,scale1,scale1,scale1);
+		yield;
+	}
+	
+	wait(70);
+	ObjMove_SetAngle(obje,90);
+	ObjMove_SetMaxSpeed(obje,10);
+	ObjMove_SetAcceleration(obje,0.075);
+	//ObjMove_SetDestAtSpeed(obje,GetCenterX-MaxWidth/2,500,2);
+	//wait(90);
+	while(ObjMove_GetY(obje)<=480){yield;}
+	ObjMove_SetY(obje,-30);
+	ObjMove_SetDestAtWeight(obje,GetCenterX-MaxWidth/2,y,12,5);
+	wait(60);
+
+	
+	
+	let ydis=80;
+	let alpha=255;
+	let alpha1=255/ydis;
+	
+	while(Spellcardactive==true)
+	{
+		//let ypos=min(ObjMove_GetY(objBoss),GetPlayerY);
+		let ypos=GetPlayerY;
+		ObjRender_SetAlpha(obj,255+(alpha1*(ypos-y-ydis)));
+		yield;
+	}
+	
+	let dissapear=1;
+	
+	loop(dissapear)
+	{
+		scale1-=1/dissapear;
+		ObjRender_SetScaleXYZ(obj,scale1,scale1,0);
+		
+		let ypos=GetPlayerY;
+		ObjRender_SetAlpha(obj,255+(alpha1*(ypos-y-ydis)));
+		yield;
+	}
+	Obj_Delete(obj);
+	
+	task Follow(obj,obje)
+	{
+		while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+		{
+			ObjRender_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje),0);
+			yield;
+		}
+		Obj_Delete(obj);
+		Obj_Delete(obje);
+	}
+}
+
+
+let spelltext2= GetCurrentScriptDirectory ~ "./Sprite/Spelltext2.png";
+
+task CreateSpellSign(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
+{
+	SE_PlayCutin(CSD ~ "./Cutin/cardcall.wav",100);
+	let path= CSD ~ "./Cutin/Spelltext2.png";
+	let Ymax=y2;
+	let	Xmax=x2;
+	let Xpart=Xmax/Xpartcount;
+	let Ypart=Ymax/Ypartcount;
+	let counterReihe=1;
+	let counterSpalte=1;
+	loop(Xpartcount*Ypartcount)
+	{
+		let obj = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,55);
+		ObjPrim_SetTexture(obj,path);
+		ObjSprite2D_SetSourceRect(obj,Xpart*(counterSpalte-1) , Ypart*(counterReihe-1) , Xpart*counterSpalte , Ypart*counterReihe);
+		ObjSprite2D_SetDestRect(obj,xpos+Xpart*(counterSpalte-1) ,ypos+Ypart*(counterReihe-1) ,xpos+(Xpart*counterSpalte) ,ypos+Ypart*counterReihe);
+		//CreateShotA1((Xpart*counterSpalte) ,((Ypart*counterReihe)),0,0,202,0);//Debug for showing how the picturepieces are placed
+		counterSpalte+=1;
+		CutinFly(obj,counterSpalte);
+		if(counterSpalte>Xpartcount){counterSpalte=1;counterReihe+=1;}
+	}
+	
+	wait(160);
+	SE_PlayCutin(CSD ~ "./Cutin/don.wav",100);
+	
+	task CutinFly(obj,counterSpalte)
+	{
+		let n1=45;
+		let n2=40+(counterSpalte*1.5);
+		let n3=20;
+		let n4=90;
+		let x=50;
+		let x1=x/n2;
+		let dis=40;
+		let dis1=dis/n2;
+		let angle=rand(0,360);
+		let anglespeed=20;
+		
+		cutinAlpha(obj,1,-1);
+		
+		/*loop(n1)
+		{
+			ObjMove_SetPosition(obj,x+dis*cos(angle),0+(dis*2)*sin(angle));
+			angle+=anglespeed;
+			yield;
+		}*/
+
+		loop(n2)
+		{
+			ObjMove_SetPosition(obj,x+dis*cos(angle),0+(dis*2)*sin(angle));
+			angle+=anglespeed;
+			x-=x1;
+			dis-=dis1;
+			yield;
+		}
+		
+		ObjMove_SetPosition(obj,0,0);
+		let xangle=0;
+		loop(n3)
+		{
+			//xangle-=360/n3/2;
+			//ObjRender_SetAngleY(obj,xangle);
+			yield;
+		}
+		wait(n4);
+		ObjMove_SetAngle(obj,rand(10,30));
+		ObjMove_SetAcceleration(obj,rand(0.1,0.12));
+		ObjMove_SetSpeed(obj,0.5);
+		ObjMove_SetMaxSpeed(obj,10);
+		cutinAlpha(obj,200,-1);
+		wait(120);
+		Obj_Delete(obj);
+	}
+
+	task cutinAlpha(obj,n,l)
+	{
+		let alpha=0;
+		if(l!=1){alpha=255;}
+		loop(n)
+		{
+			ObjRender_SetAlpha(obj,alpha);
+			if(l!=1){alpha-=255/n;}
+			else{alpha+=255/n;}
+			wait(1);
+		}
+	}
+	
+}
+
+
+task CreateSprite(path,paths,x,y,scale,RGB)
+{
+	let alpha=255;
+	x--;
+	let priority=55;
+	
+	let angle=GetPointAngle(0,GetStgFrameHeight,GetStgFrameWidth,0);
+	angle+=180;
+	let dis=100;
+	let n1=150;
+	let n2=60;
+	let n3=30;
+	
+	let speed=3.2;
+	let acc=-0.025;
+	let acc1=0.075;
+	let maxspeed=1;
+	let maxspeed1=speed*2;
+	
+	let obj=ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obj);
+	ObjPrim_SetTexture(obj,path);
+	ObjSprite2D_SetSourceRect(obj,0,1,x-1,y);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj,scale,scale,0);
+	Obj_SetRenderPriorityI(obj,priority);
+	ObjMove_SetPosition(obj,0+dis*cos(angle),GetStgFrameHeight+dis*sin(angle));
+	
+	SpriteShadow(obj,scale,path,x,y,RGB,priority);
+	
+	ObjMove_AddPatternA2(obj,0,speed,angle,acc,0,maxspeed);
+	wait(n1);
+	ObjMove_SetMaxSpeed(obj,maxspeed1);
+	ObjMove_SetAcceleration(obj,acc1);
+	wait(n1+n2);
+	
+	let scale1=1/n3;
+	let alpha1=alpha/n3;
+	loop(n3)
+	{
+		scale+=scale1;
+		alpha-=alpha1;
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjRender_SetAlpha(obj,alpha);
+		yield;
+	}
+	Obj_Delete(obj);
+	
+	task SpriteShadow(obj1,scale,path,x,y,RGB,priority)
+	{
+		Shadow2(obj1,scale,path,x,y,RGB,priority);
+		while(!Obj_IsDeleted(obj1))
+		{
+			Shadow(obj1,scale,path,x,y,RGB,priority);
+			wait(8);
+		}
+		
+		task Shadow(obj1,scale,path,x,y,RGB,priority)
+		{
+			let n=40;
+			let alpha=255;
+			let alpha1=alpha/n;
+			let scale1=scale;
+			let scale2=scale/100;
+			let obj=ObjEnemy_Create(OBJ_ENEMY);
+			ObjEnemy_Regist(obj);
+			ObjPrim_SetTexture(obj,path);
+			ObjSprite2D_SetSourceRect(obj,0,1,x-1,y);
+			ObjSprite2D_SetDestCenter(obj);
+			ObjRender_SetColor(obj,RGB[0],RGB[1],RGB[2]);
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			Obj_SetRenderPriorityI(obj,priority-1);
+			ObjMove_SetPosition(obj,ObjMove_GetX(obj1),ObjMove_GetY(obj1));
+			
+			loop(n)
+			{
+				alpha-=alpha1;
+				scale1+=scale2;
+				ObjRender_SetAlpha(obj,alpha);
+				ObjRender_SetScaleXYZ(obj,scale1,scale1,0);
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+		
+		task Shadow2(obj1,scale,path,x,y,RGB,priority)
+		{
+			let scale1=scale+scale/40;
+			let obj=ObjEnemy_Create(OBJ_ENEMY);
+			ObjEnemy_Regist(obj);
+			ObjPrim_SetTexture(obj,path);
+			ObjSprite2D_SetSourceRect(obj,0,1,x-1,y);
+			ObjSprite2D_SetDestCenter(obj);
+			ObjRender_SetColor(obj,RGB[0],RGB[1],RGB[2]);
+			Obj_SetRenderPriorityI(obj,priority-1);
+			ObjMove_SetPosition(obj,ObjMove_GetX(obj1),ObjMove_GetY(obj1));
+			ObjRender_SetScaleXYZ(obj,scale1,scale1,0);
+			
+			while(!Obj_IsDeleted(obj1))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obj1),ObjMove_GetY(obj1));
+				yield;	
+			}
+			
+			Obj_Delete(obj);
+		}
+	}
+}
+
+task CreateStrich(RGB)
+{
+	let n=170;
+	let n2=60;
+	let scale=0.7;
+	let alpha=190;
+	let path=GetCurrentScriptDirectory ~ "./Cutin/Strich.png";
+	
+	let obj=ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obj);
+	ObjPrim_SetTexture(obj,path);
+	ObjSprite2D_SetSourceRect(obj,0,0,800,300);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleY(obj,scale);
+	ObjMove_SetPosition(obj,GetCenterX,GetCenterY);
+	ObjRender_SetAngleZ(obj,GetPointAngle(ObjMove_GetX(obj),ObjMove_GetY(obj),GetStgFrameWidth,0));
+	Obj_SetRenderPriorityI(obj,55-2);
+	ObjRender_SetAlpha(obj,alpha);
+	ObjRender_SetColor(obj,RGB[0],RGB[1],RGB[2]);
+	wait(n);
+	
+	let scaley=scale/n2;
+	loop(n2)
+	{
+		ObjRender_SetScaleY(obj,scale);
+		scale-=scaley;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+
+function SetAlphaShaderMask(shaderobj, renderobj, index)
+{
+	let array = Obj_GetValueD(shaderobj, "MASK_CONTENTS", []);
+	array[index] = renderobj;
+	Obj_SetValue(shaderobj, "MASK_CONTENTS", array);
+}
+
+function AddAlphaShaderMask(shaderobj, renderobj)
+{
+	Obj_SetValue(shaderobj, "MASK_CONTENTS", Obj_GetValueD(shaderobj, "MASK_CONTENTS", []) ~ [renderobj]);
+}
+
+function ObjMask_Create(texture_name, layer_min, layer_max){
+	// Set up render target
+
+	CreateRenderTarget(texture_name);
+
+	// Set up shader
+	let obj = ObjShader_Create();
+	ObjShader_SetShaderF(obj, alphashaderpath);
+	ObjShader_SetTechnique(obj, "TecMask");
+	ObjShader_SetTexture(obj, "textureMask_", texture_name);
+	SetShaderI(obj, layer_min, layer_max);
+
+	Obj_SetValue(obj, "MASK_CONTENTS", []);
+
+	if(texture_name == "WHITE")
+	{
+		let canvas = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(canvas, GetCurrentScriptDirectory ~ "./white.png"); // white pixel
+		ObjSprite2D_SetSourceRect(canvas, 0, 0, 1024, 512); // 1024x512 is render target size MUST MATCH RENDER_HEIGHT/WIDTH FROM HLSL SCRIPT
+		ObjSprite2D_SetDestRect(canvas, 0, 0, 1024, 512);
+		ObjMask_AddSource(obj, canvas);
+	}
+	
+	run();
+
+	return obj;
+	
+	task run(){
+		while(!Obj_IsDeleted(obj)){
+			let contents = Obj_GetValueD(obj, "MASK_CONTENTS", []);
+			// Remove any deleted objects from list
+			contents = remove_deleted_objs(contents);
+
+			ascent(i in 0..length(contents)){
+				// Make visible when drawing to render target
+				Obj_SetVisible(contents[i], true); 
+				RenderToTextureB1(texture_name, contents[i], (i==0));
+				// Otherwise invisible
+				Obj_SetVisible(contents[i], false);
+			}
+			Obj_SetValue(obj, "MASK_CONTENTS", contents);
+			yield;
+		}
+
+		let contents = Obj_GetValueD(obj, "MASK_CONTENTS", []);
+		ascent(i in 0..length(contents)){ Obj_Delete(contents[i]); } 
+		RemoveTexture(texture_name);
+	}
+}
+
+function remove_deleted_objs(a){
+		let res = [0][0..0]; // typed array
+		let slices = [];
+		let prev = 0;
+		ascent(i in 0..length(a)){
+			if(Obj_IsDeleted(a[i])){
+				slices = slices ~ [[prev, i]];
+				prev = i+1;
+			}
+		}
+		// if unchanged, return
+		if(length(slices) == 0 && prev == 0){ return a; }
+		// last slice
+		slices = slices ~ [[prev, length(a)]];
+		// join slices
+		ascent(j in 0..length(slices)){
+			res = res ~ a[slices[j][0]..slices[j][1]];
+		}
+		return res;
+	}
+
+function ObjMask_AddSource(obj, src){
+	Obj_SetValue(obj, "MASK_CONTENTS", Obj_GetValueD(obj, "MASK_CONTENTS", []) ~ [src]);
+}
+
+
+
+
+function Screencapture(x1,y1,x2,y2,priority,color)
+{
+	
+	SaveSnapShotA2(CSD~"./Screenshot.png",32, 16, 416, 464);
+	let obj=ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obj);
+	ObjPrim_SetTexture(obj,CSD~"./Screenshot.png");
+	ObjSprite2D_SetSourceRect(obj,0,0,384,448);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjMove_SetPosition(obj,GetCenterX,GetCenterY);
+	//ObjRender_SetColor(obj,color[0],color[1],color[2]);
+	Obj_SetRenderPriorityI(obj,60);
+	ObjRender_SetAlpha(obj,255);
+	DeleteDelay(obj,300);
+	return obj;
+}
+
+task SE_PlayCutin(let path, let vl)
+{
+let seobj = ObjSound_Create;
+ObjSound_Load(seobj,path);
+ObjSound_Play(seobj);
+ObjSound_SetVolumeRate(seobj,vl);
+loop(120){yield;}
+RemoveSound(path);
+}

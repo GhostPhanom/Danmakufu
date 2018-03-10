@@ -1,0 +1,465 @@
+#TouhouDanmakufu[Single]
+#ScriptVersion[3]
+#Title["1und1 Survival"]
+#Text["1und1 Survival" ]
+#System["./System/Default_System.txt"]
+
+#include"./Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
+#include"./Generalfunction.dnh"
+
+let objBoss;
+
+let bossX=0;
+let bossY=0;
+
+let objScene = GetEnemyBossSceneObjectID();
+
+@Initialize
+{
+	objBoss = ObjEnemy_Create(OBJ_ENEMY_BOSS);
+	ObjEnemy_Regist(objBoss);
+	//NotifyEvent(MyStageID, EV_USER, [0]);
+	ObjMove_SetPosition(objBoss,GetCenterX,GetCenterY-100);
+    //ObjMove_SetX(objBoss,3600);
+	ObjEnemy_SetDamageRate(objBoss,500,100);
+	SetPlayerLife(99);
+	TDrawLoop;
+	TFinalize;
+	MainTask;
+}
+
+@MainLoop
+{
+    bossX = ObjMove_GetX(objBoss);
+    bossY = ObjMove_GetY(objBoss);
+    DeleteShotInCircle(TYPE_SHOT,TYPE_IMMEDIATE,0,0,2);
+    ObjEnemy_SetIntersectionCircleToShot(objBoss,ObjMove_GetX(objBoss),ObjMove_GetY(objBoss),50);
+    ObjEnemy_SetIntersectionCircleToPlayer(objBoss,ObjMove_GetX(objBoss),ObjMove_GetY(objBoss),40);
+    yield;
+}
+
+@Event
+{
+    alternative(GetEventType())
+    case(EV_REQUEST_LIFE)
+    {
+        SetScriptResult(4000);
+    }
+    case(EV_REQUEST_TIMER)
+    {
+        SetScriptResult(999);
+    }
+    case(EV_REQUEST_SPELL_SCORE)
+    {
+        SetScriptResult(1000000);
+    }
+	
+	case(EV_USER) 
+	{
+		let value=GetEventArgument(0);
+		if (value[0]==0){objBoss=value[1];} //when objBoss is asked
+	}
+}
+
+let JingleBellspath = CSD ~ "./bgm/Marcel Davis Jingle Bells.ogg";
+let JingleBellsobj = ObjSound_Create;
+
+let Tippen = [125, 140, 155, 169, 185, 335, 454, 575, 695, 814, 935, 1249, 1309, 1728, 1787, 1894, 2135, 2253, 2373, 2493, 2613, 2734, 2836, 2852, 3166, 3227];
+let Sprung = [201, 214, 245, 259, 275, 291, 305, 350, 365, 380, 394, 423, 477, 484, 497, 710, 725, 740, 752, 769, 783, 829, 843, 857, 874, 888, 904, 950, 963, 977, 994, 1010, 1025, 1038, 1054, 1071, 1080,
+1086, 1104, 1114, 1129, 1145, 1443, 1459, 1473, 1489, 1497, 1505, 1534, 1546, 1563, 1591, 1612, 1623, 1643, 1654, 1923, 1938, 1953, 1971, 1979, 1986, 2000, 2013, 2026, 2035, 2045, 2060, 2073, 2088, 2103, 
+2163, 2178, 2192, 2207, 2214, 2268, 2281, 2296, 2313, 2327, 2341, 2403, 2418, 2431, 2447, 2463, 2507, 2514, 2525, 2538, 2553, 2567, 2583, 2612, 2646, 2657, 2673, 2687, 2701, 2747, 2763, 2778, 2793, 2806,
+2821, 2869, 2883, 2887, 2898, 2912, 2927, 2942, 2958, 2972, 2983, 2994, 2998, 3017, 3032, 3046, 3055, 3363, 3375, 3435, 3453, 3482, 3496, 3511, 3525, 3541, 3717, 3735, 3751, 3830, 3853, 3873, 3887, 3897, 
+3901, 3916, 3927, 3947, 3954, 3964, 3979, 3991, 4006, 4021];
+let und = [514, 528, 542, 1204, 1216, 1235, 1265, 1277, 1294, 1681, 1694, 1712, 1745, 1758, 1774, 3122, 3139, 3152, 3184, 3199, 3213, 3392, 3422, 4037, 4053];
+let FairundTransparent = [605, 1325, 1803, 3242];
+let Hallo = [1412];
+let Kostenlos = [1173];
+let VollerEmpfang = [3340, 3601, 3626, 3662, 3685, 3773];
+let finished = false;
+
+task MainTask
+{
+	Background;
+	LoadJingleBells(JingleBellsobj);
+	wait(200);
+	PlayJingleBells(JingleBellsobj);
+	CreateShotA1(50, 50, 3, 90, 30, 0);
+	TippenShot(Tippen);
+	SprungShot(Sprung);
+	undShot(und);
+	FairundTransparentShot(FairundTransparent);
+	HalloShot(Hallo);
+	KostenlosShot(Kostenlos);
+	VollerEmpfangShot(VollerEmpfang);
+	wait(und[length(und) - 1]);
+	finished = true;
+}
+
+function LoadJingleBells(obj)
+{
+	ObjSound_Load(obj ,JingleBellspath);
+	ObjSound_SetVolumeRate(obj, 70);
+}
+
+function PlayJingleBells(obj)
+{
+	ObjSound_Play(obj);
+}
+
+task Background
+{
+	let path = CSD ~ "./Background/1.png";
+	LoadTexture(path);
+	
+	let x1 = 0;
+	let x2 = GetTextureWidth(path);
+	let y1 = 0;
+	let y2 = GetTextureHeight(path);
+	let y3 = -2;
+	
+	let alpha2 = 0;
+	let alpha1 = 255 / 240;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj, GetCenterX, GetCenterY, 0);
+	Obj_SetRenderPriorityI(obj, 55);
+	ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	
+	while(finished == false)
+	{
+		ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
+		y1 += y3;
+		y2 += y3;
+		yield;
+	}
+}
+
+task TippenShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		let n = 60;
+		let angle2 = GetAngleToPlayer(objBoss);
+		let angle1 = 360 / n;
+		let dis = -5;
+		loop(n)
+		{
+			CreateShotA1(bossX + dis * cos(angle2), bossY + dis * sin(angle2), 4, angle2, 768, 0);
+			angle2 += angle1;
+		}
+	}
+}
+
+
+task SprungShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		
+		let randmovementx = 60;
+		let randmovementy = 20;
+		ObjMove_SetPosition(objBoss, GetCenterX + rand(randmovementx * -1, randmovementx), GetCenterY - 80 + rand(randmovementy * -1, randmovementy));
+		
+		let n = 2;
+		let dis = 20;
+		let speed = 2;
+		let acc2 = -0.1;
+		let maxspeed = 4;
+		let acc1 = 0.06;
+		let randborder = 40;
+		let randspeed = 2;
+		let angle = GetAngleToPlayer(objBoss);
+		
+		loop(n)
+		{
+			let obj1 = CreateShotA2(bossX + dis * cos(angle), bossY + dis * sin(angle), speed + rand(0, randspeed), angle + 180 + rand(randborder * -1, randborder), acc2, 0, 647, 0);
+			let obj2 = CreateShotA2(bossX + dis * cos(angle + 90), bossY + dis * sin(angle + 90), speed + rand(0, randspeed), angle + 90 + rand(randborder * -1, randborder), acc2, 0, 647, 0);
+			let obj3 = CreateShotA2(bossX + dis * cos(angle - 90), bossY + dis * sin(angle - 90), speed + rand(0, randspeed), angle - 90 + rand(randborder * -1, randborder), acc2, 0, 647, 0);
+			Homing(obj1);
+			Homing(obj2);
+			Homing(obj3);
+			
+		}
+		task Homing(obj)
+		{
+			wait(70);
+			ObjMove_SetAngle(obj, GetAngleToPlayer(obj));
+			ObjMove_SetMaxSpeed(obj, maxspeed);
+			ObjMove_SetAcceleration(obj, acc1);
+		}
+		
+	}
+}
+
+
+task undShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	
+	
+	task t(w)
+	{
+		let n = 8; //Number of Spawners
+		let n2 = 3; //Number of Shots per Spawnershot
+		let n3 = 4; //Number of Shots Spawnd per Spawner
+		let angle2 = rand_int(0, 360);
+		let angle1 = (360 / n) / n3;
+		let angle = 360 / n;
+		
+		let speed = 1;
+		let acc = 0.05;
+		let maxspeed2 = 0;
+		let maxspeed1 = 0.8;
+		let maxspeed = 1;
+		let dis = 10;
+		
+		w = CorrectTiming(w);
+		wait(w);
+		
+		loop(n)
+		{
+			CreateSpawner(angle2);
+			angle2 += angle; 
+		}
+		
+		task CreateSpawner(angle3)
+		{
+			loop(n3 * 2)
+			{
+				maxspeed2 = maxspeed;
+				loop(n2)
+				{
+					CreateShotA2(bossX + dis * cos(angle3), bossY + dis * sin(angle3), speed, angle3 + 180, acc, maxspeed2, 128, 0);
+					maxspeed2 += maxspeed1;
+				}
+				angle3 += angle1;
+				yield;
+			}
+		}
+	}
+	
+	
+}
+
+task FairundTransparentShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		
+		let angle2 = GetAngleToPlayer(objBoss);
+		let angle1 = 20;
+		let n = 3;
+		
+		ascent(i in (floor(n / 2) * -1)..floor(n / 2) + 1)
+		{
+			CreateLooseLaserA1(bossX, bossY, 2, angle2 + angle1 * i, 200, 20, 988, 0);
+		}
+		
+	}
+}
+
+task HalloShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		
+		
+		let obj = CreateShotA2(bossX, bossY, 3, 274, -0.05, 0, 1112, 0);
+		ObjShot_SetSpellResist(obj, true);
+		while(ObjMove_GetSpeed(obj) > 0)
+		{yield;}
+		while(!Obj_IsDeleted(obj))
+		{
+			let n = 15;
+			let w = 180;
+			let angle2 = rand(0, 360);
+			let angle1 = 360/ n;
+			let dis = 20;
+			
+			if(Obj_IsDeleted(obj)){return;}
+			if(finished == true)
+			{
+				loop(n * 2)
+				{
+					CreateShotA1(ObjMove_GetX(obj) + dis * cos(angle2), ObjMove_GetY(obj) + dis * sin(angle2), 2, angle2, 1113, 0);
+					angle2 += angle1 / 2;
+				}
+				Obj_Delete(obj);
+				return;
+			}
+			loop(n)
+			{
+				CreateShotA1(ObjMove_GetX(obj) + dis * cos(angle2), ObjMove_GetY(obj) + dis * sin(angle2), 2, angle2, 1113, 0);
+				angle2 += angle1;
+			}
+			wait(w);
+		}
+	}
+}
+
+task KostenlosShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		
+		let spawner = 2;
+		let n = 10;
+		let angle2 = GetAngleToPlayer(objBoss) + 90;
+		let angle1 = 180 / n;
+		let dis = 10;
+		
+		loop(spawner)
+		{
+			CreateSpawner(angle2);
+			angle2 += 180;
+		}
+		
+		task CreateSpawner(angle)
+		{
+			loop(n)
+			{
+				CreateShotA1(bossX + dis * cos(angle), bossY + dis * sin(angle), 2, angle, 624, 3);
+				angle += angle1;
+				yield;
+			}
+		}
+	}
+}
+
+task VollerEmpfangShot(Array)
+{
+	ascent(i in 0..length(Array))
+	{
+		t(Array[i]);
+	}
+	
+	task t(w)
+	{
+		w = CorrectTiming(w);
+		wait(w);
+		
+		let faecher = 90;
+		let n = 9; //Shots per Faecher
+		let n2 = 2; //Shots per Spawnd
+		
+		let angle2 = 270 + rand(-10, 10);
+		let angle1 = faecher / n;
+		
+		let speed2 = 0;
+		let speed1 = 0.5;
+		let speed = 2;
+		let dis = 10;
+		
+		ascent(i in (floor(n / 2) * -1)..floor(n / 2) + 1)
+		{
+			let speed2 = speed;
+			loop(n2)
+			{
+				let obj = CreateShotA1(bossX + dis * cos(angle2 + (angle1 * i)), bossY + dis * sin(angle2 + (angle1 * i)), speed2, angle2 + (angle1 * i), 808, 0);
+				speed2 += speed1;
+				Abprallen(obj);
+			}
+		}
+		task Abprallen(obj)
+		{
+			while(ObjMove_GetY(obj)>=-5)
+			{
+				if(Obj_IsDeleted(obj)){return;} 
+				yield;
+			}
+			CreateShotA1(ObjMove_GetX(obj), ObjMove_GetY(obj), ObjMove_GetSpeed(obj), ObjMove_GetAngle(obj) * -1, ObjShot_GetImageID(obj), 0);
+		}
+		
+	}
+}
+
+function CorrectTiming(w)
+{
+	w -= round(w / 60);
+	return w;
+}
+
+task TDrawLoop
+{
+	let scale=0.4;
+    let imgBoss = GetCurrentScriptDirectory ~"./Sprite/Marcelldavis.png";
+	Render(scale,imgBoss);
+
+	task Render(scale,imgBoss)
+	{
+		let circle=0;
+		let disy=4;
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		ObjMove_SetPosition(obj,bossX,bossY);
+		ObjPrim_SetTexture(obj,imgBoss);
+		ObjSprite2D_SetSourceRect(obj,0,1,431,428);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj, scale, scale, scale);
+		while(!Obj_IsDeleted(objBoss))
+		{
+			ObjMove_SetPosition(obj,bossX,bossY+disy*cos(circle));
+			circle+=1.5;
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+	yield;
+}
+
+task TFinalize 
+{
+    while(ObjEnemy_GetInfo(objBoss, INFO_LIFE) > 0){yield;}
+    DeleteShotAll(TYPE_ALL, TYPE_IMMEDIATE);
+    SetAutoDeleteObject(true);
+    Obj_Delete(objBoss);
+    CloseScript(GetOwnScriptID());
+    
+    if(ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SHOOTDOWN_COUNT) +ObjEnemyBossScene_GetInfo(objScene, INFO_PLAYER_SPELL_COUNT) == 0)
+    {
+        AddScore(ObjEnemyBossScene_GetInfo(objScene, INFO_SPELL_SCORE));
+    }
+    return;
+}
