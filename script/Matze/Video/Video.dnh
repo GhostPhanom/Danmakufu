@@ -4,10 +4,12 @@
 
 @Initialize
 {
-	//PlayVideo30("Video4", 1507, 100.53);
-	//PlayVideo30("Video3", 215, 14.4);
+	//PlayVideo("Video4", 1507, 100.53);
+	//PlayVideo("Video3", 215, 14.4);
+	//PlayVideo("Video1", 741, 49.46);
 	LoadVideo("Video4", 1507);
 	LoadVideo("Video3", 215);
+	LoadVideo("Video1", 741);
 	
 	SetCommonData("VideoScriptID", GetOwnScriptID());
 	CreateShotA1(100, 100, 2, 90, 31, 0);
@@ -52,6 +54,8 @@ let videoSound = ObjSound_Create;
 
 function PlaySound (path)
 {
+	Obj_Delete(videoSound);
+	
 	videoSound = ObjSound_Create;
 	ObjSound_Load(videoSound, path);
 	ObjSound_SetVolumeRate(videoSound, 100);
@@ -97,9 +101,10 @@ task PlayVideo(folder, frames, duration) //duration in sec / 30 FPS Version
 	ObjSprite2D_SetDestRect(obj, x + 2, y + 2, x + size - 2, y + size - 2);
 	Obj_SetRenderPriorityI(obj, 10);
 	
+	/* //Path Debug
 	let test = CreateTestCounter(-600, 200);
 	ObjText_SetText(test, videopath ~ IntToString(0) ~ ".jpg");
-	
+	*/
 	
 	let timeinframes = CorrectTiming2(round(duration * 60), 45);
 	let timeperframe = timeinframes / frames;
