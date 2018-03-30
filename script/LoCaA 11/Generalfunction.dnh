@@ -137,6 +137,7 @@ let GetCenterX = GetStgFrameWidth/2;
 let GetCenterY = GetStgFrameHeight/2;
 let GetFullCenterX =640/2;
 let GetFullCenterY =480/2;
+
 function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}
 
 function GetAngleToObjectMove(x,y,obj){
