@@ -3,7 +3,9 @@ let DialogYLine = 380;
 let DialogPriority = 85;
 
 /*
-ObjDialog_SetTexture(slot, texture, dir)
+ObjDialog_SetAlpha(slot, alpha)
+ObjDialog_ChangeDirection(slot, d)
+ObjDialog_SetTexture(slot, texture)
 ObjDialog_FadeinTexture(slot, texture, dir, a, scaleX, scaleY, offsetX, offsetY, d)
 ObjDialog_FadeoutTexture(slot, d)
 ObjDialog_MoveTexture(slot1, slot2, d)
@@ -56,12 +58,35 @@ function ObjDialog_CreateSlot(number)
 				ObjRender_SetScaleXYZ(obj, Obj_GetValueD(obj, "ScaleX", 1), Obj_GetValueD(obj, "ScaleY", 1), 0);
 				Obj_SetRenderPriorityI(obj, Obj_GetValueD(obj, "Priority", 85) + Obj_GetValueD(obj, "PriorityDiff", 0));
 				if(Obj_GetValueD(obj, "Direction", 0) == 0){ObjRender_SetAngleY(obj, 0);}
-				else{ObjRender_SetAngleY(obj, 180);}
+				if(Obj_GetValueD(obj, "Direction", 0) == 1){ObjRender_SetAngleY(obj, 180);} //2 is changeing to 0; 3 is changeing to 1
 			}
 			yield;
 		}
 	}
 	return obj;
+}
+
+task ObjDialog_ChangeDirection(slot, d)
+{
+	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
+	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
+	
+	let spinpart = 180 / d;
+	let spin = 0; 
+	if(Obj_GetValueD(obj, "Direction", 0) == 1 || Obj_GetValueD(obj, "Direction", 0) == 3)
+	{
+		spin = 180; 
+		Obj_SetValue(obj, "Direction", 2);//Set to be not 1 or 2 to stop RenderAngle Control from Rendertask 
+	}
+	Obj_SetValue(obj, "Direction", 3);//Set to be not 1 or 2 to stop RenderAngle Control from Rendertask 
+	loop(d)
+	{
+		spin += spinpart;
+		ObjRender_SetAngleY(obj, spin);
+		yield;
+	}
+	if(spin == 360){Obj_SetValue(obj, "Direction", 0);}//Restore RenderAngle Control from Rendertask 
+	else{Obj_SetValue(obj, "Direction", 1);}
 }
 
 function ObjDialog_SetAlpha(slot, alpha)
@@ -71,7 +96,7 @@ function ObjDialog_SetAlpha(slot, alpha)
 	Obj_SetValue(obj, "Alpha", alpha);
 }
 
-function ObjDialog_SetTexture(slot, texture, dir)//dir direction Gedacht für Gesichtsausdruckwechsel
+function ObjDialog_SetTexture(slot, texture)//dir direction Gedacht für Gesichtsausdruckwechsel
 {
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
@@ -145,7 +170,9 @@ task ObjDialog_MoveTexture(slot1, slot2, d)
 	let offsetY = Obj_GetValueD(obj1, "OffsetY", 0);
 	let scaleX = Obj_GetValueD(obj1, "ScaleX", 1);
 	let scaleY = Obj_GetValueD(obj1, "ScaleY", 1);
-	let direction = Obj_GetValueD(obj1, "Direction", 0); //1 for reversed
+	let direction = Obj_GetValueD(obj1, "Direction", 0); //1 for reversed; 2 is changeing to 0; 3 is changeing to 1
+	if(direction == 2){direction = 0;}
+	if(direction == 3){direction = 1;}
 	let alpha = Obj_GetValueD(obj1, "Alpha", 0);
 	let texture = Obj_GetValueD(obj1, "Texture", "");
 	let priority = Obj_GetValueD(obj1, "Priority", DialogPriority);
