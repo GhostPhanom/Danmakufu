@@ -3,6 +3,8 @@ let DialogYLine = 380;
 let DialogPriority = 85;
 
 /*
+ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
+ObjDialog_SetPriority(slot, prio)
 ObjDialog_SetAlpha(slot, alpha)
 ObjDialog_ChangeDirection(slot, d)
 ObjDialog_SetTexture(slot, texture)
@@ -13,13 +15,14 @@ ObjDialog_MoveTexture(slot1, slot2, d)
 
 function ObjDialog_Activate
 {
-	ObjDialog_CreateSlot(1);
-	ObjDialog_CreateSlot(2);
-	ObjDialog_CreateSlot(3);
-	ObjDialog_CreateSlot(4);
-	ObjDialog_CreateSlot(5);
-	ObjDialog_CreateSlot(6);
-	ObjDialog_CreateSlot(7);
+	let slots = [];
+	let slotanzahl = 7;
+	ascent(i in 1.. slotanzahl + 1)
+	{
+		slots = slots ~ [ObjDialog_CreateSlot(i)];
+	}
+	
+	return slots; //Only needed for Debugging
 }
 
 function ObjDialog_CreateSlot(number)
@@ -64,6 +67,29 @@ function ObjDialog_CreateSlot(number)
 		}
 	}
 	return obj;
+}
+
+task ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
+{
+	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
+	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
+	
+	let y = Obj_GetValueD(obj, "OffsetY", 0);
+	let party = (targety - y) / d;
+	
+	loop(d)
+	{
+		y += party;
+		Obj_SetValue(obj, "OffsetY", y);
+		yield;
+	}
+}
+
+function ObjDialog_SetPriority(slot, prio) //Default is 0
+{
+	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
+	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
+	Obj_SetValue(obj, "PriorityDiff", prio);
 }
 
 task ObjDialog_ChangeDirection(slot, d)
