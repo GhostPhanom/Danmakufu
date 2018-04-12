@@ -1,19 +1,8 @@
 //INFO Playingwindow is (32, 16, 416, 464)
 
-function wait (n)
-{
-	loop (n)
-	{
-	yield;
-	}
-}
-
-function neg(value)
-{
-	value=negative(value);
-	return value;
-}
-
+///////////////////////////////////
+///SOUND FUNCTIONS////////
+///////////////////////////////////
 function CorrectTiming(w)
 {
 	w -= round(w / 60);
@@ -25,43 +14,39 @@ function CorrectTiming2(w, t)
 	w -= round(w / t);
 	return w;
 }
-
-function GetPointAngle(x1,y1,x2,y2)
+///////////////////////////////////
+///POSITION/ANGLE FUNCTIONS////////
+///////////////////////////////////
+function GetPointAngle(x1,y1,x2,y2) //Angle from Point 1 to Point 2
 {
      let angle=atan2(y1-y2,x1-x2);
      return angle;
 }
 
 //GetObjectDistance(obj1, obj2)
-function GetDistance(x1,y1,x2,y2)
+function GetDistance(x1,y1,x2,y2) //Distance between 2 Points 
 {
      return(((x2-x1)^2+(y2-y1)^2)^(1/2));
 }
 
-function WaitForZeroEnemy
+function IsInStageFrame(obj, xcorrect, ycorrect)
 {
-     while(length(GetAllEnemyID()) > 0){yield;}
+	if(ObjRender_GetX(obj) >= 0 - xcorrect && ObjRender_GetX(obj) <= GetStgFrameWidth + xcorrect && ObjRender_GetY(obj) >= 0 - ycorrect && ObjRender_GetY(obj) <= GetStgFrameHeight + ycorrect)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
+///////////////////////////////////
+///RENDER FUNCTIONS////////////////
+///////////////////////////////////
 
-function WaitForZeroHitboxEnemy
-{
-     while(length(GetIntersectionRegistedEnemyID()) > 0){yield;}
-}
-
-function rand_int(min, max)
-{
-     return truncate(rand(min, max + 1))
-}
-
-function ObjRender_GetAlpha(obj){
-	return Obj_GetValueD(obj, "ALPHA", 256);
-}
-
-function RandomChoice(Number, Array)
-{
-	let choice = rand_int(0, Number - 1);
-	return Array[choice];
-}
+///////////////////////////////////
+///BOSS FUNCTIONS//////////////////
+///////////////////////////////////
 
 function IsBossLifeZero(obj) //Needs ObjBossID
 {
@@ -84,17 +69,100 @@ task BossZeroDelete(obj, objb) //Needs ObjBossID
 	Obj_Delete(obj);
 }
 
-function IsInStageFrame(obj, xcorrect, ycorrect)
+///////////////////////////////////
+///STAGE FUNCTIONS/////////////////
+///////////////////////////////////
+
+function WaitForZeroEnemy
 {
-	if(ObjRender_GetX(obj) >= 0 - xcorrect && ObjRender_GetX(obj) <= GetStgFrameWidth + xcorrect && ObjRender_GetY(obj) >= 0 - ycorrect && ObjRender_GetY(obj) <= GetStgFrameHeight + ycorrect)
+     while(length(GetAllEnemyID()) > 0){yield;}
+}
+
+function WaitForZeroHitboxEnemy
+{
+     while(length(GetIntersectionRegistedEnemyID()) > 0){yield;}
+}
+
+///////////////////////////////////
+///MISC FUNCTIONS//////////////////
+///////////////////////////////////
+
+///////////////////////////////////
+///MISC FUNCTIONS//////////////////
+///////////////////////////////////
+function wait (n)
+{
+	loop (n)
 	{
-		return true;
+	yield;
+	}
+}
+
+function rand_int(min, max)
+{
+     return truncate(rand(min, max + 1))
+}
+
+function RandomChoice(Number, Array)
+{
+	let choice = rand_int(0, Number - 1);
+	return Array[choice];
+}
+
+///////////////////////////////////
+///MATH FUNCTIONS//////////////////
+///////////////////////////////////
+
+function neg(value)
+{
+	value=negative(value);
+	return value;
+}
+
+function theta(input)
+{
+	if(input >= 0)
+	{
+		return 1;
 	}
 	else
 	{
-		return false;
+		return 0;
 	}
 }
+
+function sgn(input)
+{
+	if(input > 0)
+	{
+		return 1;
+	}
+	else if(input == 0)
+	{
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+
+
+
+
+
+
+
+function ObjRender_GetAlpha(obj){ //Unnötig!
+	return Obj_GetValueD(obj, "ALPHA", 256);
+}
+
+
+
+
+
+
 
 task Autodelete(obj)
 {
@@ -188,33 +256,7 @@ function sqrt (input)
 	return input ^ 0.5;
 }
 
-function theta(input)
-{
-	if(input >= 0)
-	{
-		return 1;
-	}
-	else
-	{
-		return 0;
-	}
-}
 
-function sgn(input)
-{
-	if(input > 0)
-	{
-		return 1;
-	}
-	else if(input == 0)
-	{
-		return 0;
-	}
-	else
-	{
-		return -1;
-	}
-}
 
 function CreateTestCounter(x, y)
 {
@@ -249,30 +291,7 @@ task PlaytestInvincibility{
 	yield;}	
 }
 
-/*
-function GetClipMinX
-{
-	let clip=GetClipMinX;
-	return clip;
-}
-function GetClipMaxX
-{
-	let clip=GetClipMaxX;
-	return clip;
-}
-let clip=GetClip
-function GetClipMinY
-{
-	let clip=GetClipMinY;
-	return clip;
-}
 
-function GetClipMaxY
-{
-	let clip=GetClipMaxY;
-	return clip;
-}
-*/
 
 
 

@@ -1,0 +1,84 @@
+let spielfeld
+
+let UndertaleBGPriority = 90;
+
+let objUndertalePlayer;
+
+function CreateUndertalePlayer(obj)
+{
+	let invincibilitytime = 60; //frames
+	
+	let path = GetCurrentScriptDirectory ~ "./Undertale/Herz2.png";
+	LoadTexture(path);
+	let obj = ObjEnemy_Create(OBJ_ENEMY);
+	ObjEnemy_Regist(obj);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjSprite2D_SetDestCenter(obj);
+	
+	ObjEnemy_SetLife(obj, 199);
+	SetIncincibilty(obj, invincibilitytime); //Hitbox und invincibility
+	CreateHealthBar;
+	
+	FollowObj(obj, GetPlayerObjectID);
+	return obj;
+	
+	task CreateHealthBar
+	{
+		let pixel = GetCurrentScriptDirectory ~ "./dot.png";
+		let x = 300;
+		let y = 400;
+		let barlength = 50;
+		let barlengthpart = barlength / 99;
+		let barheight = 30;
+		
+		let barbot = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(barbot, pixel);
+		ObjSprite2D_SetSourceRect(barbot, 0, 0, 1, 1);
+		ObjSprite2D_SetDestRect(barbot, x, y, x + barlength, y + barheight);
+		ObjRender_SetColor(barbot, 255, 0, 0);
+		Obj_SetRenderPriorityI(barbot, UndertaleBGPriority);
+		
+		let bartop = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(bartop, pixel);
+		ObjSprite2D_SetSourceRect(bartop, 0, 0, 1, 1);
+		ObjSprite2D_SetDestRect(bartop, x, y, x + barlength, y + barheight);
+		ObjRender_SetColor(bartop, 255, 192, 0);
+		Obj_SetRenderPriorityI(bartop, UndertaleBGPriority);
+		
+		while(!Obj_IsDeleted(obj))
+		{
+			let remaininglive = ObjEnemy_GetInfo(obj, INFO_LIFE) - 100;
+			ObjSprite2D_SetDestRect(barbot, x, y, x + max(0, barlengthpart * remaininglive), y + barheight);
+			yield;
+		}
+		Obj_Delete(bartop);
+		Obj_Delete(barbot);
+	}
+	
+	task SetIncincibilty(obj, time)
+	{
+		let currentlive = ObjEnemy_GetInfo(obj, INFO_LIFE);
+		let live = currentlive;
+		while(!Obj_IsDeleted(obj))
+		{
+			ObjEnemy_SetIntersectionCircleToShot(obj, GetPlayerX, GetPlayerY, 5);
+			currentlive = ObjEnemy_GetInfo(obj, INFO_LIFE);
+			if(currentive != live)
+			{
+				live = currentive;
+				loop(time - 1){yield;}
+			}
+			yield;
+		}
+	}
+	
+	task FollowObj(obj, followobj)
+	{
+		while(!Obj_IsDeleted(followobj))
+		{
+			ObjMove_SetPosition(obj, ObjMove_GetX(followobj), ObjMove_GetY(followobj));
+			yield;
+		}
+	}
+}

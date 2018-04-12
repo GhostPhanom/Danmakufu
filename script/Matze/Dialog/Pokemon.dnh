@@ -1,0 +1,84 @@
+let AllPokemonObj = [];
+
+
+//Rechter Gegner
+//Standartposition des rechten Gegners
+let CenterPosXREnemy = 480;
+let CenterPosYREnemy = 100;
+let REnemyLife = 10; //Default Wert
+let REnemyMaxLife = 10; //Default Wert
+let REnemyDefense = 10; //Gerechnet in %, Default Wert
+let REnemyPokemonList = []; //3 Teiler, 1. Teil Grafik, 2. Teil MaxLife, 3. Teil Defense 
+
+//Linker Gegner
+//Standartposition des linken Gegners
+let CenterPosXLEnemy = 200;
+let CenterPosYLEnemy = 350;
+let LEnemyLife = 10; //Default Wert
+let LEnemyMaxLife = 10; //Default Wert
+let LEnemyDefense = 10; //Gerechnet in %, Default Wert
+let LEnemyPokemonList = []; //3 Teiler, 1. Teil Grafik, 2. Teil MaxLife, 3. Teil Defense 
+
+//Menü
+//Größe und Position der Menübox
+let StartMenuFieldX = 0;
+let StartMenuFieldY = 420;
+let EndMenuFieldX = 640;
+let EndMenuFieldY = 480;
+let MenuSplitX = 300;
+let objMenuBG;
+let objMenuDescription = ""; //Text links von den Auswahlmöglichkeiten
+
+let objMenuChoices = [];
+
+//Generelle Zustände
+let PokemonAttackPhase = false; //Wenn true hat der Spieler keine MenüKontrolle;
+let PokemonTextOk = false; //Wenn true hat der Spieler einen Textbox Dialog weggedrückt  
+
+//Generelle Funktionen
+task DisplayText(objText, Text)
+{
+	let displayspeed = 1;// higher number = slower
+	
+	let displayText = "";
+	let lettercounter = 0;
+	let endlength = length(Text);
+	
+	while(length(lettercounter != endlength))
+	{
+		if(Text[lettercounter] != "[")//Wenn keine Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+		}
+		else if(Text[lettercounter] == "[")//Wenn Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			lettercounter += 2;
+		}
+		else//Für den Fall, dass an der Stelle ein Leerzeichen ist und man den Fall extra behandeln möchte 
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+		}
+		
+		ObjText_SetText(objText, displayText);
+		lettercounter++;
+		wait(displayspeed);
+	}
+}
+
+//Battlefunctions
+function DetermineDamage(Power, Piercing, Defense)
+{
+	let Reduction = max(0, Defense - Piercing) / 100;
+	Power = Power - Reduction * Power;
+	return Power;
+}
+
+task PokemonBattle
+{
+	
+}
+
+
