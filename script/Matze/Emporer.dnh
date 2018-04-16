@@ -45,7 +45,7 @@ case(EV_USER)
 task TPlural{
     let dir = GetCurrentScriptDirectory();
     let obj = ObjEnemyBossScene_Create();
-    //ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerN1.dnh");
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerN1.dnh");
     ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerS1.dnh");
     ObjEnemyBossScene_LoadInThread(obj);
     ObjEnemyBossScene_Regist(obj);
