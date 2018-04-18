@@ -94,9 +94,39 @@ function WaitForZeroHitboxEnemy
 }
 
 ///////////////////////////////////
-///MISC FUNCTIONS//////////////////
+///TEXT FUNCTIONS//////////////////
 ///////////////////////////////////
-
+task DisplayText(objText, Text)
+{
+	let displayspeed = 1;// higher number = slower
+	
+	let displayText = "";
+	let lettercounter = 0;
+	let endlength = length(Text);
+	
+	while(length(lettercounter != endlength))
+	{
+		if(Text[lettercounter] != "[")//Wenn keine Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+		}
+		else if(Text[lettercounter] == "[")//Wenn Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			lettercounter += 2;
+		}
+		else//Für den Fall, dass an der Stelle ein Leerzeichen ist und man den Fall extra behandeln möchte 
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+		}
+		
+		ObjText_SetText(objText, displayText);
+		lettercounter++;
+		wait(displayspeed);
+	}
+}
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
 ///////////////////////////////////
