@@ -1,7 +1,12 @@
 let DialogXPart = 640 / 10;
 let DialogYLine = 380;
 let DialogPriority = 85;
+let DialogBoxPriority = 88;
 
+let DialogBoxFreeWidthSpace = 40;
+let DialogBoxHeight = 40;
+let DialogBoxActorHeight = 20;
+let DialogBoxActorWidth = 20;
 /*
 ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 ObjDialog_SetPriority(slot, prio)
@@ -13,16 +18,68 @@ ObjDialog_FadeoutTexture(slot, d)
 ObjDialog_MoveTexture(slot1, slot2, d)
 */
 
+
+
 function ObjDialog_Activate
 {
 	let slots = [];
 	let slotanzahl = 7;
+	
+	ObjDialog_CreateTextBox(30);
 	ascent(i in 1.. slotanzahl + 1)
 	{
 		slots = slots ~ [ObjDialog_CreateSlot(i)];
 	}
 	
 	return slots; //Only needed for Debugging
+}
+
+task ObjDialog_SetDialog(actor, text)
+{
+	if(GetCommonData("DialogBoxActorGraphicID", 99999))
+	{
+		let obj = ObjRender_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight + DialogBoxHeight + DialogBoxActorHeight, )
+	}
+	//WIP
+	
+	let path = GetCurrentScriptDirectory ~ "./graphics/namebox.png";
+	if(GetCommonData("DialogBoxActorGraphicID", 99999))
+	{
+		let obj = ObjRender_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight + DialogBoxHeight + DialogBoxActorHeight, )
+	}
+	if(actor == "")
+	{
+		ObjRender_SetAlpha(obj, 0);
+	}
+	//WIP
+	
+}
+
+task ObjDialog_CreateTextBox(n)//n = fadein time
+{
+	InstallFont(GetCurrentScriptDirectory ~ "./font/RifficFree-Bold.ttf"); //Riffic Free Medium
+	InstallFont(GetCurrentScriptDirectory ~ "./font/Aller_Rg.ttf"); //Aller
+	let path = GetCurrentScriptDirectory ~ "./graphics/textbox.png";
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight - DialogBoxHeight, GetScreenWidth - DialogBoxFreeWidthSpace, GetScreenHeight);
+	ObjRender_SetAlpha(obj, 0);
+	Obj_SetRenderPriorityI(obj, DialogBoxPriority);
+	SetCommonData("DialogBoxGraphicID", obj);
+	
+	ascent(i in 1..n + 1)
+	{
+		yield;
+		ObjRender_SetAlpha(obj, (255 / n) * i);
+	}
 }
 
 function ObjDialog_CreateSlot(number)

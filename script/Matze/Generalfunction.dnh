@@ -1,8 +1,18 @@
 //INFO Playingwindow is (32, 16, 416, 464)
 
 ///////////////////////////////////
-///SOUND FUNCTIONS////////
+///SOUND FUNCTIONS/////////////////
 ///////////////////////////////////
+function ObjMusic_CreateBGM(path, vol)
+{
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_Play(obj);
+	ObjSound_SetLoopEnable(obj, true);
+	ObjSound_SetVolumeRate(obj, vol);
+	return obj;
+}
+
 function CorrectTiming(w)
 {
 	w -= round(w / 60);
@@ -27,6 +37,12 @@ function ObjMove_SetDestAtRandom(obj, x1, y1, x2, y2, frame)
 ///////////////////////////////////
 ///POSITION/ANGLE FUNCTIONS////////
 ///////////////////////////////////
+function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}//Angle from obj1 to obj 2
+
+function GetAngleToObjectMove(x,y,obj){ //Weiß nicht, ob es einen wirklichen nutzen hat
+	let angle = atan2(ObjMove_GetY(obj)-y,ObjMove_GetX(obj)-x);
+	return angle;
+}
 function GetPointAngle(x1,y1,x2,y2) //Angle from Point 1 to Point 2
 {
      let angle=atan2(y1-y2,x1-x2);
@@ -49,6 +65,29 @@ function IsInStageFrame(obj, xcorrect, ycorrect)
 	{
 		return false;
 	}
+}
+
+function NormalizeAngle(angle)//Should be used if angle is needed for mathematical stuff and can get angle<0||angle>360 
+{
+	angle %= 360;
+	if(angle<0)
+	{
+  		angle += 360;
+ 	}
+ 	return angle;
+}
+
+//(Blargel)
+function AngularDistance(angle1, angle2){ //Should be useful for homing bullets
+	let distance = NormalizeAngle(angle2 - angle1);
+	if(distance>180){ distance-=360; }
+	return distance;
+}
+//These help avoid things behaving weirdly when, say, one angle is 15 degrees and the other is 330 degrees. 
+//If you just subtract the angles normally it'll probably end up going all the way around - this way you can easily determine the shorter way to turn.
+
+function ReflectionAngle (angle, mirror){//Calculates the reflection angle based on the angle of the object and the angle of the mirror
+   return 2*mirror-angle;
 }
 ///////////////////////////////////
 ///RENDER FUNCTIONS////////////////
@@ -127,28 +166,44 @@ task DisplayText(objText, Text)
 		wait(displayspeed);
 	}
 }
+
 ///////////////////////////////////
-///MISC FUNCTIONS//////////////////
+///DELETE FUNCTIONS////////////////
 ///////////////////////////////////
-function wait (n)
+task Autodelete(obj)// For Objects without or disabled autodelete
 {
-	loop (n)
+	while(ObjRender_GetX(obj)>=-64&&ObjRender_GetX(obj)<=GetStgFrameWidth()+64&&ObjRender_GetY(obj)>=-64&&ObjRender_GetY(obj)<=GetStgFrameHeight()+64){yield;}
+	Obj_Delete(obj);
+}
+
+task DeleteDelay(obj,n)
+{
+	loop(n){yield;}
+	Obj_Delete(obj);
+}
+
+task FadeDeleteDelay(obj,n,n2) //n wait before starting to fade / n2 actual fading time
+{
+	let alpha=255;
+	let alpha1=alpha/n2;
+	loop(n){yield;}
+	loop(n2)
 	{
-	yield;
+		ObjRender_SetAlpha(obj,alpha);
+		alpha-=alpha1;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task DeleteAllBullets(n)
+{
+	loop(n)
+	{
+		DeleteShotAll(TYPE_ALL, TYPE_IMMEDIATE);
+		yield;
 	}
 }
-
-function rand_int(min, max)
-{
-     return truncate(rand(min, max + 1))
-}
-
-function RandomChoice(Number, Array)
-{
-	let choice = rand_int(0, Number - 1);
-	return Array[choice];
-}
-
 ///////////////////////////////////
 ///MATH FUNCTIONS//////////////////
 ///////////////////////////////////
@@ -187,56 +242,30 @@ function sgn(input)
 	}
 }
 
-
-
-
-
-
-
-
-function ObjRender_GetAlpha(obj){ //Unnötig!
-	return Obj_GetValueD(obj, "ALPHA", 256);
-}
-
-
-
-
-
-
-
-task Autodelete(obj)
+function sqrt (input)
 {
-	while(ObjRender_GetX(obj)>=-64&&ObjRender_GetX(obj)<=GetStgFrameWidth()+64&&ObjRender_GetY(obj)>=-64&&ObjRender_GetY(obj)<=GetStgFrameHeight()+64){yield;}
-	Obj_Delete(obj);
+	return input ^ 0.5;
 }
-
-task DeleteDelay(obj,n)
+///////////////////////////////////
+///MISC FUNCTIONS//////////////////
+///////////////////////////////////
+function wait (n)
 {
-	loop(n){yield;}
-	Obj_Delete(obj);
-}
-
-task FadeDeleteDelay(obj,n,n2) //n wait before starting to fade / n2 actual fading time
-{
-	let alpha=255;
-	let alpha1=alpha/n2;
-	loop(n){yield;}
-	loop(n2)
+	loop (n)
 	{
-	ObjRender_SetAlpha(obj,alpha);
-	alpha-=alpha1;
 	yield;
 	}
-	Obj_Delete(obj);
 }
 
-task DeleteAllBullets(n)
+function rand_int(min, max)
 {
-	loop(n)
-	{
-		DeleteShotAll(TYPE_ALL, TYPE_IMMEDIATE);
-		yield;
-	}
+     return truncate(rand(min, max + 1))
+}
+
+function RandomChoice(Number, Array)
+{
+	let choice = rand_int(0, Number - 1);
+	return Array[choice];
 }
 
 task StopTimer(n)
@@ -247,64 +276,6 @@ task StopTimer(n)
 		ObjEnemyBossScene_SetSpellTimer(GetEnemyBossSceneObjectID(),timer+1);
 		yield;
 	}
-}
-
-function CreateMyStageID {SetCommonData("Main Stage Script ID",GetOwnScriptID);}
-function MyStageID { return GetCommonData("Main Stage Script ID", 0); }
-
-let CSD=GetCurrentScriptDirectory();
-let GetCenterX = GetStgFrameWidth/2;
-let GetCenterY = GetStgFrameHeight/2;
-let GetFullCenterX =640/2;
-let GetFullCenterY =480/2;
-function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}
-
-function GetAngleToObjectMove(x,y,obj){
-	let angle = atan2(ObjMove_GetY(obj)-y,ObjMove_GetX(obj)-x);
-	return angle;
-}
-
-//(Blargel)
-function NormalizeAngle(angle){
-	angle %= 360;
- 
-	if(angle<0){
-  		angle += 360;
- 	}
- 
- 	return angle
-}
-
-//(Blargel)
-function AngularDistance(angle1, angle2){
-	let distance = NormalizeAngle(angle2 - angle1);
-	if(distance>180){ distance-=360; }
-	return distance;
-}
-//These help avoid things behaving weirdly when, say, one angle is 15 degrees and the other is 330 degrees. 
-//If you just subtract the angles normally it'll probably end up going all the way around - this way you can easily determine the shorter way to turn.
-
-
-
-//Calculates the reflection angle based on the angle of the object and the angle of the mirror
-function ReflectionAngle (angle, mirror){
-   return 2*mirror-angle;
-}
-
-function sqrt (input)
-{
-	return input ^ 0.5;
-}
-
-
-
-function CreateTestCounter(x, y)
-{
-	let obj = ObjText_Create;
-	ObjText_SetFontSize(obj, 20);
-	ObjRender_SetPosition(obj, x, y, 0);
-	Obj_SetRenderPriorityI(obj, 79);
-	return obj;
 }
 
 //Makes the screen shake (gt_bot)
@@ -321,9 +292,22 @@ task ScreenShakeA1(shaketime, intensity){
 	Set2DCameraFocusY(GetStgFrameHeight/2);
 	yield;
 }
+function CreateMyStageID {SetCommonData("Main Stage Script ID",GetOwnScriptID);}
+function MyStageID { return GetCommonData("Main Stage Script ID", 0); }
+///////////////////////////////////
+///DEBUG FUNCTIONS/////////////////
+///////////////////////////////////
+function CreateTestCounter(x, y)//Creates a simple Textobj to use it as a debug field
+{
+	let obj = ObjText_Create;
+	ObjText_SetFontSize(obj, 20);
+	ObjRender_SetPosition(obj, x, y, 0);
+	Obj_SetRenderPriorityI(obj, 79);
+	return obj;
+}
 
 //0.12m style invincibility (AJS)
-task PlaytestInvincibility{
+task PlaytestInvincibility{//Makes the Player Incincible while holding SPACE
 	AddVirtualKey(VK_USER1,KEY_SPACE,KEY_INVALID);
 	loop{
 		if(GetVirtualKeyState(VK_USER1)==KEY_HOLD){
@@ -331,10 +315,27 @@ task PlaytestInvincibility{
 	yield;}	
 }
 
+///////////////////////////////////
+///DEFAULT VARIABLES///////////////
+///////////////////////////////////
+let CSD=GetCurrentScriptDirectory();
+let GetCenterX = GetStgFrameWidth/2;
+let GetCenterY = GetStgFrameHeight/2;
+let GetFullCenterX =640/2;
+let GetFullCenterY =480/2;
 
 
 
 
+function ObjRender_GetAlpha(obj){ //Unnötig!
+	return Obj_GetValueD(obj, "ALPHA", 256);
+}
+
+///////////////////////////////////
+//EVERYTHING BELOW IS FOR LEARNING AND IS MAYBE USEFUL
+///////////////////////////////////
+
+/*
 //Returns the intersection point of two lines (Naut)
 function GetLineIntersectionPoint(let x1, let y1, let x2, let y2, let x3, let y3, let x4, let y4){
     let point = [0, 0];
@@ -342,7 +343,7 @@ function GetLineIntersectionPoint(let x1, let y1, let x2, let y2, let x3, let y3
     point[1] = ( ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4)) );
     return point;
 }
-/*
+
 //Returns the intersection point of a line with the screen border (Trickysticks)
 function GetLineBorderPoint(px, py, tx, ty){
     let ta = atan2(ty-py, tx-px);
@@ -360,9 +361,6 @@ function GetLineBorderPoint(px, py, tx, ty){
         return [GetClipMinX, py + (GetClipMinX-px)*tan(ta+180)];
     }
 }
-*/
-
-
 
 
 //Returns true if the object is within the given boundaries (gt_bot)
@@ -444,8 +442,6 @@ task widescreen{
 		yield;
 	}
 }
-
-
 
 
 //Everything after that Python
@@ -688,3 +684,5 @@ task ObjMove_SetDestAtHermiteF(obj,dest_x,dest_y,x_dir,x_angle,y_dir,y_angle,fra
                 yield;
         }
 }
+
+*/
