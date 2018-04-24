@@ -139,7 +139,7 @@ task DisplayText(objText, Text)
 {
 	let displayspeed = 1;// higher number = slower
 	
-	let displayText = "";
+	let displayText = "aaa";
 	let lettercounter = 0;
 	let endlength = length(Text);
 	
@@ -164,6 +164,9 @@ task DisplayText(objText, Text)
 		ObjText_SetText(objText, displayText);
 		lettercounter++;
 		wait(displayspeed);
+		
+		let counter = CreateTestCounter(50, 50);
+		ObjText_SetText(counter, IntToString(counter));
 	}
 }
 

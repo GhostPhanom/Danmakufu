@@ -5,8 +5,10 @@ let DialogBoxPriority = 93;
 
 let DialogBoxFreeWidthSpace = 40;
 let DialogBoxHeight = 120;
-let DialogBoxActorHeight = 20;
-let DialogBoxActorWidth = 20;
+let DialogBoxActorHeight = 26;
+let DialogBoxActorStart = DialogBoxFreeWidthSpace + 30;
+let DialogBoxActorWidth = 220;
+
 /*
 ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 ObjDialog_SetPriority(slot, prio)
@@ -39,25 +41,6 @@ task ObjDialog_SetDialog(actor, text)
 	let obj = 0;
 	let objt = 0;
 	
-	if(GetCommonData("DialogBoxActorTextID", 99999) == 99999)
-	{
-		objt = ObjText_Create();
-		ObjText_SetFontType(objt, "Riffic Free Medium");
-		ObjText_SetFontSize(objt, 16);
-		Obj_SetRenderPriorityI(objt, DialogBoxPriority);
-		///ObjText_SetMaxWidth(objt, 500);
-		ObjRender_SetPosition(objt, 0 + DialogBoxFreeWidthSpace + 20 + ObjText_GetTextLengthCU(objt) / 2, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight / 2, 0);
-		SetCommonData("DialogBoxActorTextID", objt);
-	}
-	else
-	{
-		objt = GetCommonData("DialogBoxActorTextID", 99999);
-	}
-	ObjText_SetText(objt, actor);
-	ObjRender_SetPosition(objt, 0 + DialogBoxFreeWidthSpace + 20 + ObjText_GetTextLengthCU(objt) / 2, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight / 2, 0);
-	
-	//WIP
-	
 	let path = GetCurrentScriptDirectory ~ "./graphics/namebox.png";
 	if(GetCommonData("DialogBoxActorGraphicID", 99999) == 99999)
 	{
@@ -65,20 +48,103 @@ task ObjDialog_SetDialog(actor, text)
 		ObjPrim_SetTexture(obj, path);
 		Obj_SetRenderPriorityI(obj, DialogBoxPriority);
 		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
-		ObjSprite2D_SetDestRect(obj,0 + DialogBoxFreeWidthSpace, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0 + DialogBoxFreeWidthSpace + ObjText_GetTotalWidth(objt) + 40, GetScreenHeight - DialogBoxHeight);
+		ObjSprite2D_SetDestRect(obj, DialogBoxActorStart, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, DialogBoxActorStart + DialogBoxActorWidth, GetScreenHeight - DialogBoxHeight);
 		SetCommonData("DialogBoxActorGraphicID", obj);
 	}
 	else
 	{
 		obj = GetCommonData("DialogBoxActorGraphicID", 99999);
 	}
+	
+	if(GetCommonData("DialogBoxActorTextID", 99999) == 99999)
+	{
+		objt = ObjText_Create();
+		ObjText_SetFontType(objt, "Riffic Free Medium");
+		ObjText_SetFontSize(objt, 18);
+		ObjText_SetFontBorderType(objt, BORDER_FULL);
+		ObjText_SetFontBorderWidth(objt, 3);
+		ObjText_SetFontBorderColor(objt ,187, 85, 153);
+		ObjText_SetHorizontalAlignment(objt, ALIGNMENT_CENTER);
+		Obj_SetRenderPriorityI(objt, DialogBoxPriority);
+		ObjText_SetMaxWidth(objt, DialogBoxActorWidth);
+		ObjRender_SetPosition(objt, DialogBoxActorStart, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight + 2, 0);
+		SetCommonData("DialogBoxActorTextID", objt);
+	}
+	else
+	{
+		objt = GetCommonData("DialogBoxActorTextID", 99999);
+	}
+	
 	if(actor == "")
 	{
 		ObjRender_SetAlpha(obj, 0);
 	}
-	ObjSprite2D_SetDestRect(obj,0 + DialogBoxFreeWidthSpace + 10, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0 + DialogBoxFreeWidthSpace + ObjText_GetTotalWidth(objt) + 40, GetScreenHeight - DialogBoxHeight);
-	//WIP
 	
+	//Actor Text
+	ObjText_SetText(objt, actor);
+	//ObjRender_SetPosition(objt, 0 + DialogBoxFreeWidthSpace + 60 + ObjText_GetTextLengthCU(objt) / 2, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0);
+	
+	//Actor Box
+	//ObjSprite2D_SetDestRect(obj,0 + DialogBoxFreeWidthSpace + 30, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0 + DialogBoxFreeWidthSpace + ObjText_GetTotalWidth(objt) + 30, GetScreenHeight - DialogBoxHeight);
+	
+	if(GetCommonData("DialogBoxTextID", 99999) == 99999)
+	{
+		objt = ObjText_Create();
+		ObjText_SetFontType(objt, "Aller");
+		ObjText_SetFontSize(objt, 22);
+		ObjText_SetFontBorderType(objt, BORDER_FULL);
+		ObjText_SetFontBorderWidth(objt, 2);
+		ObjText_SetFontBorderColor(objt ,81, 49, 64);
+		Obj_SetRenderPriorityI(objt, DialogBoxPriority);
+		ObjText_SetMaxWidth(objt, GetScreenWidth - DialogBoxFreeWidthSpace * 2 - 40);
+		ObjRender_SetPosition(objt, DialogBoxFreeWidthSpace + 20, GetScreenHeight - DialogBoxHeight + 12, 0);
+		SetCommonData("DialogBoxTextID", objt);
+	}
+	else
+	{
+		objt = GetCommonData("DialogBoxTextID", 99999);
+	}
+	
+	//Dialog Text
+	ObjDialog_DisplayText(objt, text);
+	
+}
+
+task ObjDialog_DisplayText(objText, Text)
+{
+	let counter = CreateTestCounter(80, 80);
+	let displayspeed = 10;// higher number = slower
+	
+	let displayText = "";
+	let lettercounter = 0;
+	let endlength = length(Text);
+	
+	ObjText_SetText(counter, "$");
+	
+	while(false&&length(lettercounter) != endlength)
+	{
+		if(Text[lettercounter] != "[")//Wenn keine Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+		}
+		else if(Text[lettercounter] == "[")//Wenn Textformatierung kommt
+		{
+			displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			lettercounter += 2;
+		}
+		else//Für den Fall, dass an der Stelle ein Leerzeichen ist und man den Fall extra behandeln möchte 
+		{
+			displayText = displayText ~ Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+		}
+		
+		ObjText_SetText(objText, displayText);
+		lettercounter++;
+		wait(displayspeed);
+		
+		ObjText_SetText(counter, IntToString(lettercounter));
+	}
 }
 
 task ObjDialog_CreateTextBox(n)//n = fadein time
