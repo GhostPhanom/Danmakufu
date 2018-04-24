@@ -1,10 +1,10 @@
 let DialogXPart = 640 / 10;
 let DialogYLine = 380;
-let DialogPriority = 85;
-let DialogBoxPriority = 88;
+let DialogPriority = 90;
+let DialogBoxPriority = 93;
 
 let DialogBoxFreeWidthSpace = 40;
-let DialogBoxHeight = 40;
+let DialogBoxHeight = 120;
 let DialogBoxActorHeight = 20;
 let DialogBoxActorWidth = 20;
 /*
@@ -36,27 +36,47 @@ function ObjDialog_Activate
 
 task ObjDialog_SetDialog(actor, text)
 {
-	if(GetCommonData("DialogBoxActorGraphicID", 99999))
+	let obj = 0;
+	let objt = 0;
+	
+	if(GetCommonData("DialogBoxActorTextID", 99999) == 99999)
 	{
-		let obj = ObjRender_Create(OBJ_SPRITE_2D);
-		ObjPrim_SetTexture(obj, path);
-		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
-		ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight + DialogBoxHeight + DialogBoxActorHeight, )
+		objt = ObjText_Create();
+		ObjText_SetFontType(objt, "Riffic Free Medium");
+		ObjText_SetFontSize(objt, 16);
+		Obj_SetRenderPriorityI(objt, DialogBoxPriority);
+		///ObjText_SetMaxWidth(objt, 500);
+		ObjRender_SetPosition(objt, 0 + DialogBoxFreeWidthSpace + 20 + ObjText_GetTextLengthCU(objt) / 2, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight / 2, 0);
+		SetCommonData("DialogBoxActorTextID", objt);
 	}
+	else
+	{
+		objt = GetCommonData("DialogBoxActorTextID", 99999);
+	}
+	ObjText_SetText(objt, actor);
+	ObjRender_SetPosition(objt, 0 + DialogBoxFreeWidthSpace + 20 + ObjText_GetTextLengthCU(objt) / 2, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight / 2, 0);
+	
 	//WIP
 	
 	let path = GetCurrentScriptDirectory ~ "./graphics/namebox.png";
-	if(GetCommonData("DialogBoxActorGraphicID", 99999))
+	if(GetCommonData("DialogBoxActorGraphicID", 99999) == 99999)
 	{
-		let obj = ObjRender_Create(OBJ_SPRITE_2D);
+		obj = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjPrim_SetTexture(obj, path);
+		Obj_SetRenderPriorityI(obj, DialogBoxPriority);
 		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
-		ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight + DialogBoxHeight + DialogBoxActorHeight, )
+		ObjSprite2D_SetDestRect(obj,0 + DialogBoxFreeWidthSpace, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0 + DialogBoxFreeWidthSpace + ObjText_GetTotalWidth(objt) + 40, GetScreenHeight - DialogBoxHeight);
+		SetCommonData("DialogBoxActorGraphicID", obj);
+	}
+	else
+	{
+		obj = GetCommonData("DialogBoxActorGraphicID", 99999);
 	}
 	if(actor == "")
 	{
 		ObjRender_SetAlpha(obj, 0);
 	}
+	ObjSprite2D_SetDestRect(obj,0 + DialogBoxFreeWidthSpace + 10, GetScreenHeight - DialogBoxHeight - DialogBoxActorHeight, 0 + DialogBoxFreeWidthSpace + ObjText_GetTotalWidth(objt) + 40, GetScreenHeight - DialogBoxHeight);
 	//WIP
 	
 }
