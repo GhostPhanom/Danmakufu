@@ -118,10 +118,11 @@ task ObjDialog_SetDialog(actor, text)
 
 task ObjDialog_DisplayText(objText, Text)
 {
-	let displayspeed = 1;// higher number = slower
+	let displayspeed = 4;// higher number = slower
 	
 	let displayText = "";
 	let lettercounter = 0;
+	let soundcounter = 0;
 	let endlength = length(Text);
 	
 	while(lettercounter != endlength)
@@ -147,7 +148,11 @@ task ObjDialog_DisplayText(objText, Text)
 			displayText = displayText ~ ['0']; 
 			displayText[lettercounter] = Text[lettercounter];
 			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+			
 		}
+
+		soundcounter++;
+		if(soundcounter % 5 == 0){ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "./blipmale.wav", 70);}
 		
 		ObjText_SetText(objText, displayText);
 		lettercounter++;

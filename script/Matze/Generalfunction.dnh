@@ -3,6 +3,15 @@
 ///////////////////////////////////
 ///SOUND FUNCTIONS/////////////////
 ///////////////////////////////////
+function ObjMusic_CreateSE(path, vol)
+{
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_Play(obj);
+	ObjSound_SetVolumeRate(obj, vol);
+	return obj;
+}
+
 function ObjMusic_CreateBGM(path, vol)
 {
 	let obj = ObjSound_Create;
