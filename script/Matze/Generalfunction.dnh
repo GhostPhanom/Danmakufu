@@ -139,34 +139,38 @@ task DisplayText(objText, Text)
 {
 	let displayspeed = 1;// higher number = slower
 	
-	let displayText = "aaa";
+	let displayText = "";
 	let lettercounter = 0;
 	let endlength = length(Text);
 	
-	while(length(lettercounter != endlength))
+	while(lettercounter != endlength)
 	{
-		if(Text[lettercounter] != "[")//Wenn keine Textformatierung kommt
+		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
 		{
-			displayText = displayText ~ Text[lettercounter];
-			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
 		}
-		else if(Text[lettercounter] == "[")//Wenn Textformatierung kommt
+		else if(Text[lettercounter] == '[')//Wenn Textformatierung kommt
 		{
-			displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			displayText = displayText ~ ['0','0','0'];
+			ascent(i in lettercounter..lettercounter + 3)
+			{
+				displayText[i] = Text[i];
+			}
+			//displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
 			lettercounter += 2;
 		}
-		else//Für den Fall, dass an der Stelle ein Leerzeichen ist und man den Fall extra behandeln möchte 
+		else//Wenn keine Textformatierung und kein Leerzeichen kommt
 		{
-			displayText = displayText ~ Text[lettercounter];
-			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
 		}
 		
 		ObjText_SetText(objText, displayText);
 		lettercounter++;
 		wait(displayspeed);
-		
-		let counter = CreateTestCounter(50, 50);
-		ObjText_SetText(counter, IntToString(counter));
 	}
 }
 

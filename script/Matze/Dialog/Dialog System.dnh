@@ -91,13 +91,19 @@ task ObjDialog_SetDialog(actor, text)
 	{
 		objt = ObjText_Create();
 		ObjText_SetFontType(objt, "Aller");
-		ObjText_SetFontSize(objt, 22);
 		ObjText_SetFontBorderType(objt, BORDER_FULL);
 		ObjText_SetFontBorderWidth(objt, 2);
 		ObjText_SetFontBorderColor(objt ,81, 49, 64);
 		Obj_SetRenderPriorityI(objt, DialogBoxPriority);
 		ObjText_SetMaxWidth(objt, GetScreenWidth - DialogBoxFreeWidthSpace * 2 - 40);
-		ObjRender_SetPosition(objt, DialogBoxFreeWidthSpace + 20, GetScreenHeight - DialogBoxHeight + 12, 0);
+		
+		//5 Zeilen Version
+		ObjText_SetFontSize(objt, 18);
+		ObjRender_SetPosition(objt, DialogBoxFreeWidthSpace + 9, GetScreenHeight - DialogBoxHeight + 6, 0);
+		//4 Zeilen Version
+		//ObjText_SetFontSize(objt, 22);
+		//ObjRender_SetPosition(objt, DialogBoxFreeWidthSpace + 15, GetScreenHeight - DialogBoxHeight + 10, 0);
+		
 		SetCommonData("DialogBoxTextID", objt);
 	}
 	else
@@ -112,38 +118,40 @@ task ObjDialog_SetDialog(actor, text)
 
 task ObjDialog_DisplayText(objText, Text)
 {
-	let counter = CreateTestCounter(80, 80);
-	let displayspeed = 10;// higher number = slower
+	let displayspeed = 1;// higher number = slower
 	
 	let displayText = "";
 	let lettercounter = 0;
 	let endlength = length(Text);
 	
-	ObjText_SetText(counter, "$");
-	
-	while(false&&length(lettercounter) != endlength)
+	while(lettercounter != endlength)
 	{
-		if(Text[lettercounter] != "[")//Wenn keine Textformatierung kommt
+		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
 		{
-			displayText = displayText ~ Text[lettercounter];
-			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
 		}
-		else if(Text[lettercounter] == "[")//Wenn Textformatierung kommt
+		else if(Text[lettercounter] == '[')//Wenn Textformatierung kommt
 		{
-			displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			displayText = displayText ~ ['0','0','0'];
+			ascent(i in lettercounter..lettercounter + 3)
+			{
+				displayText[i] = Text[i];
+			}
+			//displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
 			lettercounter += 2;
 		}
-		else//Für den Fall, dass an der Stelle ein Leerzeichen ist und man den Fall extra behandeln möchte 
+		else//Wenn keine Textformatierung und kein Leerzeichen kommt
 		{
-			displayText = displayText ~ Text[lettercounter];
-			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
 		}
 		
 		ObjText_SetText(objText, displayText);
 		lettercounter++;
 		wait(displayspeed);
-		
-		ObjText_SetText(counter, IntToString(lettercounter));
 	}
 }
 
