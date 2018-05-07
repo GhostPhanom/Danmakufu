@@ -9,8 +9,15 @@ let DialogBoxActorHeight = 26;
 let DialogBoxActorStart = DialogBoxFreeWidthSpace + 30;
 let DialogBoxActorWidth = 220;
 
+let DialogSystemActive = false;
+
+let DialogAdvanceButton = VK_SHOT;
+let DialogSkipButton = VK_BOMB;
+let DialogSkipState = false;
+
+
 /*
-ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
+ObjDialog_MoveY(slot, targety, d) //M?glichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 ObjDialog_SetPriority(slot, prio)
 ObjDialog_SetAlpha(slot, alpha)
 ObjDialog_ChangeDirection(slot, d)
@@ -20,12 +27,59 @@ ObjDialog_FadeoutTexture(slot, d)
 ObjDialog_MoveTexture(slot1, slot2, d)
 */
 
+function dwait(n)
+{	
+	yield;
+	loop(n - 1)
+	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true){break;}
+		yield;
+	}
+}
 
+task ObjDialog_ActiveSkipControl
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D); //Nur für Funktionsabschaltung wenn das Objekt gelöscht wurde
+	
+	let initialwait = 60;
+	let skipinterval = 10;
+	let counter = 0;
+	
+	while(!Obj_IsDeleted(obj))
+	{
+		if(GetVirtualKeyState(DialogSkipButton) == KEY_PUSH)
+		{
+			DialogSkipState = true;
+			yield;
+			DialogSkipState = false;
+		}
+		else if(GetVirtualKeyState(DialogSkipButton) == KEY_HOLD)
+		{
+			if(counter > initialwait && counter % skipinterval == 0)
+			{
+				DialogSkipState = true;
+			}
+			else
+			{
+				DialogSkipState = false;
+			}
+			counter++;
+		}
+		else
+		{
+			DialogSkipState = false;
+			counter = 0;
+		}
+		yield;
+	}
+}
 
 function ObjDialog_Activate
 {
 	let slots = [];
 	let slotanzahl = 7;
+	
+	ObjDialog_ActiveSkipControl;
 	
 	ObjDialog_CreateTextBox(30);
 	ascent(i in 1.. slotanzahl + 1)
@@ -36,8 +90,10 @@ function ObjDialog_Activate
 	return slots; //Only needed for Debugging
 }
 
-task ObjDialog_SetDialog(actor, text)
+function ObjDialog_SetDialog(actor, text)
 {
+	yield;
+	
 	let obj = 0;
 	let objt = 0;
 	
@@ -114,11 +170,12 @@ task ObjDialog_SetDialog(actor, text)
 	//Dialog Text
 	ObjDialog_DisplayText(objt, text);
 	
+	while(GetVirtualKeyState(DialogAdvanceButton) != KEY_PUSH && DialogSkipState == false){yield;}
 }
 
-task ObjDialog_DisplayText(objText, Text)
+function ObjDialog_DisplayText(objText, Text)
 {
-	let displayspeed = 4;// higher number = slower
+	let displayspeed = 1;// higher number = slower
 	
 	let displayText = "";
 	let lettercounter = 0;
@@ -127,6 +184,14 @@ task ObjDialog_DisplayText(objText, Text)
 	
 	while(lettercounter != endlength)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			ObjText_SetText(objText, Text);
+			yield;
+			return;
+		}
+		
+		
 		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
 		{
 			displayText = displayText ~ ['0']; 
@@ -225,7 +290,7 @@ function ObjDialog_CreateSlot(number)
 	return obj;
 }
 
-task ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
+task ObjDialog_MoveY(slot, targety, d) //M?glichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 {
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
@@ -235,6 +300,13 @@ task ObjDialog_MoveY(slot, targety, d) //Möglichen OffsetY bei der Spriteerstell
 	
 	loop(d)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			y = targety;
+			Obj_SetValue(obj, "OffsetY", y);
+			return;
+		}
+	
 		y += party;
 		Obj_SetValue(obj, "OffsetY", y);
 		yield;
@@ -258,11 +330,19 @@ task ObjDialog_ChangeDirection(slot, d)
 	if(Obj_GetValueD(obj, "Direction", 0) == 1 || Obj_GetValueD(obj, "Direction", 0) == 3)
 	{
 		spin = 180; 
-		Obj_SetValue(obj, "Direction", 2);//Set to be not 1 or 2 to stop RenderAngle Control from Rendertask 
+		Obj_SetValue(obj, "Direction", 2);//Set to be not 0 or 1 to stop RenderAngle Control from Rendertask 
 	}
-	Obj_SetValue(obj, "Direction", 3);//Set to be not 1 or 2 to stop RenderAngle Control from Rendertask 
+	Obj_SetValue(obj, "Direction", 3);//Set to be not 0 or 1 to stop RenderAngle Control from Rendertask 
 	loop(d)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			if(spin < 180){spin = 180;}
+			if(spin > 180){spin = 360;}
+			ObjRender_SetAngleY(obj, spin);
+			break;
+		}
+		
 		spin += spinpart;
 		ObjRender_SetAngleY(obj, spin);
 		yield;
@@ -278,7 +358,7 @@ function ObjDialog_SetAlpha(slot, alpha)
 	Obj_SetValue(obj, "Alpha", alpha);
 }
 
-function ObjDialog_SetTexture(slot, texture)//dir direction Gedacht für Gesichtsausdruckwechsel
+function ObjDialog_SetTexture(slot, texture)//dir direction Gedacht f?r Gesichtsausdruckwechsel
 {
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
@@ -313,6 +393,14 @@ task ObjDialog_FadeinTexture(slot, texture, dir, a, scaleX, scaleY, offsetX, off
 	Obj_SetValue(obj, "Alpha", a);
 	loop(d)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			alpha = a;
+			ObjRender_SetAlpha(obj, alpha);
+			Obj_SetValue(obj, "Alpha", alpha);
+			break;
+		}
+		
 		alpha += alphapart;
 		ObjRender_SetAlpha(obj, alpha);
 		Obj_SetValue(obj, "Alpha", alpha);
@@ -332,6 +420,14 @@ task ObjDialog_FadeoutTexture(slot, d) //dir direction, d duration
 	Obj_SetValue(obj, "Alpha", a);
 	loop(d)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			alpha = 0;
+			ObjRender_SetAlpha(obj, alpha);
+			Obj_SetValue(obj, "Alpha", alpha);
+			break;
+		}
+	
 		alpha -= alphapart;
 		ObjRender_SetAlpha(obj, alpha);
 		Obj_SetValue(obj, "Alpha", alpha);
@@ -360,13 +456,13 @@ task ObjDialog_MoveTexture(slot1, slot2, d)
 	let priority = Obj_GetValueD(obj1, "Priority", DialogPriority);
 	let prioritydiff = Obj_GetValueD(obj1, "PriorityDiff", 0);
 	
-	Obj_SetValue(obj1, "OffsetX", 0);//Zurücksetzen von Ursprungslot
+	Obj_SetValue(obj1, "OffsetX", 0);//Zur?cksetzen von Ursprungslot
 	Obj_SetValue(obj1, "OffsetY", 0);
 	Obj_SetValue(obj1, "ScaleX", 1);
 	Obj_SetValue(obj1, "ScaleY", 1);
 	Obj_SetValue(obj1, "Direction", 0); //1 for reversed
 	Obj_SetValue(obj1, "Alpha", 0);
-	//Obj_SetValue(obj1, "Texture", ""); //Für den If Check in der Render Routine
+	//Obj_SetValue(obj1, "Texture", ""); //F?r den If Check in der Render Routine
 	Obj_SetValue(obj1, "Priority", DialogPriority);
 	Obj_SetValue(obj1, "PriorityDiff", 0);
 	
@@ -385,22 +481,26 @@ task ObjDialog_MoveTexture(slot1, slot2, d)
 	let baseY2 = Obj_GetValueD(obj2, "BaseY", 0);
 	let posX1 = baseX + offsetX;
 	let posY1 = baseY + offsetY;
-	let posX2 = baseX2; //offsetX wird bei baseX2 laut Design zurückgesetzt ;offset2 wird zurückgesetzt
+	let posX2 = baseX2; //offsetX wird bei baseX2 laut Design zur?ckgesetzt ;offset2 wird zur?ckgesetzt
 	let posY2 = baseY2 + offsetY;
 	let partX = (posX2 - posX1) / d;
 	let partY = (posY2 - posY1) / d;
 	
 	loop(d)
 	{
+		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
+		{
+			break;
+		}
 		posX1 += partX;
 		posY1 += partY;
 		ObjRender_SetPosition(obj, posX1, posY1, 0);
 		yield;
 	}
 	
-	Obj_SetValue(obj1, "Texture", "");//Für den If Check in der Render Routine
+	Obj_SetValue(obj1, "Texture", "");//F?r den If Check in der Render Routine
 	
-	//Teil hierdrunter ist um einen 1 Frame langen und unschönen Übergang zu überbrücken
+	//Teil hierdrunter ist um einen 1 Frame langen und unsch?nen ?bergang zu ?berbr?cken
 	LoadTexture(texture);
 	ObjPrim_SetTexture(obj2, texture);
 	ObjSprite2D_SetSourceRect(obj2, 0, 1, GetTextureWidth(texture), GetTextureHeight(texture));

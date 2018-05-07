@@ -1,0 +1,54 @@
+#include "./snd/sound.dnh"
+#include "./rb_Game_effects.dnh"
+
+@Initialize
+{
+	SetDefaultBonusItemEnable(false);
+	//LoadItems;
+	LoadEffects;
+}
+@Finalize
+{
+	//UnloadItems;
+	UnloadEffects;
+}
+
+@MainLoop { yield; }
+
+@Event
+{
+	alternative(GetEventType())
+	case(EV_GET_ITEM) {
+		let itemType = GetEventArgument(0);
+		let objItem = GetEventArgument(1);
+	}
+	case(EV_DELETE_SHOT_TO_ITEM)
+	{
+		let objShot = GetEventArgument(0);
+		let objPos = GetEventArgument(1);
+
+		let ox = objPos[0];
+		let oy = objPos[1];
+		if(
+			ox > 0 &&
+			ox < GetStgFrameWidth &&
+			oy > 0 &&
+			oy < GetStgFrameHeight
+		) {
+			if(IsPlayerSpellActive) { // Low value star items
+				//CreateItemA1(ITEM_POINT_S, ox,oy, 10);
+			}
+			else { // High value star items
+				//CreateItemA1(ITEM_POINT_S, ox,oy, 100);
+			}
+
+			let o_spd = ObjMove_GetSpeed(objShot)*0.5;
+			let o_ang = ObjMove_GetAngle(objShot);
+			let b_rgb = GetShotDataInfoA1(ObjShot_GetImageID(objShot), TARGET_ENEMY, INFO_DELAY_COLOR);
+			let b_rect = GetShotDataInfoA1(ObjShot_GetImageID(objShot), TARGET_ENEMY, INFO_RECT);
+			let b_rad = (b_rect[2] - b_rect[0])/32;
+			b_rad = 0.7+b_rad;
+			TSparkle3Anim(40, ox,oy, cos(o_ang)*o_spd, sin(o_ang)*o_spd, 0.5*b_rad, 1.5*b_rad, (b_rgb[0]+255)/2, (b_rgb[1]+255)/2, (b_rgb[2]+255)/2, 8, BLEND_ALPHA);
+		}
+	}
+}

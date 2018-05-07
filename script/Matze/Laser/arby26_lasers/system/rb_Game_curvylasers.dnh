@@ -1,0 +1,161 @@
+//Curvy Lasers
+
+//Creates the laser at x,y with speed,ang,accel,angularvelocity, and maxspeed.
+//Laser is made by creating segments over time from a tip object.
+//Parameter "segments" is the amount that will exist at the laser's full length.
+//Parameter "seg_rate" is how often a segment is created.
+//   Smaller seg_rate makes the laser smoother but requires more segments to maintain length, and vice-versa.
+//   The game will slowdown very fast with too many segments around.
+//Parameter "bullet" is the color of the laser, use integers 1-16 only.
+//  With my shot sheet, you can use "AS_BALL_S_" bullet types to define the color more easily.
+//
+//Laser currently uses one width and graphic.
+//
+//Made by arby26
+//
+function MyLaserz(x,y, spd,ang,accel,av,maxspd, segments, seg_rate, bullet, delay){
+	let parent = CreateShotA2(x, y, 0,ang,0,maxspd, bullet, 0);
+	ObjShot_SetIntersectionEnable(parent,false);
+	ObjShot_SetSpellResist(parent,true);
+	Obj_SetVisible(parent,false);
+	ObjMove_AddPatternA2(parent, delay, spd, ang, accel, av, maxspd);
+	TLaser(parent, x,y, spd,ang,accel,maxspd, segments, seg_rate, bullet, delay);
+	return parent;
+
+	task TLaser(parent, x,y, spd,ang,accel,maxspd, segments, seg_rate, bullet, delay){
+		loop(delay){yield;}
+		let time=segments*seg_rate;
+		// Removal of "parent" but not "obj" means the laser will stop, but the tail will continue to where parent was deleted (usually when it goes off screen).
+		// Removal of "obj" means the laser was hit by bullet canceling effects (like bombs or a boss attack ending), and the whole laser will fade.
+		let obj = CreateShotA2(x, y, 0,ang,0,maxspd, bullet+512, 0);//This is the actual tip.
+		//let obj = ObjShot_Create(OBJ_SHOT);
+		//ObjMove_SetPosition(obj,x,y);
+		//ObjShot_SetGraphic(obj,bullet);
+		//ObjShot_Regist(obj);
+		//ObjShot_SetSpellResist(obj,true);
+		ObjShot_SetAutoDelete(obj,false);
+		Obj_SetVisible(obj,false);
+		TMoveTrail(obj,parent,0, bullet, 2,255, time+seg_rate);
+		let x2=ObjMove_GetX(obj);
+		let y2=ObjMove_GetY(obj);
+		let ang2=ObjMove_GetAngle(obj)+90;
+		let seg=obj;
+		let c=0;
+		loop{
+			if(Obj_IsDeleted(obj)){break;}
+			if(Obj_IsDeleted(parent)){
+				TSeg(obj,seg, 0, ObjMove_GetX(obj),ObjMove_GetY(obj),ObjMove_GetAngle(obj)+90, x2,y2,ang2, time, seg_rate, bullet);
+				break;
+			}
+			let x=ObjMove_GetX(obj);
+			let y=ObjMove_GetY(obj);
+			let ang=ObjMove_GetAngle(obj)+90;
+			ObjMove_SetPosition(parent,x,y);//Maybe not necessary
+			if(c%seg_rate==0){
+				seg = CreateShotA2(x, y, 0,ang,0,10, bullet+512, 0);
+				//seg = ObjShot_Create(OBJ_SHOT);
+				//ObjMove_SetPosition(seg,x,y);
+				//ObjShot_SetGraphic(seg,bullet);
+				//ObjShot_Regist(seg);
+
+				Obj_SetVisible(seg,false);
+				ObjShot_SetAutoDelete(seg,false);
+				//ObjShot_SetDeleteFrame(seg,time);
+				TSegAlive(seg,obj, time);
+			}
+			TSeg(obj,seg, 1, x,y,ang, x2,y2,ang2, time, seg_rate, bullet);
+			x2=x;
+			y2=y;
+			ang2=ang;
+			c++;
+			loop(seg_rate){yield;}
+		}
+		if(!Obj_IsDeleted(parent)){Obj_Delete(parent);}
+
+		task TSegAlive(obj,tip, time){
+			loop(time){
+				if(Obj_IsDeleted(obj)||Obj_IsDeleted(tip)){
+					if(!Obj_IsDeleted(tip)){Obj_Delete(tip);}
+					break;
+				}
+				yield;
+			}
+			if(!Obj_IsDeleted(obj)){Obj_Delete(obj);}
+		}
+		task TMoveTrail(obj,parent,time, bullet, sca,col, lasertime){
+			let remove_time=lasertime+1;
+			loop{
+				if(Obj_IsDeleted(obj)||Obj_IsDeleted(parent)){break;}
+				ObjMove_AddPatternA2(obj, time, ObjMove_GetSpeed(parent), ObjMove_GetAngle(parent), 0, 0, 10);
+				LaserGfxFrameA(bullet-1, ObjMove_GetX(obj),ObjMove_GetY(obj), ObjMove_GetAngle(obj)+90, 1.125,sca, col,col,col,255);
+				//LaserGfxTipA(bullet-1, ObjMove_GetX(obj),ObjMove_GetY(obj), ObjMove_GetAngle(obj)+90, 3,3, 64,64,64,255);
+				yield;
+			}
+			ObjMove_AddPatternA2(obj, 0, 0, NO_CHANGE, 0, 0, 10);
+			while(remove_time>0&&!Obj_IsDeleted(obj)){
+				//LaserGfxFrameA(bullet-1, ObjMove_GetX(obj),ObjMove_GetY(obj), ObjMove_GetAngle(obj)+90, 1.125,sca, col,col,col,255);
+				remove_time--;
+				yield;
+			}
+			if(!Obj_IsDeleted(obj)){Obj_Delete(obj);}
+		}
+		task TSeg(tip,seg, delay, x,y,ang, x2,y2,ang2, time, seg_rate, bullet){
+			loop(delay){yield;}
+			let bbreak=false;
+			let sca=0.25;
+			let sca_d=-0.005;
+			loop(seg_rate){
+				if(finish||Obj_IsDeleted(tip)){bbreak=true;break;}
+				let sdist = ((y2-y)^2+(x2-x)^2)^0.5/14;
+				LaserGfxFrameA(bullet-1, x,y, ang, 1.25+sca,2.0*sdist, 255,255,255,255);
+				SetShotIntersectionLine(x,y,x2,y2,2);
+				sca+=sca_d;
+				yield;
+			}
+			loop(time-delay-2-2*seg_rate){
+				if(finish||Obj_IsDeleted(tip)){bbreak=true;break;}
+				let sdist = ((y2-y)^2+(x2-x)^2)^0.5/12;
+				LaserGfxFrameA(bullet-1, x,y, ang, 1.25+sca,2.0*sdist, 255,255,255,255);
+				SetShotIntersectionLine(x,y,x2,y2,2);
+				sca+=sca_d;
+				yield;
+			}
+			//When the segment has lived long enough to be the last one, this slightly more complicated loop below smooths out the tail's movement.
+			let xd=((x-x2)/seg_rate);
+			let yd=((y-y2)/seg_rate);
+			//let ang_d=(ang-ang2)/(seg_rate-1);
+			let sdist = ((y2-y)^2+(x2-x)^2)^0.5/12;//It should be possible to replace this with the built-in distance function "GetObjectDistance()" for a potential performance improvement.
+			x2=(x+x2)/2;
+			y2=(y+y2)/2;
+			ObjMove_SetPosition(seg,x,y);//This prevents the invisible bullet/break point from falling too far behind the tail of the laser, and becoming a phantom death zone for an unlucky player.
+			loop(seg_rate){
+				if(finish||Obj_IsDeleted(tip)){bbreak=true;break;}
+				//sdist = max(0.5,((y2-y)^2+(x2-x)^2)^0.5/12);
+				LaserGfxFrameA(bullet-1, x2,y2, ang, 1.25+sca,2.0*sdist, 255,255,255,255);
+				SetShotIntersectionLine(x,y,x2,y2,2);
+				//LaserGfxFrameA(AS_BALL_S_WHITE, (x+x2)/2,(y+y2)/2, atan2(y-y2,x-x2)+90, 1.25,8, 255,255,255,255);
+				x2+=xd;
+				y2+=yd;
+				//ang2+=ang_d;
+				yield;
+			}
+			if(bbreak){//Do the below if the laser was hit by a bomb or spell break.
+				let time=rand(15,30);
+				let sx=(8+rand(-2,2)-1.25)/time;
+				let sy=(8+rand(-2,2)-3.0)/time;
+				//let al_d=-255/time;
+				//let al=255;
+				
+				ascent(i in 0..time){
+					let al=255-i*(255/time);
+					LaserGfxFrameA(bullet-1, (x+x2)/2,(y+y2)/2, (ang+ang2)/2, 1.25+i*sx,3.0+i*sy, al,al,al,255);
+					//al+=al_d;
+					yield;
+				}
+			}
+		}
+	}
+}
+
+
+

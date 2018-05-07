@@ -1,0 +1,22 @@
+
+let dirCurrentGFX = GetCurrentScriptDirectory;
+let imgBoss = dirCurrentGFX~"./../img_enemy/daiyousei.png";
+let imgBossShield = dirCurrentGFX~"./../img_enemy/miko_shield.png";
+let imgBossEffect = dirCurrentGFX~"./../img_enemy/miko_effect.png";
+let bossXoff = 0;
+let bossYoff = 0;
+let bossScale = 0.5;
+let shoot_offset = -8;
+
+function LoadDaiyousei
+{
+	LoadTexture(imgBoss);
+	LoadTexture(imgBossShield);
+	LoadTexture(imgBossEffect);
+}
+function UnloadDaiyousei
+{
+	RemoveTexture(imgBoss);
+	RemoveTexture(imgBossShield);
+	RemoveTexture(imgBossEffect);
+}

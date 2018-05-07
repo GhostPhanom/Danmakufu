@@ -1,0 +1,637 @@
+#include "./rb_lib_boss_anim.dnh"
+
+//#include "./../system/rb_Game_items.dnh"
+#include "./../system/rb_Game_effects.dnh"
+#include "./../system/rb_Game_functions.dnh"
+#include "./../system/rb_Game_curvylasers.dnh"
+
+let ATTACK_BASIC = 0;
+let ATTACK_SPELLCARD = 1;
+let ATTACK_SURVIVAL = 2;
+let END_BASIC = 0;
+let END_BIG = 1;
+let SHIELD_NONE = 0;
+let SHIELD_BOMBS = 1;
+let SHIELD_SUPER = 2;
+let BONUS_STANDARD = 0;
+let BONUS_MEDAL1 = 1;
+let BONUS_MEDAL2 = 2;
+
+//let Life_Drop = false;
+//let Medal_Level = 0;
+//let Bonus = 0;
+//let Bonus_Multiplier = 1;
+//let BonusMin = 0;
+//let Failed = 0;
+//let Time = 0;
+//let PLives = 0;
+//let PBombs = 0;
+let SpellCard = false;
+let finish = false;
+
+let bossSTGw = GetStgFrameWidth;
+let bossSTGr = GetStgFrameWidth;
+let bossSTGl = 0;
+
+task PlaySndDelay(delay, sound, volume)
+{
+	loop(delay) { yield; }
+	if(!finish){
+		ObjSound_SetVolumeRate(sndObj[sound], volume*SFXVOL);
+		ObjSound_Play(sndObj[sound]);
+	}
+}
+
+// Basically ObjMove_SetDestAtWeight, but defined by time taken rather than wtf speeds and weight.
+// The good old instantly move away at speed, decellerate near the destination.
+task TBossMoveTowards(obj, tx,ty, time)
+{
+	if(!finish) {
+		let ex = ObjMove_GetX(obj);
+		let ey = ObjMove_GetY(obj);
+		let spd = (((tx-ex)^2+(ty-ey)^2)^0.5)/time; // Distance away divided by time
+		ObjMove_SetDestAtWeight(obj, tx, ty, 2*spd, spd);
+	}
+}
+task TBossMoveTowardsAnim(obj, tx,ty, time, exit_row, exit_rate)
+{
+	if(!finish) {
+		let ex = ObjMove_GetX(obj);
+		let ey = ObjMove_GetY(obj);
+		let spd = (((tx-ex)^2+(ty-ey)^2)^0.5)/time; // Distance away divided by time
+		ObjMove_SetDestAtWeight(obj, tx, ty, 2*spd, spd);
+		if(ex > tx) { // moving left
+			objEnemyAnim = BossAnim1(obj, objEnemyAnim, 3, 20, 0.25, 0, 0.125);
+		}
+		else { // moving left
+			objEnemyAnim = BossAnim1(obj, objEnemyAnim, 2, 20, 0.25, 0, 0.125);
+		}
+	}
+}
+
+// Enemy accelerates to speed, and decellerates near the destination.
+task TBossSmoothMove(obj, tx,ty, time)
+{
+	let ex = ObjMove_GetX(obj);
+	let ey = ObjMove_GetY(obj);
+	let vx = (tx-ex)/time;
+	let vy = (ty-ey)/time;
+	let spd = 0;
+	time = time/2;
+	let spd_d = 2/time;
+	loop(time) {
+		if(Obj_IsDeleted(obj)){break;}
+		ex += vx*spd;
+		ey += vy*spd;
+		spd += spd_d;
+		ObjMove_SetPosition(obj, ex,ey);
+		yield;
+	}
+	spd_d = -spd_d;
+	loop(time) {
+		if(Obj_IsDeleted(obj)){break;}
+		ex += vx*spd;
+		ey += vy*spd;
+		spd += spd_d;
+		ObjMove_SetPosition(obj, ex,ey);
+		yield;
+	}
+}
+
+// Boss moves around smoothly, mostly above the player, changing destination every 90 frames.
+task TBossMoveAround(time)
+{
+	let i = 0;
+	while(i < time) {
+		spellbreak;
+		TBossSmoothMove(objEnemy, (bossSTGw/2+rand(-32,32)+ObjMove_GetX(objPlayer)+rand(-32,32))/2,120+rand(-8, 16)-shoot_offset, 90);
+		i += 90;
+		wait(90);
+	}
+}
+
+function waitb(frames) // wait with spellbreak
+{
+	loop(frames) { yield; }
+	if(finish) { break; }
+}
+// wait function that is canceled when a bomb goes off, to instantly move on to the next phase.
+function wait_bombable(frames)
+{
+	let count = 0;
+	let bombed = false;
+	while(count < frames) {
+		while(IsPlayerSpellActive) {
+			count = frames-30;
+			bombed = true;
+			yield;
+		}
+		count++;
+		yield;
+	}
+	if(bombed && !finish) {
+		//DeleteShotAll(TYPE_ALL, TYPE_ITEM);//Removes all enemy bullets	
+		DeleteShotAll(TYPE_SHOT, TYPE_ITEM);//Removes enemy bullets	
+	}
+}
+// break out of loops when the attack is closing
+function spellbreak
+{
+	if(finish) { break; }
+}
+
+function BombHold{ // Don't continue until bomb has ended
+	loop(600) {
+		if(!IsPlayerSpellActive) {
+			break;
+		}
+		yield;
+	}
+}
+
+task StartAttack(name, type, end_type, dmg_score_factor, total, min, stime, low_health)
+{
+	//LoadItems;
+	LoadEffects;
+	finish = false;
+	wait(90);
+
+	//BossCollision(radiusShot, radiusPlayer);
+	BossDamaging(dmg_score_factor, low_health);
+	//BombShield(shield_type, dmg_shot_n, dmg_bomb_n, dmg_shot_s, dmg_bomb_s, free_frames);
+	ManageAttack(name, type, end_type, total, min, stime);
+}
+
+task DropsALife
+{
+	//if the enemy's life is 0
+	while(ObjEnemy_GetInfo(objEnemy, INFO_LIFE) > 0)
+	{
+		yield;
+	}
+	let ex = ObjMove_GetX(objEnemy);
+	let ey = ObjMove_GetY(objEnemy);
+	//TItemLife(0, ex+rand(-32, 32), ey+rand(-32, 32));
+}
+task DropsASpell
+{
+	//if the enemy's life is 0
+	while(ObjEnemy_GetInfo(objEnemy, INFO_LIFE) > 0)
+	{
+		yield;
+	}
+	let ex = ObjMove_GetX(objEnemy);
+	let ey = ObjMove_GetY(objEnemy);
+	//TItemBomb(0, ex+rand(-32, 32), ey+rand(-32, 32));
+}
+task ManageAttack(name, type, ending, total, min, stime)
+{
+	let Life_Drop = true;
+	let Bonus = total*1000000; // bonuses are in the millions
+	let BonusMin = min*1000000; // bonuses are in the millions
+	let Bonus_Multiplier = 1;
+
+	// Get player's lives and bombs at the start.
+	let PLives = GetPlayerLife;
+	let PBombs = GetPlayerSpell;
+
+	if(type == ATTACK_BASIC) { // ---------- Manage Basic attack ----------
+		nameattack(name);
+
+		//if the enemy's life isn't 0
+		while(ObjEnemy_GetInfo(objEnemy, INFO_LIFE) > 0)
+		{
+			TLifePart;
+			yield;
+		}
+		EndAttack;
+	}
+	else if(			(type == ATTACK_SPELLCARD) // ---------- Manage Spell Card ----------
+			||	(type == ATTACK_SURVIVAL)
+			) {
+		nameattack(name);
+
+		SpellCard = true;
+
+		TBonusCounter;
+
+		let objScene = GetEnemyBossSceneObjectID();
+		ObjEnemyBossScene_StartSpell(objScene);
+
+		PlaySnd(SND_e_start, 100);
+
+		// Start counting the bonus.
+		let scoring = true;
+		let rate = 0;
+		let eat_score = 4;
+		if(type != ATTACK_SURVIVAL) { // Set the score decrease rate
+			if(total != min) { rate = (Bonus-BonusMin)/(stime*60); } // non-survival spell cards
+		}
+
+		while(ObjEnemy_GetInfo(objEnemy, INFO_LIFE) > 0 && scoring && !finish)
+		{
+			Bonus = Bonus-rate;
+			scoring = !(GetPlayerLife() < PLives) && !(GetPlayerSpell() < PBombs) && !(GetCommonData("Magic_Lvl", 0)>0);
+			PBombs = GetPlayerSpell;
+			scoring = scoring && !(type != ATTACK_SURVIVAL && ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(), INFO_TIMER) <= 0);
+			TLifePart;
+			if(!scoring) { Bonus = 0; }
+			yield;
+		}
+		while(ObjEnemy_GetInfo(objEnemy, INFO_LIFE) > 0 && !finish) {
+			yield;
+		}
+		EndAttack;
+	}
+	task TLifePart
+	{
+		Life_Drop = Life_Drop && !(GetPlayerLife < PLives);
+		Life_Drop = Life_Drop && !(type != ATTACK_SURVIVAL && ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(), INFO_TIMER) <= 0);
+		PLives = GetPlayerLife();
+	}
+
+	task EndAttack // ---------- Attack Endings ----------
+	{
+		let ex = ObjMove_GetX(objEnemy);
+		let ey = ObjMove_GetY(objEnemy);
+
+		finish = true;
+		SpellCard = false;
+
+		if(Life_Drop) {
+			//TItemBombPart(0, ex,ey);
+			PlaySnd(SND_p_lpart, 90);
+		}
+
+		if(type == ATTACK_SPELLCARD) {
+			loop(5) {
+				//TItemPtPw(0, ex+rand(-32, 32),ey+rand(-32, 32));
+			}
+		}
+
+		if(type != ATTACK_BASIC) {
+			PlaySnd(SND_e_shot, 100);
+			if(Bonus != 0)
+			{
+				PlaySndM(SND_e_clear, 100);
+				Bonus = Bonus_Multiplier*Bonus;
+				AddScore(truncate((Bonus)/10)*10);
+				SetCommonData("Spellcard_Bonus", Bonus);
+				//TSpellcardBonus(Bonus);
+			}
+		}
+
+		ObjRender_SetAlpha(objEnemy, 255);
+
+		if(ending == END_BASIC) {
+			TExplosionNew(ex, ey, 255, 6, 30);
+			loop(16) {
+				TExplosionSpark(ex, ey, rand(0,360), 5);
+			}
+			ClearBullets(GetPlayerX, GetPlayerY, 30);
+
+			//wait(60);
+			Obj_Delete(objEnemy);
+
+			wait(31);
+			DeleteShotAll(TYPE_ALL, TYPE_ITEM); // Final bullet clear at +31 frames
+		}
+		else if(ending == END_BIG) {
+			PlaySndM(SND_e_clear, 100);
+			ClearBullets(GetPlayerX, GetPlayerY, 60);
+
+			//render_enemy__attack1(6, 1, 360, 0, 0.125);
+			objEnemyAnim = BossAnim2(objEnemy, objEnemyAnim, 6, 360, 1, 0, 0.25);
+			TExplosionNew(ex, ey, 255, 6, 30);
+			loop(16) {
+				TExplosionSpark(ex, ey, rand(0,360), 5);
+			}
+			wait(60);
+			TExplosions(45, 11, objEnemy, 16, 32);
+			wait(45);
+			TExplosions(90, 7, objEnemy, 16, 32);
+
+			wait(90);
+			ex = ObjMove_GetX(objEnemy);
+			ey = ObjMove_GetY(objEnemy);
+			Obj_Delete(objEnemy);
+			PlaySndM(SND_e_clear, 100);
+			//PlaySndM(SND_e_expl, 100);
+			TExplosionNew(ex, ey, 255, 6, 15);
+			loop(32) {
+				TExplosionSpark(ex, ey, rand(0,360), 5);
+			}
+			loop(4) {
+				TBossFlyOff(ex, ey, imgBoss, bossScale);
+				yield;
+			}
+
+			wait(57);
+			DeleteShotAll(TYPE_ALL, TYPE_ITEM); // Final bullet clear at +61 frames
+		}
+
+		wait(120);
+		wait(600);
+		//UnloadItems;
+		CloseScript(GetOwnScriptID());
+
+		return;
+	}
+
+	task ClearBullets(x,y, time) {
+		let rad = 16;
+		let rad_d = (512-16)/time;
+		loop(time) {
+			DeleteShotInCircle(TYPE_ALL, TYPE_ITEM, x,y,rad);
+			rad += rad_d;
+			yield;
+		}
+		DeleteShotAll(TYPE_ALL, TYPE_ITEM); // Final bullet clear at +61 frames
+	}
+	task TBonusCounter
+	{
+		let margin = 4+64;
+		let texty = 46;
+		let alpha = 0;
+
+		let obj = ObjText_Create;
+		Obj_SetRenderPriority(obj, 0.7);
+		ObjText_SetFontSize(obj, 11);
+		//ObjText_SetFontBold(obj, true);
+		ObjText_SetMaxWidth(obj, GetStgFrameWidth-2*margin);
+		ObjText_SetLinePitch(obj, 2);
+		ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderWidth(obj, 1);
+		ObjText_SetFontBorderColor(obj, 140, 140, 255);
+		ObjText_SetFontColorBottom(obj, 255, 255, 128);
+		ObjText_SetFontColorTop(obj, 255, 255, 255);
+		ObjText_SetHorizontalAlignment(obj, ALIGNMENT_RIGHT);
+
+		ObjRender_SetPosition(obj, margin, texty, 0);
+		ObjRender_SetAlpha(obj, alpha);
+		//ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+
+		let last_multiplier = Bonus_Multiplier;
+		let scale = 1;
+		while(!finish){
+			if(alpha < 255) { alpha++; }
+			ObjRender_SetAlpha(obj, alpha);
+
+			ObjText_SetText(obj,"Bonus: "~IntToString(Bonus_Multiplier*Bonus));
+			if(Bonus_Multiplier != last_multiplier) {
+				scale = 0;
+				last_multiplier = Bonus_Multiplier;
+			}
+			if(scale <= 1){
+				scale += 1/20;
+				if(scale > 1) { scale = 1; }
+			}
+			ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
+
+function BCheckDistBonus(x,y){
+	let dist = ( (x-GetPlayerX)^2 + (y-GetPlayerY)^2)^0.5;
+	let increment = 70;
+	let bonus = 1;
+	if(dist < increment) { bonus++; }
+	if(dist < 2*increment) { bonus++; }
+	if(dist < 3*increment) { bonus++; }
+	if(dist < 4*increment) { bonus++; }
+	return bonus;
+}
+// Player is awarded points for damaging the enemy.
+// Point quantity is much higher when closer to the enemy.
+task BossDamaging(multiplier, small_health)
+{
+	let frame = 0;
+	let max_health = ObjEnemy_GetInfo(objEnemy, INFO_LIFE);
+	//let small_health = max_health/10;
+	let cur_health = 0.0;
+	let last_health = 0.0;
+	let soundoff = false;
+	let lasttimer = 9999;
+
+	let motivation = 0;
+	let damaging = 0;
+	let chunk = max_health-200;
+	let motiv_bonus = false;
+	while(!finish)
+	//loop
+	{
+		cur_health = ObjEnemy_GetInfo(objEnemy, INFO_LIFE);
+		let dist_bonus = 0.0; // Bonus while bombing is reduced to zero that of max distance damage.
+		if(GetPlayerInvincibilityFrame() < 1) {
+			dist_bonus = (400 - GetObjectDistance(objEnemy, objPlayer))/120;
+			if(dist_bonus < 0) { dist_bonus = 0; }
+		}
+		let chip_bonus = truncate(dist_bonus*(last_health - cur_health)*multiplier);
+		if(cur_health < last_health)
+		{
+			if(cur_health < chunk)
+			{
+				let ex = ObjMove_GetX(objEnemy);
+				let ey = ObjMove_GetY(objEnemy);
+				let value = 6-BCheckDistBonus(ex,ey);
+				chunk-=40*value;
+				//chunk-=200;
+				motiv_bonus = true; // only add motivation for every every 150 damage, not based on how long the player can drag out the fight
+			}
+			damaging = 9;
+			AddScore(10*chip_bonus);
+			soundoff = true;
+		}
+
+		if(damaging > 0) {
+			motivation++;
+			if(motiv_bonus) {
+				let ex = ObjMove_GetX(objEnemy);
+				let ey = ObjMove_GetY(objEnemy);
+				//TItemCharge(0, ex+rand(-32, 32), ey+rand(-32, 32));
+				motiv_bonus = false;
+				motivation = 0;
+			}
+		}
+		damaging--;
+
+		if((frame%4 == 0) && soundoff)
+		{
+			if(cur_health < small_health)
+			{
+				PlaySnd(SND_e_dmg2, 100);
+			}
+			else
+			{
+				PlaySnd(SND_e_dmg2, 90);
+			}
+			soundoff = false;
+		}
+			
+		last_health = cur_health;
+
+		let timer = ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(), INFO_TIMER);
+		if((timer != lasttimer) && (timer <= 10) && (timer > 3))
+		{
+			PlaySnd(SND_count1, 100);
+		}
+		else if((timer != lasttimer) && (timer <= 3))
+		{
+			PlaySnd(SND_count2, 100);
+		}
+		lasttimer = timer;
+
+		//let obj = CreateShotA2(240, 100, 3, 90+chip_bonus, 0, 10, DS_FIRE_RED, 15);
+		frame++;
+		frame = frame%10;
+		yield;
+	}
+}
+
+let collide_on = false;
+task BossCollision(delay, radiusShot, radiusPlayer, y_off)
+{
+	loop(delay){yield;}
+	collide_on = true;
+	while(!finish && collide_on)
+	{
+		let ex = ObjMove_GetX(objEnemy);
+		let ey = ObjMove_GetY(objEnemy)+y_off;
+
+		ObjEnemy_SetIntersectionCircleToShot(objEnemy, ex, ey, radiusShot);
+		ObjEnemy_SetIntersectionCircleToPlayer(objEnemy, ex, ey, radiusPlayer);
+
+		yield;
+	}
+}
+task BossStopCollision
+{
+	collide_on = false;
+}
+
+task BombShield(shield_type, initShield, dmg_shot_n, dmg_bomb_n, dmg_shot_s, dmg_bomb_s, free_frames)
+{
+	ObjEnemy_SetDamageRate(objEnemy, 5, 0);
+	loop(initShield) {
+		yield;
+	}
+	// Bomb resist
+	alternative(shield_type)
+	case(SHIELD_BOMBS) {
+		TShieldBombs;
+	}
+	case(SHIELD_SUPER) {
+		TShieldSuper;
+	}
+
+	task TShieldBombs
+	{
+		while(!finish) {
+			if(IsPlayerSpellActive) {
+				ObjEnemy_SetDamageRate(objEnemy, dmg_shot_s, dmg_bomb_s);
+			}
+			else {
+				ObjEnemy_SetDamageRate(objEnemy, dmg_shot_n, dmg_bomb_n);
+			}
+			yield;
+		}
+	}
+	task TShieldSuper
+	{
+		while(!finish) {
+			if(GetPlayerInvincibilityFrame() > 1+free_frames) {
+				ObjEnemy_SetDamageRate(objEnemy, dmg_shot_s, dmg_bomb_s);
+			}
+			else {
+				ObjEnemy_SetDamageRate(objEnemy, dmg_shot_n, dmg_bomb_n);
+			}
+			yield;
+		}
+	}
+}
+
+task TExplosions(duration, rate, obj, xrange, yrange)
+{
+	let i = 0;
+	let ex = 0;
+	let ey = 0;
+	loop(duration/rate)
+	{
+		ex = ObjMove_GetX(obj);
+		ey = ObjMove_GetY(obj);
+		PlaySnd(SND_e_clear, 98);
+		loop(3){
+			TExplosionSpark(ex+rand(-xrange, xrange), ey+rand(-xrange, xrange), rand(0,360), 5);
+		}
+		TExplosionNew(ex+rand(-xrange, xrange), ey+rand(-yrange, yrange), 255, 4, 21);
+		wait(rate);
+	}
+}
+
+task nameattack(name)
+{
+	let texty = 220;
+	let textx = -300-64;
+	let height = 30;
+	let margin = 4;
+
+	let time = 45;
+	let scale = 7;
+	let alpha = 0;
+
+	let obj = ObjText_Create;
+	Obj_SetRenderPriority(obj, 0.7);
+	ObjText_SetText(obj, name);
+	ObjText_SetFontSize(obj, 11);
+	//ObjText_SetFontBold(obj, true);
+	ObjText_SetMaxWidth(obj, GetStgFrameWidth-2*margin);
+	ObjText_SetLinePitch(obj, 2);
+	ObjText_SetFontBorderType(obj, BORDER_FULL);
+	ObjText_SetFontBorderWidth(obj, 1);
+	ObjText_SetFontBorderColor(obj, 80, 140, 110);
+	ObjText_SetFontColorBottom(obj, 100, 200, 150);
+	ObjText_SetFontColorTop(obj, 255, 255, 255);
+	ObjText_SetHorizontalAlignment(obj, ALIGNMENT_RIGHT);
+
+	ObjRender_SetPosition(obj, margin, texty, 0);
+	ObjRender_SetAlpha(obj, alpha);
+	ObjRender_SetScaleXYZ(obj, 1, scale, 1);
+
+	let s_inc = 6/time;
+	let a_inc = 255/time;
+	let ty_inc = (220-height)/(time);
+	let tx_inc = -300/time;
+	loop(time)
+	{
+		if(finish) { Obj_Delete(obj); break; }
+		scale -= s_inc;
+		//texty -= ty_inc;
+		textx -= tx_inc;
+		alpha += a_inc;
+		ObjRender_SetScaleXYZ(obj, 1, scale, 1);
+		ObjRender_SetX(obj, textx);
+		ObjRender_SetY(obj, texty);
+		ObjRender_SetAlpha(obj, alpha);
+		yield;
+	}
+	loop(30) { 
+		if(finish) { Obj_Delete(obj); break; }
+		yield;
+	}
+	loop(time)
+	{
+		if(finish) { Obj_Delete(obj); break; }
+		texty -= ty_inc;
+		ObjRender_SetY(obj, texty);
+		yield;
+	}
+
+
+	while(finish == false) // Wait here until finished.
+	{
+		yield;
+	}
+	Obj_Delete(obj);
+}

@@ -46,7 +46,10 @@ function ObjMove_SetDestAtRandom(obj, x1, y1, x2, y2, frame)
 ///////////////////////////////////
 ///POSITION/ANGLE FUNCTIONS////////
 ///////////////////////////////////
-function GetAngleTo(let object1, let object2) { return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));}//Angle from obj1 to obj 2
+function GetAngleTo(let object1, let object2) 
+{ 
+	return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));
+}//Angle from obj1 to obj 2
 
 function GetAngleToObjectMove(x,y,obj){ //Weiß nicht, ob es einen wirklichen nutzen hat
 	let angle = atan2(ObjMove_GetY(obj)-y,ObjMove_GetX(obj)-x);
