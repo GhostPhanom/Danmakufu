@@ -265,6 +265,18 @@ function sqrt (input)
 {
 	return input ^ 0.5;
 }
+
+function ToDegree(input)//Winkelmaß
+{
+	return ((360 / (2 * pi)) * input);
+}
+
+function ToRadiant(input) //Bogenmaß
+{
+	return ((2 * pi) / 360 * input);
+}
+
+
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
 ///////////////////////////////////
