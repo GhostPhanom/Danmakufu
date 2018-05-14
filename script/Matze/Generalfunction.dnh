@@ -280,6 +280,17 @@ function ToRadiant(input) //Bogenmaß
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
 ///////////////////////////////////
+function CompareFloats (input1, input2) 
+{
+	let EPSILON = 0.0001;
+    let diff = input1 - input2;
+	if(diff < EPSILON && -diff < EPSILON)
+	{
+		return true;
+	}
+    return false;
+}
+
 function wait (n)
 {
 	loop (n)
