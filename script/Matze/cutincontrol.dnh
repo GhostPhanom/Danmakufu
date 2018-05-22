@@ -1,6 +1,11 @@
 #include"./Generalfunction.dnh"
 
 
+@Loading
+{
+	//LoadTexture(CSD ~ "./cutin/cutin2.png");
+	LoadTexture(GetCurrentScriptDirectory() ~ "./cutin/cutmask.png");
+}
 
 @Initialize
 {
@@ -15,7 +20,12 @@
 		let casefile=GetEventArgument(0);
 		if(casefile[0]=="Cutin")
 		{
-			cutintest(casefile[1]);
+			cutintest(casefile[1], casefile[2], casefile[3], casefile[4]);
+		}
+		if(casefile[0]=="CutinFontColor")
+		{
+			fontcolortop = [atoi(casefile[1]), atoi(casefile[2]),atoi(casefile[3])];
+			fontcolorbottom = [atoi(casefile[4]), atoi(casefile[5]), atoi(casefile[6])];
 		}
 		if(casefile[0]=="Spellcardover")
 		{
@@ -29,32 +39,39 @@
 	yield;
 }
 
-//Use NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Cutin"]);
+
+
+//Use NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Cutin", "SPELLCARDNAME", "PATH TO CUTIN IMAGE", "PATH TO SPELLSIGN IMAGE", "SPRITESCALE"]);
 //In the @Finilize of the Script which runs before the one, that uses the Cutin (if the Cutin should happen right at the Scipt Start)
 
 let Spellcardactive=false;
 
 let alphashaderpath = GetCurrentScriptDirectory() ~ "./cutin/SamplePS02_HLSL.txt";
 
-task cutintest(text)
+let fontcolortop = [255,128,0];
+let fontcolorbottom = [0,0,255];
+
+task cutintest(text, path, spellsignpath, spritescale)
 {
 	Spellcardactive=true;
 	//Cutin Sprite
-	let path=CSD ~ "./Cutin/jiki_052.png";
-	let pathsilhouette=CSD ~ "./Cutin/jiki_052s.png";
+	//path=CSD ~ "./cutin/cutin2.png";
+	let pathsilhouette = path;
 	LoadTexture(path);
 	LoadTexture(pathsilhouette);
 	let x=GetTextureWidth(path);
 	let y=GetTextureHeight(path);
-	let SpriteRGB=[255,255,0];
-	let Spritescale=0.75;
+	let SpriteRGB=[255,128,0];
+	let Spritescale=ator(spritescale);
 	
 	
 	
 	//Spellcard Text
 	//let text="Yukari Sign, Super Spin Border of Death";
-	let FontColor1=[255,90,0];
-	let FontColor2=[255,180,120];
+	//let FontColor1=[255,128,0];
+	//let FontColor2=[0,0,255];
+	let FontColor1 = fontcolortop;
+	let FontColor2 = fontcolorbottom;
 	let FontBorderColor=[255,255,255];
 	
 	
@@ -62,10 +79,13 @@ task cutintest(text)
 	//Spellcard Sign	(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
 	let Xpartcount=50;
 	let Ypartcount=20;
-	let signx2=300;
-	let signy2=100;
-	let signxpos=50;
-	let signypos=150;
+	//let signx2=400;
+	//let signy2=200;
+	LoadTexture(spellsignpath);
+	let signx2 = 384;
+	let signy2 = GetTextureHeight(spellsignpath);
+	let signxpos=0;
+	let signypos=120;
 	
 	
 	
@@ -74,7 +94,7 @@ task cutintest(text)
 	Createcut;
 	//CreateStrich(RGB); //Additional background sprite 
 	CreateSprite(path,pathsilhouette,x,y,Spritescale,SpriteRGB);
-	CreateSpellSign(Xpartcount, Ypartcount , signx2, signy2, signxpos, signypos); //(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
+	CreateSpellSign(Xpartcount, Ypartcount , signx2, signy2, signxpos, signypos, spellsignpath); //(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
 	CreateSpellText(text,FontColor1,FontColor2,FontBorderColor);
 }
 
@@ -244,12 +264,12 @@ task CreateSpellText(text,RGBTop,RGBBottom,RGBBorder)
 }
 
 
-let spelltext2= GetCurrentScriptDirectory ~ "./Sprite/Spelltext2.png";
+let spelltext2= GetCurrentScriptDirectory ~ "./Sprite/Spelltext.png";
 
-task CreateSpellSign(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
+task CreateSpellSign(Xpartcount, Ypartcount, x2, y2, xpos, ypos, path)
 {
 	SE_PlayCutin(CSD ~ "./Cutin/cardcall.wav",100);
-	let path= CSD ~ "./Cutin/Spelltext2.png";
+	//let path= CSD ~ "./Cutin/Spelltext.png";
 	let Ymax=y2;
 	let	Xmax=x2;
 	let Xpart=Xmax/Xpartcount;

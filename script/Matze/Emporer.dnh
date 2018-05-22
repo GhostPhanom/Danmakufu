@@ -9,38 +9,103 @@
 
 //let objbgmdragon = CreateBGM(bgmdragon,100);
 
-
-function CreateBGM(bgm,v)
+// NotifyEvent(GetCommonData("Main Plural Script ID" , 0), EV_USER, ["PluralBG"]);
+@Event
 {
-    let obj = ObjSound_Create;
-    ObjSound_SetLoopEnable(obj,true);
-    ObjSound_SetVolumeRate(obj,v);
-    ObjSound_SetSoundDivision(obj,SOUND_BGM);
-    ObjSound_Load(obj,bgm);
-    return obj;
+	alternative(GetEventType)   
+	case(EV_USER) 
+	{
+		let casefile = GetEventArgument(0);
+		if(casefile[0] == "PluralBG")
+		{
+			Background;
+		}
+		if(casefile[0] == "Music_Alice")
+		{
+			ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 70);
+		}
+	}
 }
 
-
-// NotifyEvent(MyStageID, EV_USER, 0);
-@Event{
-alternative(GetEventType)   
-case(EV_USER) 
+@Initialize
 {
-    let value=GetEventArgument(0);
-    //if (value[0]==0){NotifyEvent(MyStageID, EV_USER, [0,objBoss]);} //when objBoss is asked
-}
-}
-
-@Initialize{
+    SetCommonData("Main Plural Script ID", GetOwnScriptID());
+    SetCommonData("Player ID", GetPlayerScriptID());
     TPlural;
     //LoadSE;
-    SetCommonData("Main Stage Script ID", GetOwnScriptID());
-    SetCommonData("Player ID", GetPlayerScriptID());
 }
-@MainLoop{
+@MainLoop
+{
     yield;
 }
 
+let script = LoadScript(CSD ~ "./cutincontrol.dnh");
+StartScript(script);
+
+task Background
+{
+	let path = CSD ~ "./Background/magiekreisalice.png";
+	LoadTexture(path);
+	
+	while(true)
+	{
+		CreateRing(1, [255, 255, 255]);
+		wait(12);
+		CreateRing(1, [255, 255, 255]);
+		wait(12);
+		CreateRing(1, [0, 0, 255]);
+		wait(80);
+		CreateRing(-1, [255, 255, 255]);
+		wait(12);
+		CreateRing(-1, [255, 255, 255]);
+		wait(12);
+		CreateRing(-1, [0, 0, 255]);
+		wait(80);
+	}
+	
+	task CreateRing(dir, color)
+	{
+		let startscale = 0.3;
+		let scalegrowth = 0.05;
+		let spinspeed = 1.5 * dir;
+		let angle = 0;
+		let alpha = 0;
+		
+		
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, -1, GetTextureWidth(path) - 1, GetTextureHeight(path));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 25);
+		ObjRender_SetPosition(obj, GetCenterX, GetCenterY, 0);
+		ObjRender_SetColor(obj, color[0], color[1], color[2]);
+		
+		loop(60)
+		{
+			alpha += 255 / 20;
+			ObjRender_SetAlpha(obj, alpha);
+			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
+			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+			ObjRender_SetAngleZ(obj, angle);
+			angle += spinspeed;
+			startscale += scalegrowth;
+			yield;
+		}
+		alpha = 255;
+		loop(20)
+		{
+			alpha -= 255 / 20;
+			ObjRender_SetAlpha(obj, alpha);
+			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
+			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+			ObjRender_SetAngleZ(obj, angle);
+			angle += spinspeed;
+			startscale += scalegrowth;
+			yield;
+		}
+		Obj_Delete(obj)
+	}
+}
 
 task TPlural{
     let dir = GetCurrentScriptDirectory();
@@ -52,5 +117,6 @@ task TPlural{
     while(!Obj_IsDeleted(obj)){
         yield;
     }
+	wait(240);
     CloseScript(GetOwnScriptID());
 }

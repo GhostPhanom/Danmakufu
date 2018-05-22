@@ -1,0 +1,19 @@
+#TouhouDanmakufu[Stage]
+#ScriptVersion[3]
+#Title["Stage1"]
+#Text["Stage1"]
+
+@Event
+{
+
+}
+
+@Initialize
+{
+
+}
+
+@MainLoop
+{
+    yield;
+}

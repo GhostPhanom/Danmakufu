@@ -104,7 +104,129 @@ function ReflectionAngle (angle, mirror){//Calculates the reflection angle based
 ///////////////////////////////////
 ///RENDER FUNCTIONS////////////////
 ///////////////////////////////////
+function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeilen, spalten, xscale, yscale, xoffset, yoffset)//Idle Animation
+{//Obj origin, texture, animationspeed, width of one frame, height of one frame, how many rows has the spritesheet, how many Spalten has the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	Animation;
+	
+	return obj;
+	
+	task Animation
+	{
+		let counter = 0;
+		let zeilencounter = 0;
+		let spaltencounter = 0;
+		
+		while(!Obj_IsDeleted(objo))
+		{
+			ObjRender_SetPosition(obj, ObjRender_GetX(objo) + xoffset, ObjRender_GetY(objo) + yoffset, 0);
+			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
+			
+			counter++;
+			if(counter > speed)
+			{
+				spaltencounter++;
+				counter = 0;
+			}
+			if(spaltencounter > spalten)
+			{
+				zeilencounter++;
+				spaltencounter = 0;
+			}
+			if(zeilencounter > zeilen)
+			{
+				zeilencounter = 0;
+			}
+			yield;
+		}
+	}
+}
 
+function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartwidth, zeilen, spalten, animspalten, xscale, yscale, xoffset, yoffset)//Idle/Move Animation; Nur eine Zeile für eine Animationsart
+{//Obj origin, texture, Version: (0 = counter starts at 0 and ends at 0; 1 = 0 but without directionlogic; 2 = counter starts at max and ends at 0; 3 = 2 but without directionlogic), animationspeed, width of one frame, height of one frame,
+ //how many Zeilen has the spritesheet, how many Spalten has the idle part of the spritesheet, how many Spalten has the animation part of the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	Animation;
+	
+	return obj;
+	
+	task Animation
+	{
+		let counter = 0;
+		let zeilencounter = 0;
+		let spaltencounter = 0;
+		
+		let movecounter = 0;
+		let movemaxcounter = animspalten * speed;
+		
+		let posxlastframe = ObjMove_GetX(objo);
+		let posxcurrentframe = ObjMove_GetX(objo);
+		let dir = 0;//0 = rechts; 1 = links
+		
+		while(!Obj_IsDeleted(objo))
+		{
+			ObjRender_SetPosition(obj, ObjRender_GetX(objo) + xoffset, ObjRender_GetY(objo) + yoffset, 0);
+			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
+			
+			
+			posxlastframe = posxcurrentframe;
+			posxcurrentframe = ObjMove_GetX(objo);
+			if(posxcurrentframe < posxlastframe){dir = 1;}//links
+			else{dir = 0;}//rechts
+			
+			if(ObjMove_GetSpeed(objo) != 0)
+			{
+				if(movecounter < movemaxcounter){movecounter++;}
+				if(version >= 2){movecounter = movemaxcounter;}
+			}
+			else if(movecounter > 0)
+			{
+				movecounter--;
+			}
+			
+			if(movecounter > 0)
+			{
+				counter = 0;
+				if(version == 0 || version == 2)//2 different rows of sprites for different directions
+				{
+					zeilencounter = 1 + dir;
+				}
+				else//sprite mirror
+				{
+					ObjRender_SetAngleY(obj, dir * 180);//in der Annahme, dass die Bewegungsanimation auf eine Bewegung nach rechts angepasst ist
+					zeilencounter = 1;
+				}
+				spaltencounter = truncate((movecounter + 0.0001) / speed);//0.0001 Um Floating Point Errors zu vermeiden
+			}
+			else
+			{
+				counter++;
+				zeilencounter = 0;
+				ObjRender_SetAngleY(obj, 0);
+				if(counter > speed)
+				{
+					spaltencounter++;
+					counter = 0;
+				}
+				if(spaltencounter > spalten)
+				{
+					//zeilencounter++;
+					spaltencounter = 0;
+				}
+			}
+			yield;
+		}
+	}
+}
 ///////////////////////////////////
 ///BOSS FUNCTIONS//////////////////
 ///////////////////////////////////
@@ -215,6 +337,18 @@ task FadeDeleteDelay(obj,n,n2) //n wait before starting to fade / n2 actual fadi
 	Obj_Delete(obj);
 }
 
+task FadeDelete(obj, n, alpha) //n fading time; alpha startalpha
+{
+	let alpha1=alpha/n;
+	loop(n)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		alpha-=alpha1;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
 task DeleteAllBullets(n)
 {
 	loop(n)
@@ -280,6 +414,12 @@ function ToRadiant(input) //Bogenmaß
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
 ///////////////////////////////////
+function CreateEmptyFloatArray
+{
+	let array = [1];
+	return array[0..0]; //same as array=slice(array, 0, 0)
+}
+
 function CompareFloats (input1, input2) 
 {
 	let EPSILON = 0.0001;

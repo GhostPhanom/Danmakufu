@@ -9,23 +9,50 @@ let DialogBoxActorHeight = 26;
 let DialogBoxActorStart = DialogBoxFreeWidthSpace + 30;
 let DialogBoxActorWidth = 220;
 
-let DialogSystemActive = false;
+let DialogSystemActive = false;//Check Variable for Main Task
 
 let DialogAdvanceButton = VK_SHOT;
 let DialogSkipButton = VK_BOMB;
 let DialogSkipState = false;
 
+let DialogObjArray = CreateEmptyFloatArray;
 
 /*
-ObjDialog_MoveY(slot, targety, d) //M?glichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
+dwait(n)
+ObjDialog_Activate //First Function to call
+ObjDialog_CreateTextBox(n) //Second Function to call
+ObjDialog_SetDialog(actor, text)
+ObjDialog_FadeinTexture(slot, texture, dir, alpha, scaleX, scaleY, offsetX, offsetY, duration) //dir is 0 or 1
+
+ObjDialog_SetTexture(slot, texture)
+ObjDialog_MoveTexture(slot1, slot2, duration)
+ObjDialog_MoveY(slot, targety, duration) //M?glichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 ObjDialog_SetPriority(slot, prio)
 ObjDialog_SetAlpha(slot, alpha)
-ObjDialog_ChangeDirection(slot, d)
-ObjDialog_SetTexture(slot, texture)
-ObjDialog_FadeinTexture(slot, texture, dir, a, scaleX, scaleY, offsetX, offsetY, d)
-ObjDialog_FadeoutTexture(slot, d)
-ObjDialog_MoveTexture(slot1, slot2, d)
+ObjDialog_ChangeDirection(slot, duration)
+ObjDialog_FadeoutTexture(slot, duration)
+
+ObjDialog_Deactivate(n) //Last Function to call
 */
+
+function ObjDialog_Deactivate(n)
+{
+	ascent(i in 0..length(DialogObjArray))
+	{
+		if(Obj_GetValueD(DialogObjArray[i], "Alpha", 255) != 0)
+		{
+			FadeDelete(DialogObjArray[i], n, Obj_GetValueD(DialogObjArray[i], "Alpha", 255));
+		}
+		else
+		{
+			Obj_Delete(DialogObjArray[i]);
+		}
+	}
+	wait(n);
+	DialogObjArray = CreateEmptyFloatArray;
+	DialogSystemActive = false;
+	DialogSkipState = false; //reset
+}
 
 function dwait(n)
 {	
@@ -40,6 +67,7 @@ function dwait(n)
 task ObjDialog_ActiveSkipControl
 {
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D); //Nur für Funktionsabschaltung wenn das Objekt gelöscht wurde
+	DialogObjArray = DialogObjArray ~ [obj];
 	
 	let initialwait = 60;
 	let skipinterval = 10;
@@ -81,6 +109,8 @@ function ObjDialog_Activate
 	
 	ObjDialog_ActiveSkipControl;
 	
+	DialogSystemActive = true;
+	
 	ObjDialog_CreateTextBox(30);
 	ascent(i in 1.. slotanzahl + 1)
 	{
@@ -101,6 +131,7 @@ function ObjDialog_SetDialog(actor, text)
 	if(GetCommonData("DialogBoxActorGraphicID", 99999) == 99999)
 	{
 		obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		DialogObjArray = DialogObjArray ~ [obj];
 		ObjPrim_SetTexture(obj, path);
 		Obj_SetRenderPriorityI(obj, DialogBoxPriority);
 		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
@@ -115,6 +146,7 @@ function ObjDialog_SetDialog(actor, text)
 	if(GetCommonData("DialogBoxActorTextID", 99999) == 99999)
 	{
 		objt = ObjText_Create();
+		DialogObjArray = DialogObjArray ~ [objt];
 		ObjText_SetFontType(objt, "Riffic Free Medium");
 		ObjText_SetFontSize(objt, 18);
 		ObjText_SetFontBorderType(objt, BORDER_FULL);
@@ -146,6 +178,7 @@ function ObjDialog_SetDialog(actor, text)
 	if(GetCommonData("DialogBoxTextID", 99999) == 99999)
 	{
 		objt = ObjText_Create();
+		DialogObjArray = DialogObjArray ~ [objt];
 		ObjText_SetFontType(objt, "Aller");
 		ObjText_SetFontBorderType(objt, BORDER_FULL);
 		ObjText_SetFontBorderWidth(objt, 2);
@@ -232,6 +265,7 @@ task ObjDialog_CreateTextBox(n)//n = fadein time
 	let path = GetCurrentScriptDirectory ~ "./graphics/textbox.png";
 	
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	DialogObjArray = DialogObjArray ~ [obj];
 	ObjPrim_SetTexture(obj, path);
 	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
 	ObjSprite2D_SetDestRect(obj, 0 + DialogBoxFreeWidthSpace, GetScreenHeight - DialogBoxHeight, GetScreenWidth - DialogBoxFreeWidthSpace, GetScreenHeight);
@@ -242,13 +276,15 @@ task ObjDialog_CreateTextBox(n)//n = fadein time
 	ascent(i in 1..n + 1)
 	{
 		yield;
-		ObjRender_SetAlpha(obj, (255 / n) * i);
+		ObjRender_SetAlpha(obj, (200 / n) * i);
 	}
+	Obj_SetValue(obj, "Alpha", 200);
 }
 
 function ObjDialog_CreateSlot(number)
 {
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	DialogObjArray = DialogObjArray ~ [obj];
 	ObjPrim_SetTexture(obj, "");
 	ObjSprite2D_SetDestCenter(obj);
 	ObjRender_SetAlpha(obj, 0);
@@ -267,6 +303,8 @@ function ObjDialog_CreateSlot(number)
 	Obj_SetValue(obj, "Priority", DialogPriority);
 	Obj_SetValue(obj, "PriorityDiff", 0);
 	RenderSlot(obj);
+	
+	//Main Rendering of each Slot
 	
 	task RenderSlot(obj)
 	{
@@ -292,6 +330,9 @@ function ObjDialog_CreateSlot(number)
 
 task ObjDialog_MoveY(slot, targety, d) //M?glichen OffsetY bei der Spriteerstellung UNBEDINGT BEACHTEN
 {
+	yield;
+	d -= 1;
+	
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
 	
@@ -322,6 +363,9 @@ function ObjDialog_SetPriority(slot, prio) //Default is 0
 
 task ObjDialog_ChangeDirection(slot, d)
 {
+	yield;
+	d -= 1;
+	
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
 	
@@ -371,6 +415,9 @@ function ObjDialog_SetTexture(slot, texture)//dir direction Gedacht f?r Gesichts
 
 task ObjDialog_FadeinTexture(slot, texture, dir, a, scaleX, scaleY, offsetX, offsetY, d) //dir direction, d duration, a alpha
 {
+	yield;
+	d -= 1;
+	
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
 	LoadTexture(texture);
@@ -410,6 +457,9 @@ task ObjDialog_FadeinTexture(slot, texture, dir, a, scaleX, scaleY, offsetX, off
 
 task ObjDialog_FadeoutTexture(slot, d) //dir direction, d duration
 {
+	yield;
+	d -= 1;
+	
 	let obj = GetCommonData("Slot " ~ IntToString(slot) ~ "_Obj", 99999);
 	if(obj == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot));}
 	
@@ -437,6 +487,9 @@ task ObjDialog_FadeoutTexture(slot, d) //dir direction, d duration
 
 task ObjDialog_MoveTexture(slot1, slot2, d)
 {
+	yield;
+	d -= 1;
+	
 	let obj1 = GetCommonData("Slot " ~ IntToString(slot1) ~ "_Obj", 99999);
 	if(obj1 == 99999){RaiseError("Slot not set! Slot Nr. " ~ IntToString(slot1));}
 	let obj2 = GetCommonData("Slot " ~ IntToString(slot2) ~ "_Obj", 99999);
