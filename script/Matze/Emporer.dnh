@@ -54,13 +54,13 @@ task Background
 		CreateRing(1, [255, 255, 255]);
 		wait(12);
 		CreateRing(1, [0, 0, 255]);
-		wait(80);
+		wait(60);
 		CreateRing(-1, [255, 255, 255]);
 		wait(12);
 		CreateRing(-1, [255, 255, 255]);
 		wait(12);
 		CreateRing(-1, [0, 0, 255]);
-		wait(80);
+		wait(60);
 	}
 	
 	task CreateRing(dir, color)
