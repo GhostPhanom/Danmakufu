@@ -11,6 +11,8 @@ let DialogBoxActorWidth = 220;
 
 let DialogSystemActive = false;//Check Variable for Main Task
 
+let DialogWritingActive = false;//Check Variable if currently a Text isn't completly written
+
 let DialogAdvanceButton = VK_SHOT;
 let DialogSkipButton = VK_BOMB;
 let DialogSkipState = false;
@@ -215,12 +217,27 @@ function ObjDialog_DisplayText(objText, Text)
 	let soundcounter = 0;
 	let endlength = length(Text);
 	
+	let extraOffsetX = 0;
+	let extraOffsetY = 0;
+	let extraSize = 6;
+	let extraColor = [255, 255, 255];
+	
+	let DialogWritingActive = true;
+	
 	while(lettercounter != endlength)
 	{
 		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
 		{
 			ObjText_SetText(objText, Text);
+			ascent(i in lettercounter..endlegth) //To display ExtraText, even when Text is skipped
+			{
+				if(Text[i] == '{')
+				{
+					ManageExtraTextString;
+				}
+			}
 			yield;
+			DialogWritingActive = false;
 			return;
 		}
 		
@@ -230,6 +247,10 @@ function ObjDialog_DisplayText(objText, Text)
 			displayText = displayText ~ ['0']; 
 			displayText[lettercounter] = Text[lettercounter];
 			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+		}
+		else if(Text[lettercounter] == '{')//Wenn Extra eingeschobener Text kommt
+		{
+			ManageExtraTextString;
 		}
 		else if(Text[lettercounter] == '[')//Wenn Textformatierung kommt
 		{
@@ -255,6 +276,46 @@ function ObjDialog_DisplayText(objText, Text)
 		ObjText_SetText(objText, displayText);
 		lettercounter++;
 		wait(displayspeed);
+	}
+	
+	function ManageExtraTextString
+	{
+		let extraText = slice(Text, lettercounter, SearchNextChar(Text, lettercounter, '}') + 1);//Obtains our ExtraText
+		loop(length(extraText)){erase(Text, lettercounter);}//Removes the Text from the Original String
+		endlength -= length(extraText); //endlegth muss verkleinert werden, da der Originalstring verkürzt wurde 
+		erase(extraText, 0);// '{' und '}' werden nicht benötigt
+		erase(extraText, length(extraText) - 1);
+		
+		if(extraText[0] == '*')//ExtraText Einstellungen werden eingerichtet
+		{
+			extraText = erase(extraText, 0);//Removes the '*'
+			//OffX/OffY/Size/R/G/B
+			extraText = SplitString(extraText, "/");
+			extraOffsetX = ator(extraText[0]);
+			extraOffsetY = ator(extraText[1]);
+			extraSize = ator(extraText[2]);
+			extraColor = [ator(extraText[3]), ator(extraText[4]), ator(extraText[5])];
+		}
+		else
+		{
+			let extraTextObj = ObjText_Create;
+			ObjText_SetFontType(extraTextObj, "Aller");
+			ObjText_SetFontSize(extraTextObj, extraSize);
+			ObjText_SetFontColorTop(extraTextObj, extraColor[0], extraColor[1], extraColor[2]);
+			ObjText_SetFontColorBottom(extraTextObj, extraColor[0], extraColor[1], extraColor[2]);
+			ObjRender_SetPosition(extraTextObj, ObjRender_GetX(objText) + extraOffsetX, ObjRender_GetY(objText) + extraOffsetY, 0);
+			ManageExtraText(extraTextObj, extraText);
+		}
+		
+		lettercounter--; //To compansate the lettercounter++ at the end because there is no text processed
+	}
+	
+	task ManageExtraText(obj, Text)
+	{
+		DisplayText(obj, Text);
+		while(!Obj_IsDeleted(obj) && DialogWritingActive = true){yield;}
+		while(!Obj_IsDeleted(obj) && neg(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)){yield;}
+		Obj_Delete(obj);
 	}
 }
 

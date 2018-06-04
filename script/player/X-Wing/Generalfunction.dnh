@@ -69,6 +69,15 @@ task DeleteAllBullets(n)
 	}
 }
 
+function CreateTestCounter(x, y)//Creates a simple Textobj to use it as a debug field
+{
+	let obj = ObjText_Create;
+	ObjText_SetFontSize(obj, 20);
+	ObjRender_SetPosition(obj, x, y, 0);
+	Obj_SetRenderPriorityI(obj, 79);
+	return obj;
+}
+
 function MyStageID { return GetCommonData("Main Stage Script ID", 0); }
 
 let CSD=GetCurrentScriptDirectory();

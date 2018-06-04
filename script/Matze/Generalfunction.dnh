@@ -269,6 +269,7 @@ function WaitForZeroHitboxEnemy
 ///////////////////////////////////
 ///TEXT FUNCTIONS//////////////////
 ///////////////////////////////////
+
 task DisplayText(objText, Text)
 {
 	let displayspeed = 1;// higher number = slower
@@ -279,6 +280,8 @@ task DisplayText(objText, Text)
 	
 	while(lettercounter != endlength)
 	{
+		if(!Obj_IsDeleted(objText)){return;}
+		
 		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
 		{
 			displayText = displayText ~ ['0']; 
@@ -306,6 +309,16 @@ task DisplayText(objText, Text)
 		lettercounter++;
 		wait(displayspeed);
 	}
+}
+
+function SearchNextChar(Text, startindex, Char)//returns the index of the searched Char
+{
+	ascent(i in startindex..length(Text))
+	{
+		if(Text[i] == Char){return i;}
+	}
+	
+	RaiseError("Char not found inside the String, starting from the given Index");
 }
 
 ///////////////////////////////////
@@ -400,12 +413,12 @@ function sqrt (input)
 	return input ^ 0.5;
 }
 
-function ToDegree(input)//Winkelmaß
+function ToDegree(input)//Winkelmas
 {
 	return ((360 / (2 * pi)) * input);
 }
 
-function ToRadiant(input) //Bogenmaß
+function ToRadiant(input) //Bogenmas
 {
 	return ((2 * pi) / 360 * input);
 }
