@@ -229,7 +229,7 @@ function ObjDialog_DisplayText(objText, Text)
 		if(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)
 		{
 			ObjText_SetText(objText, Text);
-			ascent(i in lettercounter..endlegth) //To display ExtraText, even when Text is skipped
+			ascent(i in lettercounter..endlength) //To display ExtraText, even when Text is skipped
 			{
 				if(Text[i] == '{')
 				{
@@ -313,7 +313,7 @@ function ObjDialog_DisplayText(objText, Text)
 	task ManageExtraText(obj, Text)
 	{
 		DisplayText(obj, Text);
-		while(!Obj_IsDeleted(obj) && DialogWritingActive = true){yield;}
+		while(!Obj_IsDeleted(obj) && DialogWritingActive == true){yield;}
 		while(!Obj_IsDeleted(obj) && neg(GetVirtualKeyState(DialogAdvanceButton) == KEY_PUSH || DialogSkipState == true)){yield;}
 		Obj_Delete(obj);
 	}

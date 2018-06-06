@@ -42,7 +42,23 @@ function ObjMove_SetDestAtRandom(obj, x1, y1, x2, y2, frame)
 	ObjMove_SetDestAtFrame(obj, rand(x1, x2), rand(y1, y2), frame);
 }
 
-
+task ObjMove_SetDestAtFrame2(obj, x, y, n)
+{
+	let originx = ObjMove_GetX(obj);
+	let originy = ObjMove_GetY(obj);
+	
+	let angle = GetPointAngle(originx, originy, x, y) + 180;
+	let distance = GetDistance(originx, originy, x, y);
+	let dis = 0;
+	
+	loop(n)
+	{
+		dis += distance / n;
+		ObjMove_SetPosition(obj, originx + dis * cos(angle), originy + dis * sin(angle));
+		yield;
+	}
+	
+}
 ///////////////////////////////////
 ///POSITION/ANGLE FUNCTIONS////////
 ///////////////////////////////////
