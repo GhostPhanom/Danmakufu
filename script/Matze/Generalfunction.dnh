@@ -127,6 +127,10 @@ function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeil
 	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
 	ObjSprite2D_SetDestCenter(obj);
 	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	
+	zeilen--;//Fix for logicerror
+	spalten--;
+	
 	Animation;
 	
 	return obj;
@@ -159,30 +163,43 @@ function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeil
 			}
 			yield;
 		}
+		Obj_Delete(obj);
 	}
 }
 
-function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartwidth, zeilen, spalten, animspalten, xscale, yscale, xoffset, yoffset)//Idle/Move Animation; Nur eine Zeile für eine Animationsart
-{//Obj origin, texture, Version: (0 = counter starts at 0 and ends at 0; 1 = 0 but without directionlogic; 2 = counter starts at max and ends at 0; 3 = 2 but without directionlogic), animationspeed, width of one frame, height of one frame,
- //how many Zeilen has the spritesheet, how many Spalten has the idle part of the spritesheet, how many Spalten has the animation part of the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartwidth, idlespalten, animspalten, xscale, yscale, xoffset, yoffset)//Idle/Move Animation; Nur eine Zeile für eine Animationsart
+{
+//Obj origin, texture, Version: 
+//(0 = counter starts at 0 and ends at 0; 1 = 0 but without directionlogic; 2 = 0 but last two frames repeating; 3 = 0 but last two frames repeating and w/o directionlogic;
+//4 = counter starts at max and ends at 0; 5 = 4 but without directionlogic;),
+//animationspeed, width of one frame, height of one frame, how many Spalten has the idle part of the spritesheet, how many Spalten has the animation part of the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
 
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjPrim_SetTexture(obj, path);
 	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
 	ObjSprite2D_SetDestCenter(obj);
 	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	
+	idlespalten--;//Fix for logicerror
+	animspalten--;
+	
 	Animation;
 	
 	return obj;
 	
 	task Animation
 	{
+		let counter1 = CreateTestCounter(50, 50);
+		let counter2 = CreateTestCounter(50, 70);
+		let counter3 = CreateTestCounter(50, 90);
+		let counter4 = CreateTestCounter(50, 110);
+		
 		let counter = 0;
 		let zeilencounter = 0;
 		let spaltencounter = 0;
 		
 		let movecounter = 0;
-		let movemaxcounter = animspalten * speed;
+		let movemaxcounter = (animspalten + 1) * speed - 1;
 		
 		let posxlastframe = ObjMove_GetX(objo);
 		let posxcurrentframe = ObjMove_GetX(objo);
@@ -197,22 +214,31 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 			posxlastframe = posxcurrentframe;
 			posxcurrentframe = ObjMove_GetX(objo);
 			if(posxcurrentframe < posxlastframe){dir = 1;}//links
-			else{dir = 0;}//rechts
+			else if(posxcurrentframe > posxlastframe){dir = 0;}//rechts
 			
 			if(ObjMove_GetSpeed(objo) != 0)
 			{
 				if(movecounter < movemaxcounter){movecounter++;}
-				if(version >= 2){movecounter = movemaxcounter;}
+				else if(version == 3){movecounter++;}
+				if(version >= 4)
+				{
+					movecounter = movemaxcounter;
+				}
 			}
 			else if(movecounter > 0)
 			{
 				movecounter--;
 			}
+			else
+			{
+				ObjRender_SetAngleY(obj, 0);
+			}
+			
 			
 			if(movecounter > 0)
 			{
 				counter = 0;
-				if(version == 0 || version == 2)//2 different rows of sprites for different directions
+				if(version == 0 || version == 2 || version == 4 )//2 different rows of sprites for different directions
 				{
 					zeilencounter = 1 + dir;
 				}
@@ -221,26 +247,38 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 					ObjRender_SetAngleY(obj, dir * 180);//in der Annahme, dass die Bewegungsanimation auf eine Bewegung nach rechts angepasst ist
 					zeilencounter = 1;
 				}
+				
 				spaltencounter = truncate((movecounter + 0.0001) / speed);//0.0001 Um Floating Point Errors zu vermeiden
+				if(version == 3)
+				{
+					if(movecounter >= movemaxcounter)
+					{
+						movecounter = (animspalten - 1) * speed;
+					}
+				}
 			}
 			else
 			{
 				counter++;
 				zeilencounter = 0;
-				ObjRender_SetAngleY(obj, 0);
 				if(counter > speed)
 				{
 					spaltencounter++;
 					counter = 0;
 				}
-				if(spaltencounter > spalten)
+				if(spaltencounter > idlespalten)
 				{
 					//zeilencounter++;
 					spaltencounter = 0;
 				}
 			}
+			ObjText_SetText(counter1, "dir: " ~ ToString(dir));
+			ObjText_SetText(counter2, "movecounter: " ~ ToString(movecounter));
+			ObjText_SetText(counter3, "zeilencounter: " ~ ToString(zeilencounter));
+			ObjText_SetText(counter4, "spaltencounter: " ~ ToString(spaltencounter));
 			yield;
 		}
+		Obj_Delete(obj);
 	}
 }
 ///////////////////////////////////
@@ -266,6 +304,32 @@ task BossZeroDelete(obj, objb) //Needs ObjBossID
 		yield;
 	}
 	Obj_Delete(obj);
+}
+
+///////////////////////////////////
+///ENEMY FUNCTIONS/////////////////
+///////////////////////////////////
+task ObjEnemy_ZeroLifeDelete(obj)
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
+		{
+			Obj_Delete(obj);
+			return;
+		}
+		yield;
+	}
+}
+
+task ObjEnemy_CreateHitbox(obj, hurtbox, hitbox)
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		ObjEnemy_SetIntersectionCircleToPlayer(obj, ObjMove_GetX(obj), ObjMove_GetY(obj), hurtbox);
+		ObjEnemy_SetIntersectionCircleToShot(obj, ObjMove_GetX(obj), ObjMove_GetY(obj), hitbox);
+		yield;
+	}
 }
 
 ///////////////////////////////////
