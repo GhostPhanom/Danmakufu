@@ -590,6 +590,32 @@ task PlaytestInvincibility{//Makes the Player Incincible while holding SPACE
 	yield;}	
 }
 
+task CameraTestValues
+{
+	let counter1 = CreateTestCounter(50, 50);
+	let counter2 = CreateTestCounter(50, 70);
+	let counter3 = CreateTestCounter(50, 90);
+	let counter4 = CreateTestCounter(50, 110);
+	let counter5 = CreateTestCounter(50, 130);
+	let counter6 = CreateTestCounter(50, 150);
+	let counter7 = CreateTestCounter(50, 170);
+	let counter8 = CreateTestCounter(50, 190);
+	let counter9 = CreateTestCounter(50, 210);
+	
+	while(true)
+	{
+		ObjText_SetText(counter1,"Azimuth: " ~ ToString(GetCameraAzimuthAngle));
+		ObjText_SetText(counter2,"Elevation: "  ~ ToString(GetCameraElevationAngle));
+		ObjText_SetText(counter3,"Radius: "  ~ ToString(GetCameraRadius));
+		ObjText_SetText(counter4,"FocusX: "  ~ ToString(GetCameraFocusX));
+		ObjText_SetText(counter5,"FocusY: "  ~ ToString(GetCameraFocusY));
+		ObjText_SetText(counter6,"FocusZ: "  ~ ToString(GetCameraFocusZ));
+		ObjText_SetText(counter7,"Yaw: "  ~ ToString(GetCameraYaw));
+		ObjText_SetText(counter8,"Pitch: "  ~ ToString(GetCameraPitch));
+		ObjText_SetText(counter9,"Roll: "  ~ ToString(GetCameraRoll));
+		yield;
+	}
+}
 ///////////////////////////////////
 ///DEFAULT VARIABLES///////////////
 ///////////////////////////////////
