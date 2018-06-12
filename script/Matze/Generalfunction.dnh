@@ -281,6 +281,15 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 		Obj_Delete(obj);
 	}
 }
+
+task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		ObjRender_SetAngleZ(obj, ObjRender_GetAngleZ(obj) + speed * dir);
+		yield;
+	}
+}
 ///////////////////////////////////
 ///BOSS FUNCTIONS//////////////////
 ///////////////////////////////////
@@ -406,7 +415,7 @@ function SearchNextChar(Text, startindex, Char)//returns the index of the search
 ///////////////////////////////////
 task Autodelete(obj)// For Objects without or disabled autodelete
 {
-	while(ObjRender_GetX(obj)>=-64&&ObjRender_GetX(obj)<=GetStgFrameWidth()+64&&ObjRender_GetY(obj)>=-64&&ObjRender_GetY(obj)<=GetStgFrameHeight()+64){yield;}
+	while(ObjRender_GetX(obj) >= -64 && ObjRender_GetX(obj) <= GetStgFrameWidth() + 64 && ObjRender_GetY(obj) >= -64 && ObjRender_GetY(obj) <=GetStgFrameHeight() + 64){yield;}
 	Obj_Delete(obj);
 }
 
