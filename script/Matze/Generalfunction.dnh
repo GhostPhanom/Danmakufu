@@ -83,6 +83,11 @@ function GetDistance(x1,y1,x2,y2) //Distance between 2 Points
      return(((x2-x1)^2+(y2-y1)^2)^(1/2));
 }
 
+function GetObjectpointDistance(obj, x2, y2) //Distance between 2 Points 
+{
+     return(((x2-ObjRender_GetX(obj))^2+(y2-ObjRender_GetY(obj))^2)^(1/2));
+}
+
 function IsInStageFrame(obj, xcorrect, ycorrect)
 {
 	if(ObjRender_GetX(obj) >= 0 - xcorrect && ObjRender_GetX(obj) <= GetStgFrameWidth + xcorrect && ObjRender_GetY(obj) >= 0 - ycorrect && ObjRender_GetY(obj) <= GetStgFrameHeight + ycorrect)
@@ -189,10 +194,12 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 	
 	task Animation
 	{
+		/* //DEBUG
 		let counter1 = CreateTestCounter(50, 50);
 		let counter2 = CreateTestCounter(50, 70);
 		let counter3 = CreateTestCounter(50, 90);
 		let counter4 = CreateTestCounter(50, 110);
+		*/
 		
 		let counter = 0;
 		let zeilencounter = 0;
@@ -272,10 +279,11 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 					spaltencounter = 0;
 				}
 			}
-			ObjText_SetText(counter1, "dir: " ~ ToString(dir));
-			ObjText_SetText(counter2, "movecounter: " ~ ToString(movecounter));
-			ObjText_SetText(counter3, "zeilencounter: " ~ ToString(zeilencounter));
-			ObjText_SetText(counter4, "spaltencounter: " ~ ToString(spaltencounter));
+			
+			//ObjText_SetText(counter1, "dir: " ~ ToString(dir));
+			//ObjText_SetText(counter2, "movecounter: " ~ ToString(movecounter));
+			//ObjText_SetText(counter3, "zeilencounter: " ~ ToString(zeilencounter));
+			//ObjText_SetText(counter4, "spaltencounter: " ~ ToString(spaltencounter));
 			yield;
 		}
 		Obj_Delete(obj);
@@ -289,6 +297,13 @@ task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
 		ObjRender_SetAngleZ(obj, ObjRender_GetAngleZ(obj) + speed * dir);
 		yield;
 	}
+}
+
+function ObjSprite2D_SetSourceDestCenter(obj, path)
+{
+	LoadTexture(path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjSprite2D_SetDestCenter(obj);
 }
 ///////////////////////////////////
 ///BOSS FUNCTIONS//////////////////
@@ -340,6 +355,19 @@ task ObjEnemy_CreateHitbox(obj, hurtbox, hitbox)
 		yield;
 	}
 }
+
+///////////////////////////////////
+///SHOT FUNCTIONS//////////////////
+///////////////////////////////////
+task CreateDelayLaser(x, y, angle, lengthl, width, t)
+{
+	let obj = CreateStraightLaserA1(x, y, angle, lengthl, width, 0, 1, t);
+	ObjStLaser_SetSource(obj, false);
+	loop(t - 1)
+	{yield;}
+	Obj_Delete(obj);
+}
+
 
 ///////////////////////////////////
 ///STAGE FUNCTIONS/////////////////
@@ -512,6 +540,30 @@ function ToRadiant(input) //Bogenmas
 	return ((2 * pi) / 360 * input);
 }
 
+///////////////////////////////////
+///PLAYER FUNCTIONS////////////////
+///////////////////////////////////
+function SetPlayerInvincibility(bool)
+{
+	if(bool == true)
+	{
+		SetCommonData("GeneralPlayerInvincibility", true);
+		PlayerInvincibility;
+	}
+	if(bool == false)
+	{
+		SetCommonData("GeneralPlayerInvincibility", false);
+	}
+	
+	task PlayerInvincibility
+	{
+		while(GetCommonData("GeneralPlayerInvincibility", false) == true)
+		{
+			SetPlayerInvincibilityFrame(10);
+			yield;
+		}
+	}
+}
 
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
@@ -576,6 +628,7 @@ task ScreenShakeA1(shaketime, intensity){
 	Set2DCameraFocusY(GetStgFrameHeight/2);
 	yield;
 }
+
 function CreateMyStageID {SetCommonData("Main Stage Script ID",GetOwnScriptID);}
 function MyStageID { return GetCommonData("Main Stage Script ID", 0); }
 ///////////////////////////////////
@@ -628,18 +681,13 @@ task CameraTestValues
 ///////////////////////////////////
 ///DEFAULT VARIABLES///////////////
 ///////////////////////////////////
-let CSD=GetCurrentScriptDirectory();
-let GetCenterX = GetStgFrameWidth/2;
-let GetCenterY = GetStgFrameHeight/2;
-let GetFullCenterX =640/2;
-let GetFullCenterY =480/2;
+let CSD = GetCurrentScriptDirectory;
+let GetCenterX = GetStgFrameWidth / 2;
+let GetCenterY = GetStgFrameHeight / 2;
+let GetFullCenterX = 640 / 2;
+let GetFullCenterY = 480 / 2;
 
 
-
-
-function ObjRender_GetAlpha(obj){ //Unnötig!
-	return Obj_GetValueD(obj, "ALPHA", 256);
-}
 
 ///////////////////////////////////
 //EVERYTHING BELOW IS FOR LEARNING AND IS MAYBE USEFUL
