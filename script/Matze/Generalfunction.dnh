@@ -299,11 +299,43 @@ task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
 	}
 }
 
+task ObjRender_SetDestAtFrame(obj, x, y, frames)
+{	
+	let xpart = (x - ObjRender_GetX(obj)) / frames;
+	let ypart = (y - ObjRender_GetY(obj)) / frames;
+	
+	//let counterx1 = CreateTestCounter(50, 50);
+	//let counterx2 = CreateTestCounter(50, 100);
+	
+	let expectedX = ObjRender_GetX(obj);
+	let expectedY = ObjRender_GetY(obj);
+	
+	loop(frames)
+	{
+		yield;
+		//ObjText_SetText(counterx1, ToString(expectedX));
+		//ObjText_SetText(counterx2, ObjRender_GetX(obj));
+		if(!CompareFloats(expectedX, ObjRender_GetX(obj))){return;}
+		if(!CompareFloats(expectedY, ObjRender_GetY(obj))){return;}
+		expectedX += xpart;
+		expectedY += ypart;
+		ObjRender_SetPosition(obj, expectedX, expectedY, 0);
+	}
+}
+
 function ObjSprite2D_SetSourceDestCenter(obj, path)
 {
 	LoadTexture(path);
+	ObjPrim_SetTexture(obj, path);
 	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
 	ObjSprite2D_SetDestCenter(obj);
+}
+
+function ObjSprite2D_SetSourceDestRect(obj, path, x1, y1, x2, y2)
+{
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
+	ObjSprite2D_SetDestRect(obj, x1, y1, x2, y2);
 }
 ///////////////////////////////////
 ///BOSS FUNCTIONS//////////////////
@@ -576,7 +608,17 @@ function CreateEmptyFloatArray
 
 function CompareFloats (input1, input2) 
 {
-	let EPSILON = 0.0001;
+	let EPSILON = 0.001;
+    let diff = input1 - input2;
+	if(diff < EPSILON && -diff < EPSILON)
+	{
+		return true;
+	}
+    return false;
+}
+
+function CompareFloats2 (input1, input2, EPSILON) 
+{
     let diff = input1 - input2;
 	if(diff < EPSILON && -diff < EPSILON)
 	{
@@ -665,6 +707,9 @@ function CreateTestCounter(x, y)//Creates a simple Textobj to use it as a debug 
 	ObjText_SetFontSize(obj, 20);
 	ObjRender_SetPosition(obj, x, y, 0);
 	Obj_SetRenderPriorityI(obj, 79);
+	ObjText_SetFontBorderType(obj, BORDER_FULL);
+	ObjText_SetFontBorderWidth(obj, 1);
+	ObjText_SetFontBorderColor(obj, 0, 0, 0);
 	return obj;
 }
 
