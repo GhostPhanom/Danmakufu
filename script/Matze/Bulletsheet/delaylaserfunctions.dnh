@@ -24,10 +24,6 @@ ID 40-55 = ScaleLaser
 ID 60-75 = LooseLaser2
 */
 
-///////////////////////////////////////////////////
-///NOT USED!!! IDENTICAL COPY IN GENERALFUNCTION///
-///////////////////////////////////////////////////
-
 #include"./Shotconstants.dnh"
 
 function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime)
@@ -55,7 +51,7 @@ function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime)
 	
 	task CorrectAlpha
 	{
-		let alpha = 255;
+		let alpha = ObjRender_GetAlpha(obj);
 		ObjRender_SetAlpha(obj, 0);
 		wait(alphawait);
 		ObjRender_SetAlpha(obj, alpha);
