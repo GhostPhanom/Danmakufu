@@ -1,0 +1,122 @@
+#TouhouDanmakufu[Plural]
+#ScriptVersion[3]
+#Title["Emporer Plural"]
+#Text["Emporer Plural" ]
+#System["./System/Default_System.txt"]
+
+#include"./Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
+#include"./Generalfunction.dnh"
+
+//let objbgmdragon = CreateBGM(bgmdragon,100);
+
+// NotifyEvent(GetCommonData("Main Plural Script ID" , 0), EV_USER, ["PluralBG"]);
+@Event
+{
+	alternative(GetEventType)   
+	case(EV_USER) 
+	{
+		let casefile = GetEventArgument(0);
+		if(casefile[0] == "PluralBG")
+		{
+			Background;
+		}
+		if(casefile[0] == "Music_Alice")
+		{
+			ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 70);
+		}
+	}
+}
+
+@Initialize
+{
+    SetCommonData("Main Plural Script ID", GetOwnScriptID());
+    SetCommonData("Player ID", GetPlayerScriptID());
+    TPlural;
+    //LoadSE;
+}
+@MainLoop
+{
+    yield;
+}
+
+let script = LoadScript(CSD ~ "./cutincontrol.dnh");
+StartScript(script);
+
+task Background
+{
+	let path = CSD ~ "./Background/magiekreisalice.png";
+	LoadTexture(path);
+	
+	while(true)
+	{
+		CreateRing(1, [255, 255, 255]);
+		wait(12);
+		CreateRing(1, [255, 255, 255]);
+		wait(12);
+		CreateRing(1, [0, 0, 255]);
+		wait(60);
+		CreateRing(-1, [255, 255, 255]);
+		wait(12);
+		CreateRing(-1, [255, 255, 255]);
+		wait(12);
+		CreateRing(-1, [0, 0, 255]);
+		wait(60);
+	}
+	
+	task CreateRing(dir, color)
+	{
+		let startscale = 0.3;
+		let scalegrowth = 0.05;
+		let spinspeed = 1.5 * dir;
+		let angle = 0;
+		let alpha = 0;
+		
+		
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, -1, GetTextureWidth(path) - 1, GetTextureHeight(path));
+		ObjSprite2D_SetDestCenter(obj);
+		Obj_SetRenderPriorityI(obj, 25);
+		ObjRender_SetPosition(obj, GetCenterX, GetCenterY, 0);
+		ObjRender_SetColor(obj, color[0], color[1], color[2]);
+		
+		loop(60)
+		{
+			alpha += 255 / 20;
+			ObjRender_SetAlpha(obj, alpha);
+			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
+			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+			ObjRender_SetAngleZ(obj, angle);
+			angle += spinspeed;
+			startscale += scalegrowth;
+			yield;
+		}
+		alpha = 255;
+		loop(20)
+		{
+			alpha -= 255 / 20;
+			ObjRender_SetAlpha(obj, alpha);
+			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
+			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+			ObjRender_SetAngleZ(obj, angle);
+			angle += spinspeed;
+			startscale += scalegrowth;
+			yield;
+		}
+		Obj_Delete(obj)
+	}
+}
+
+task TPlural{
+    let dir = GetCurrentScriptDirectory();
+    let obj = ObjEnemyBossScene_Create();
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerN1.dnh");
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_LoadInThread(obj);
+    ObjEnemyBossScene_Regist(obj);
+    while(!Obj_IsDeleted(obj)){
+        yield;
+    }
+	wait(240);
+    CloseScript(GetOwnScriptID());
+}

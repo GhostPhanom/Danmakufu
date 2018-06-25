@@ -1,0 +1,902 @@
+task PerfectPosession(obj)
+{
+	let scale = 0.3;
+	let priority = 30;
+	
+	let n = 20;
+	let n2 = 20;
+	let n3 = 10;
+	
+	let targetscale = scale + 1.2;
+	
+	let pathball = CSD ~ "./effect/possesion1.png";
+	let pathring = CSD ~ "./effect/possesion2.png";
+	LoadTexture(pathball);
+	LoadTexture(pathring);
+	
+	let ballalpha = 255;
+	let objball = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(objball, pathball);
+	ObjSprite2D_SetSourceRect(objball, 0, 0, GetTextureWidth(pathball), GetTextureHeight(pathball));
+	ObjSprite2D_SetDestCenter(objball);
+	ObjRender_SetPosition(objball, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+	Obj_SetRenderPriorityI(objball, Obj_GetRenderPriorityI(obj));
+	ObjRender_SetBlendType(objball, BLEND_ADD_ARGB);
+	
+	let ringalpha = 255;
+	let objring = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(objring, pathring);
+	ObjSprite2D_SetSourceRect(objring, 0, 0, GetTextureWidth(pathball), GetTextureHeight(pathball));
+	ObjSprite2D_SetDestCenter(objring);
+	ObjRender_SetPosition(objring, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+	Obj_SetRenderPriorityI(objring, priority - 1);
+	ObjRender_SetBlendType(objring, BLEND_ADD_ARGB);
+	ObjRender_SetColor(objring, 321, 66, 208);
+	
+	PlayPerfectPosession;
+	
+	task PlayPerfectPosession
+	{
+		let path = GetCurrentScriptDirectory ~ "./effect/PerfectPossesion.wav";
+		let volume = 70;
+		let objsound = ObjSound_Create;
+		ObjSound_Load(objsound, path);
+		ObjSound_SetVolumeRate(objsound, volume);
+		ObjSound_Play(objsound);
+	}
+	
+	loop(10)
+	{
+		let anzahlbereiche = 20;
+		let winkelbereich = 360 / anzahlbereiche;
+		let cherryprobereich = 1;
+		ascent(i in 0..anzahlbereiche)
+		{
+			loop(cherryprobereich)
+			{
+				CreatePosessionPetal(i * winkelbereich, (i + 1) * winkelbereich);
+			}
+		}
+	}
+	
+	task CreatePosessionPetal(startbereich, endbereich)
+	{
+		let scalemin = 0.2;
+		let scalemax = 0.3;
+		let scale = rand(scalemin, scalemax);
+		
+		let colorversion = truncate(rand(0, 1 + 1));
+		let color = [152, 0, 255];//lila
+		if(colorversion < 1)
+		{
+		color = [232, 107, 255]; //rosa
+		}
+		
+		let spinangle = rand(0, 360);
+		let dismin = 60;
+		let dismax = 230;
+		let targetdis = rand(dismin , dismax);
+		let angle = rand(startbereich, endbereich);
+		let path = CSD ~ "./effect/Cherry.png";
+		LoadTexture(path);
+		let objpetal = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(objpetal);
+		ObjPrim_SetTexture(objpetal, path);
+		ObjSprite2D_SetSourceRect(objpetal, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestCenter(objpetal);
+		ObjRender_SetScaleXYZ(objpetal, scale, scale, 0);
+		ObjRender_SetColor(objpetal, color[0], color[1], color[2]);
+		ObjRender_SetBlendType(objpetal, BLEND_ADD_ARGB);
+		Obj_SetRenderPriorityI(objpetal, priority - 2);
+		ObjRender_SetAngleZ(objpetal, spinangle);
+		
+		ObjRender_SetPosition(objpetal, ObjRender_GetX(obj), ObjRender_GetY(obj), 0);
+		ObjMove_SetDestAtWeight(objpetal, ObjRender_GetX(obj) + targetdis * cos(angle), ObjRender_GetY(obj) + targetdis * sin(angle), 30, 6);
+		
+		let fadetimemin = 1.5;
+		let fadetimemax = 2.5;
+		let fadetime = rand(fadetimemin, fadetimemax);
+		
+		let t = n + n2 + n3 * fadetime;
+		let alpha2 = 255;
+		let alpha = 255 / t;
+		loop(t)
+		{
+			alpha2 -= alpha;
+			ObjRender_SetAlpha(objpetal, alpha2);
+			yield;
+		}
+		Obj_Delete(objpetal);
+		
+	}
+	
+	loop(n)
+	{
+		scale += targetscale / n;
+		ballalpha -= 255 / (n + n2);
+		ObjRender_SetScaleXYZ(objball, scale, scale, 0);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objball, ballalpha);
+		yield;
+	}
+	loop(n2)
+	{
+		scale += targetscale / n;
+		ballalpha -= 255 / (n + n2);
+		ringalpha -= 255 / (n2 + n3);
+		ObjRender_SetScaleXYZ(objball, scale, scale, 0);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objball, ballalpha);
+		ObjRender_SetAlpha(objring, ringalpha);
+		yield;
+	}
+	Obj_Delete(objball);
+	loop(n3)
+	{
+		scale += targetscale / n;
+		ringalpha -= 255 / (n2 + n3);
+		ObjRender_SetScaleXYZ(objring, scale, scale, 0);
+		ObjRender_SetAlpha(objring, ringalpha);
+		yield;
+	}
+	Obj_Delete(objring);
+	
+}
+
+task LenenSpellcardring(obj1,number,active,dis,t)
+{
+	/*
+	let number=10;
+	let active=7;
+	let dis=50;
+	let t=120;
+	*/
+	
+	let scale=0.7;
+	let roundtime=120; //time for one card to make a 360° Spin around the object
+	let roundtime1=360/roundtime;
+	let roundtime2=roundtime;
+	let spawntime=roundtime/number;
+	let spawntime2=t;
+	let spincount=5;
+	let spintime=roundtime/spincount;//spintime at spawn before being still
+	let spintime1=360/spintime;
+	
+	let priority=Obj_GetRenderPriorityI(obj1)-1;
+	
+	loop (active-1)
+	{
+		let obj=CreateLenenSpellcard("USED",scale);
+		Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+		spawntime2+=spawntime;
+	}
+	
+	let obj=CreateLenenSpellcard("ACTIVE",scale);
+	Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+	spawntime2+=spawntime;
+	
+	loop (number-active)
+	{
+		let obj=CreateLenenSpellcard("UNUSED",scale);
+		Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,spawntime2);
+		spawntime2+=spawntime;
+	}
+	
+	task Movement(obj,obj1,spincount,spintime,spintime1,roundtime1,dis,t)
+	{
+		let spintime2=0;
+		let spintime3=spincount*spintime*spintime1;
+		let roundtime2=90;
+		ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+		
+		loop(t)
+		{
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+		
+		while(spintime2<spintime3&&!Obj_IsDeleted(obj1))
+		{
+			spintime2+=spintime1;
+			roundtime2+=roundtime1;
+			
+			ObjRender_SetAngleZ(obj,spintime2);
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+		
+		let angle=0;
+		let angle1=roundtime1;
+		
+		while(!Obj_IsDeleted(obj1))
+		{
+			roundtime2+=roundtime1;
+			angle+=angle1;
+			
+			ObjRender_SetAngleZ(obj,angle);
+			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			yield;
+		}
+	}
+	
+	function CreateLenenSpellcard(Status,scale)
+	{
+		let path=CSD~"./effect/lenenspellcardunused.png";
+		let pathused=CSD~"./effect/lenenspellcardused.png";
+		let pathactive=CSD~"./effect/lenenspellcardactive.png";
+		LoadTexture(path);
+		let x=GetTextureWidth(path);
+		let y=GetTextureHeight(path);
+		let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+		
+		alternative(Status)
+		case("USED")
+		{
+			ObjPrim_SetTexture(obj,pathused);
+		}
+		case("ACTIVE")
+		{
+			ObjPrim_SetTexture(obj,pathactive);
+		}
+		others
+		{
+			ObjPrim_SetTexture(obj,path);
+		}
+		
+		
+		ObjSprite2D_SetSourceRect(obj,0,0,x,y);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		Obj_SetRenderPriorityI(obj,priority);
+		
+		
+		return obj;
+	}
+}
+
+
+task Chargeeffect1 (obj) //Dont use it
+{
+let n=120;
+let scale=1.5;
+let color=[128,0,200];
+loop(3)
+{
+Spinring(obj,n,scale,color);
+Firering(obj,n,scale,color);
+wait(30);
+}
+
+	task Firering (obje,n,scale,color)
+	{
+		let spinspeed=20;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring1.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,1,1,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,n/3,120);
+		scale-=scale/3;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Spinring (obje,n,scale,color)
+	{
+		let spinspeed=-5;
+		let ring = GetCurrentScriptDirectory ~ "./effect/spin1.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,28);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,199,200);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_RGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,1,1,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,n/3,255);
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Alpha (obj,n,alpha1)
+	{
+		let alpha=0;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obj)){return;}
+			alpha+=alpha1/n;
+			ObjRender_SetAlpha(obj,alpha);
+			yield;
+		}
+	}
+}
+
+task Chargeeffect2 (obj, n, scale, color)
+{
+	/*
+	let n=90;
+	let scale=1.5;
+	let color=[128,0,200];
+	*/
+	let startdelayring=0;
+	let startdelayspin=0;
+	let shrinkdelayring=0;
+	let shrinkdelayspin=0;
+	let alphatimering=60; 
+	let alphatimespin=60; 
+	loop(1)
+	{
+		Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		wait(30);
+	}
+
+	task Firering1 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=5;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring5.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,200);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Firering2 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=-2;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring3.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,100);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Spinring (obje,n,scale,spinspeed,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		//let spinspeed=-8;
+		let ring = GetCurrentScriptDirectory ~ "./effect/spin2.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,28);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,255);
+		wait(shrinkdelay);
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Alpha (obj,n,alpha1)
+	{
+		let alpha=0;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obj)){return;}
+			alpha+=alpha1/n;
+			ObjRender_SetAlpha(obj,alpha);
+			yield;
+		}
+	}
+}
+
+task Chargeeffect3 (obj, n, scale, color)
+{
+	/*
+	let n=90;
+	let scale=1.5;
+	let color=[128,0,200];
+	*/
+	let startdelayring=0;
+	let startdelayspin=0;
+	let shrinkdelayring=0;
+	let shrinkdelayspin=0;
+	let alphatimering=60; 
+	let alphatimespin=60; 
+	loop(5)
+	{
+		//Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+		Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
+		wait(10);
+	}
+
+	task Firering1 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=5;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring5.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,200);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Firering2 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=-2;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring3.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,100);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Spinring (obje,n,scale,spinspeed,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		//let spinspeed=-8;
+		let ring = GetCurrentScriptDirectory ~ "./effect/spin2.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,28);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,255);
+		wait(shrinkdelay);
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Alpha (obj,n,alpha1)
+	{
+		let alpha=0;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obj)){return;}
+			alpha+=alpha1/n;
+			ObjRender_SetAlpha(obj,alpha);
+			yield;
+		}
+	}
+}
+
+task Chargeeffect4 (obj)
+{
+let n=70;
+let startdelayring=0;
+let startdelayspin=0;
+let shrinkdelayring=0;
+let shrinkdelayspin=0;
+let alphatimering=60; 
+let alphatimespin=60; 
+let scale=1.5;
+let numbershines=10;
+let color=[255,90,0];
+loop(1)
+{
+Firering1(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+Firering2(obj,n,scale,color,startdelayring,shrinkdelayring,alphatimering);
+Spinring(obj,n,scale,-10,color,startdelayspin,shrinkdelayspin,alphatimespin);
+Spinring(obj,n,scale,-8,color,startdelayspin,shrinkdelayspin,alphatimespin);
+Spinring(obj,n,scale,-6,color,startdelayspin,shrinkdelayspin,alphatimespin);
+Spinring(obj,n,scale,-4,color,startdelayspin,shrinkdelayspin,alphatimespin);
+Spinring(obj,n,scale,-2,color,startdelayspin,shrinkdelayspin,alphatimespin);
+Shining(obj,n,scale,color,numbershines);
+wait(10);
+}
+
+	task Firering1 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=5;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring5.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,200);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Firering2 (obje,n,scale,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		let spinspeed=-2;
+		let ring = GetCurrentScriptDirectory ~ "./effect/ring3.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,29);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,100);
+		wait(shrinkdelay);
+		scale-=scale/n;
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Spinring (obje,n,scale,spinspeed,color,startdelay,shrinkdelay,alphatime)
+	{
+		wait(startdelay);
+		//let spinspeed=-8;
+		let ring = GetCurrentScriptDirectory ~ "./effect/spin2.png";
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,28);
+		ObjPrim_SetTexture(obj,ring);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjFollow(obj,obje);
+		Alpha(obj,alphatime,255);
+		wait(shrinkdelay);
+		let scale1=scale/n;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obje)){Obj_Delete(obj);break;}
+			ObjRender_SetScaleXYZ(obj,scale,scale,0);
+			scale-=scale1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	task Shining (obj,n,scale,color,numbershines)
+	{
+		loop(numbershines)
+		{
+		Lightshine(obj,n,scale,color);
+		wait(1);
+		}
+	task Lightshine(obje,n,scale,color)
+	{
+		let light = GetCurrentScriptDirectory ~ "./effect/light2.png";
+		let alpha=200;
+		let RED = color[0];
+		let GREEN = color[1];
+		let BLUE = color[2];
+		let spinspeed=rand(-1,1);
+		scale=rand(1,2);
+		let obj=ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		Obj_SetRenderPriorityI(obj,27);
+		ObjPrim_SetTexture(obj,light);
+		ObjSprite2D_SetSourceRect(obj,0,1,255,256);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+		ObjRender_SetColor(obj,RED,GREEN,BLUE);
+		ObjRender_SetAlpha(obj,0);
+		ObjRender_SetScaleXYZ(obj,scale,scale,0);
+		ObjRender_SetScaleY(obj,ObjRender_GetScaleY(obj)/2);
+		ObjFollow(obj,obje);
+		Alpha(obj,rand(10,30),alpha);
+		let n2=(n*1.2)-30;
+		wait(n-n2);
+		let alpha1=alpha/n2;
+		loop(n2)
+		{
+			ObjRender_SetAlpha(obj,alpha);
+			alpha-=alpha1;
+			yield;
+		}
+		Obj_Delete(obj);
+		task ObjFollow (obj,obje)
+		{
+		ObjRender_SetAngleZ(obj,rand(0,360));
+			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
+			{
+				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
+				yield;
+			}
+		Obj_Delete(obj);
+		}
+	}
+	}
+	
+	task Alpha (obj,n,alpha1)
+	{
+		let alpha=0;
+		loop(n)
+		{
+			if(Obj_IsDeleted(obj)){return;}
+			alpha+=alpha1/n;
+			ObjRender_SetAlpha(obj,alpha);
+			yield;
+		}
+	}
+}

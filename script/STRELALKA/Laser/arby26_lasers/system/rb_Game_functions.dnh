@@ -1,0 +1,289 @@
+#include "./arby26_ShotConst.dnh"
+
+let stgx = GetStgFrameWidth();
+let stgy = GetStgFrameHeight();
+
+function wait(frames)
+{
+	loop(frames) { yield; }
+}
+
+function fsin(a) { // very crappy sine
+	a = floor((a/18)%20); // Angle is cut down
+	let r = 0; // 0, 180, 360
+			if(a==1 || a==9)	{ r = 0.309017; }	// 18, 162 degrees
+	else	if(a==2 || a==8)	{ r = 0.587785; }	// 36, 144
+	else	if(a==3 || a==7)	{ r = 0.809017; }	// 54, 126
+	else	if(a==4 || a==6)	{ r = 0.951057; }	// 72, 108
+	else	if(a==5)			{ r = 1.000000; }	// 90
+			if(a==11 || a==19)	{ r = -0.309017; }	// 198, 342
+	else	if(a==12 || a==18)	{ r = -0.587785; }	// 216, 324
+	else	if(a==13 || a==17)	{ r = -0.809017; }	// 234, 307
+	else	if(a==14 || a==16)	{ r = -0.951057; }	// 252, 288
+	else	if(a==15)			{ r = -1.000000; }	// 270
+
+	return r;
+}
+function fcos(a) { // very crappy cosine
+	a = floor(((a+90)/18)%20); // Angle is shifted and cut down
+	let r = 0; // 0, 180, 360
+			if(a==1 || a==9)	{ r = 0.309017; }	// 18, 162 degrees
+	else	if(a==2 || a==8)	{ r = 0.587785; }	// 36, 144
+	else	if(a==3 || a==7)	{ r = 0.809017; }	// 54, 126
+	else	if(a==4 || a==6)	{ r = 0.951057; }	// 72, 108
+	else	if(a==5)			{ r = 1.000000; }	// 90
+			if(a==11 || a==19)	{ r = -0.309017; }	// 198, 342
+	else	if(a==12 || a==18)	{ r = -0.587785; }	// 216, 324
+	else	if(a==13 || a==17)	{ r = -0.809017; }	// 234, 307
+	else	if(a==14 || a==16)	{ r = -0.951057; }	// 252, 288
+	else	if(a==15)			{ r = -1.000000; }	// 270
+
+	return r;
+}
+
+function IsInFrame(obj, extra_x, extra_y)
+{
+	let x = ObjMove_GetX(obj);
+	let y = ObjMove_GetY(obj);
+	if(		(x <= stgx+extra_x)
+		&&	(x >= 0-extra_x)
+		&&	(y <= stgy+extra_y)
+		&&	(y >= 0-extra_y)
+		) {
+		return true;
+	}
+	else { return false; }
+}
+
+task TargetPlayer(obj, delay, extra)
+{
+	wait(delay);
+	if(!Obj_IsDeleted(obj)) {
+		ObjMove_SetAngle(obj, atan2(GetPlayerY-ObjMove_GetY(obj), GetPlayerX-ObjMove_GetX(obj))+extra );
+	}
+}
+
+task SteerBullet(obj, delay, time, av, av_end)
+{
+	wait(delay);
+	let av_d = (av_end - av)/time;
+	let count = 0;
+	while(!Obj_IsDeleted(obj) && (count <= time)) {
+		ObjMove_SetAngularVelocity(obj, av);
+		av += av_d;
+		count++;
+		yield;
+	}
+}
+
+
+task BulletFlash(ex, ey, speed, angle, bullet, time1,time2, scale1x,scale1y, scale2x,scale2y, expri) // A warning flash that bullets are spawning
+{
+	let ex_d=cos(angle)*speed;
+	let ey_d=sin(angle)*speed;
+	//let obj = CreateShotA2(ex, ey, speed, angle, 0, 10, bullet, 0);
+	//ObjShot_SetSpellResist(obj, true);
+	//Obj_SetRenderPriorityI(obj, GetShotRenderPriorityI+5+expri);
+	//ObjShot_SetIntersectionEnable(obj, false);
+	let total_time = time1+time2;
+	let scale0x_d = (scale2x-scale1x)/total_time; // rate of change of x scale
+	let scale0y_d = (scale2y-scale1y)/total_time; // rate of change of y scale
+	let a = 0; // alpha
+	let a_d = 255/time1; // alpha rate of change
+	let f=(bullet-316)*32;
+	//let f=(bullet-844)*32;
+	let u=256+f;
+	let v=513;
+	let u2=288+f;
+	let v2=543;
+	loop(time1) {
+		//if(!finish) {
+			BulletFlashFrame(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, 255,255,255,a);
+			//ObjRender_SetScaleXYZ(obj, scale1x,scale1y,1);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			//ObjRender_SetAlpha(obj, a);
+			a += a_d;
+			ex+=ex_d;
+			ey+=ey_d;
+			yield;
+		//}
+	}
+	a_d = -255/time2;
+	loop(time2) {
+		//if(!finish) {
+			BulletFlashFrame(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, 255,255,255,a);
+			//ObjRender_SetScaleXYZ(obj, scale1x,scale1y,1);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			//ObjRender_SetAlpha(obj, a);
+			a += a_d;
+			ex+=ex_d;
+			ey+=ey_d;
+			yield;
+		//}
+	}
+	//if(!Obj_IsDeleted(obj)) {
+	//	Obj_Delete(obj);
+	//}
+}
+task BulletFlashAdd(ex, ey, speed, angle, bullet, time1,time2, scale1x,scale1y, scale2x,scale2y, expri) // A warning flash that bullets are spawning
+{
+	let ex_d=cos(angle)*speed;
+	let ey_d=sin(angle)*speed;
+	let total_time = time1+time2;
+	let scale0x_d = (scale2x-scale1x)/total_time; // rate of change of x scale
+	let scale0y_d = (scale2y-scale1y)/total_time; // rate of change of y scale
+	let f=max(0, bullet-317)*32;
+	let u=1+f;
+	let v=193;
+	let u2=32+f;
+	let v2=224;
+	let a = 0; // alpha
+	let a_d = 255/time1; // alpha rate of change
+	loop(time1) {
+			BulletFlashFrameA(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, a,a,a,a);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			a += a_d;
+			ex+=ex_d;
+			ey+=ey_d;
+			yield;
+	}
+	a_d = -255/time2;
+	loop(time2) {
+			BulletFlashFrameA(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, a,a,a,a);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			a += a_d;
+			ex+=ex_d;
+			ey+=ey_d;
+			yield;
+	}
+}
+task EBulletFlash(objEnemy, x, y, speed, angle, bullet, time1,time2, scale1x,scale1y, scale2x,scale2y, expri) // A warning flash that bullets are spawning
+{
+	let ex=ObjMove_GetX(objEnemy);
+	let ey=ObjMove_GetY(objEnemy);
+	let x_d=cos(angle)*speed;
+	let y_d=sin(angle)*speed;
+	//let obj = CreateShotA2(ex, ey, speed, angle, 0, 10, bullet, 0);
+	//ObjShot_SetSpellResist(obj, true);
+	//Obj_SetRenderPriorityI(obj, GetShotRenderPriorityI+5+expri);
+	//ObjShot_SetIntersectionEnable(obj, false);
+	let total_time = time1+time2;
+	let scale0x_d = (scale2x-scale1x)/total_time; // rate of change of x scale
+	let scale0y_d = (scale2y-scale1y)/total_time; // rate of change of y scale
+	let a = 0; // alpha
+	let a_d = 255/time1; // alpha rate of change
+	let f=(bullet-316)*32;
+	//let f=(bullet-844)*32;
+	let u=256+f;
+	let v=513;
+	let u2=288+f;
+	let v2=543;
+	loop(time1) {
+		//if(!finish) {
+			BulletFlashFrame(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, 255,255,255,a);
+			//ObjRender_SetScaleXYZ(obj, scale1x,scale1y,1);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			//ObjRender_SetAlpha(obj, a);
+			a += a_d;
+			if(!Obj_IsDeleted(objEnemy)) {
+				ex=ObjMove_GetX(objEnemy)+x;
+				ey=ObjMove_GetY(objEnemy)+y;
+			}
+			x+=x_d;
+			y+=y_d;
+			yield;
+		//}
+	}
+	a_d = -255/time2;
+	loop(time2) {
+		//if(!finish) {
+			BulletFlashFrame(u,v,u2,v2, ex+x,ey+y, angle, scale1x,scale1y, 255,255,255,a);
+			//ObjRender_SetScaleXYZ(obj, scale1x,scale1y,1);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			//ObjRender_SetAlpha(obj, a);
+			a += a_d;
+			x+=x_d;
+			y+=y_d;
+			yield;
+		//}
+	}
+	//if(!Obj_IsDeleted(obj)) {
+	//	Obj_Delete(obj);
+	//}
+}
+task EBulletFlashAdd(objEnemy, x, y, speed, angle, bullet, time1,time2, scale1x,scale1y, scale2x,scale2y, expri) // A warning flash that bullets are spawning
+{
+	let ex=ObjMove_GetX(objEnemy);
+	let ey=ObjMove_GetY(objEnemy);
+	let x_d=cos(angle)*speed;
+	let y_d=sin(angle)*speed;
+	let total_time = time1+time2;
+	let scale0x_d = (scale2x-scale1x)/total_time; // rate of change of x scale
+	let scale0y_d = (scale2y-scale1y)/total_time; // rate of change of y scale
+	let f=max(0, bullet-317)*32;
+	let u=1+f;
+	let v=193;
+	let u2=32+f;
+	let v2=224;
+	let a = 0; // alpha
+	let a_d = 255/time1; // alpha rate of change
+	loop(time1) {
+			BulletFlashFrameA(u,v,u2,v2, ex,ey, angle, scale1x,scale1y, a,a,a,a);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			a += a_d;
+			if(!Obj_IsDeleted(objEnemy)) {
+				ex=ObjMove_GetX(objEnemy)+x;
+				ey=ObjMove_GetY(objEnemy)+y;
+			}
+			x+=x_d;
+			y+=y_d;
+			yield;
+	}
+	a_d = -255/time2;
+	loop(time2) {
+			BulletFlashFrameA(u,v,u2,v2, ex+x,ey+y, angle, scale1x,scale1y, a,a,a,a);
+			scale1x += scale0x_d;
+			scale1y += scale0y_d;
+			a += a_d;
+			x+=x_d;
+			y+=y_d;
+			yield;
+	}
+}
+
+function CustomShotA2(ex, ey, speed, angle, accel, speed_limit, bullet, delay, init_spd)
+{
+	let obj = CreateShotA2(ex, ey, init_spd, angle, 0, init_spd, bullet, 0);
+	ObjShot_SetIntersectionEnable(obj, false);
+	Obj_SetVisible(obj, false);
+	TIntersection(obj, delay);
+	ObjMove_AddPatternA2(obj, delay, speed, NO_CHANGE, accel, 0, speed_limit);
+	return obj;
+
+	task TIntersection(obj, delay) {
+		wait(delay);
+		if(!Obj_IsDeleted(obj)) {
+			ObjShot_SetIntersectionEnable(obj, true);
+			Obj_SetVisible(obj, true);
+		}
+	}
+}
+
+task ClearBullets(x,y, time) {
+	let rad = 16;
+	let rad_d = (512-16)/time;
+	loop(time) {
+		DeleteShotInCircle(TYPE_ALL, TYPE_ITEM, x,y,rad);
+		rad += rad_d;
+		yield;
+	}
+	DeleteShotAll(TYPE_ALL, TYPE_ITEM); // Final bullet clear at +61 frames
+}
+

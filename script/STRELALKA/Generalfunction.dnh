@@ -1,0 +1,1250 @@
+//INFO Playingwindow is (32, 16, 416, 464)
+
+///////////////////////////////////
+///SOUND FUNCTIONS/////////////////
+///////////////////////////////////
+function ObjMusic_CreateSE(path, vol)
+{
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_Play(obj);
+	ObjSound_SetVolumeRate(obj, vol);
+	return obj;
+}
+
+function ObjMusic_CreateBGM(path, vol)
+{
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_Play(obj);
+	ObjSound_SetLoopEnable(obj, true);
+	ObjSound_SetVolumeRate(obj, vol);
+	return obj;
+}
+
+function CorrectTiming(w)
+{
+	w -= round(w / 60);
+	return w;
+}
+
+function CorrectTiming2(w, t)
+{
+	w -= round(w / t);
+	return w;
+}
+
+///////////////////////////////////
+///MOVE FUNCTIONS//////////////////
+///////////////////////////////////
+function ObjMove_SetDestAtRandom(obj, x1, y1, x2, y2, frame)
+{
+	ObjMove_SetDestAtFrame(obj, rand(x1, x2), rand(y1, y2), frame);
+}
+
+task ObjMove_SetDestAtFrame2(obj, x, y, n)
+{
+	let originx = ObjMove_GetX(obj);
+	let originy = ObjMove_GetY(obj);
+	
+	let angle = GetPointAngle(originx, originy, x, y) + 180;
+	let distance = GetDistance(originx, originy, x, y);
+	let dis = 0;
+	
+	loop(n)
+	{
+		dis += distance / n;
+		ObjMove_SetPosition(obj, originx + dis * cos(angle), originy + dis * sin(angle));
+		yield;
+	}
+	
+}
+///////////////////////////////////
+///POSITION/ANGLE FUNCTIONS////////
+///////////////////////////////////
+function GetAngleTo(let object1, let object2) 
+{ 
+	return atan2(ObjRender_GetY(object2)-ObjRender_GetY(object1), ObjRender_GetX(object2)-ObjRender_GetX(object1));
+}//Angle from obj1 to obj 2
+
+function GetAngleToObjectMove(x,y,obj){ //Weiß nicht, ob es einen wirklichen nutzen hat
+	let angle = atan2(ObjMove_GetY(obj)-y,ObjMove_GetX(obj)-x);
+	return angle;
+}
+function GetPointAngle(x1,y1,x2,y2) //Angle from Point 1 to Point 2
+{
+     let angle=atan2(y1-y2,x1-x2);
+     return angle;
+}
+
+//GetObjectDistance(obj1, obj2)
+function GetDistance(x1,y1,x2,y2) //Distance between 2 Points 
+{
+     return(((x2-x1)^2+(y2-y1)^2)^(1/2));
+}
+
+function GetObjectpointDistance(obj, x2, y2) //Distance between 2 Points 
+{
+     return(((x2-ObjRender_GetX(obj))^2+(y2-ObjRender_GetY(obj))^2)^(1/2));
+}
+
+function IsInStageFrame(obj, xcorrect, ycorrect)
+{
+	if(ObjRender_GetX(obj) >= 0 - xcorrect && ObjRender_GetX(obj) <= GetStgFrameWidth + xcorrect && ObjRender_GetY(obj) >= 0 - ycorrect && ObjRender_GetY(obj) <= GetStgFrameHeight + ycorrect)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+function NormalizeAngle(angle)//Should be used if angle is needed for mathematical stuff and can get angle<0||angle>360 
+{
+	angle %= 360;
+	if(angle<0)
+	{
+  		angle += 360;
+ 	}
+ 	return angle;
+}
+
+//(Blargel)
+function AngularDistance(angle1, angle2){ //Should be useful for homing bullets
+	let distance = NormalizeAngle(angle2 - angle1);
+	if(distance>180){ distance-=360; }
+	return distance;
+}
+//These help avoid things behaving weirdly when, say, one angle is 15 degrees and the other is 330 degrees. 
+//If you just subtract the angles normally it'll probably end up going all the way around - this way you can easily determine the shorter way to turn.
+
+function ReflectionAngle (angle, mirror){//Calculates the reflection angle based on the angle of the object and the angle of the mirror
+   return 2*mirror-angle;
+}
+///////////////////////////////////
+///RENDER FUNCTIONS////////////////
+///////////////////////////////////
+function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeilen, spalten, xscale, yscale, xoffset, yoffset)//Idle Animation
+{//Obj origin, texture, animationspeed, width of one frame, height of one frame, how many rows has the spritesheet, how many Spalten has the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	
+	zeilen--;//Fix for logicerror
+	spalten--;
+	
+	Animation;
+	
+	return obj;
+	
+	task Animation
+	{
+		let counter = 0;
+		let zeilencounter = 0;
+		let spaltencounter = 0;
+		
+		while(!Obj_IsDeleted(objo))
+		{
+			ObjRender_SetPosition(obj, ObjRender_GetX(objo) + xoffset, ObjRender_GetY(objo) + yoffset, 0);
+			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
+			
+			counter++;
+			if(counter > speed)
+			{
+				spaltencounter++;
+				counter = 0;
+			}
+			if(spaltencounter > spalten)
+			{
+				zeilencounter++;
+				spaltencounter = 0;
+			}
+			if(zeilencounter > zeilen)
+			{
+				zeilencounter = 0;
+			}
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
+
+function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartwidth, idlespalten, animspalten, xscale, yscale, xoffset, yoffset)//Idle/Move Animation; Nur eine Zeile für eine Animationsart
+{
+//Obj origin, texture, Version: 
+//(0 = counter starts at 0 and ends at 0; 1 = 0 but without directionlogic; 2 = 0 but last two frames repeating; 3 = 0 but last two frames repeating and w/o directionlogic;
+//4 = counter starts at max and ends at 0; 5 = 4 but without directionlogic;),
+//animationspeed, width of one frame, height of one frame, how many Spalten has the idle part of the spritesheet, how many Spalten has the animation part of the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	
+	idlespalten--;//Fix for logicerror
+	animspalten--;
+	
+	Animation;
+	
+	return obj;
+	
+	task Animation
+	{
+		/* //DEBUG
+		let counter1 = CreateTestCounter(50, 50);
+		let counter2 = CreateTestCounter(50, 70);
+		let counter3 = CreateTestCounter(50, 90);
+		let counter4 = CreateTestCounter(50, 110);
+		*/
+		
+		let counter = 0;
+		let zeilencounter = 0;
+		let spaltencounter = 0;
+		
+		let movecounter = 0;
+		let movemaxcounter = (animspalten + 1) * speed - 1;
+		
+		let posxlastframe = ObjMove_GetX(objo);
+		let posxcurrentframe = ObjMove_GetX(objo);
+		let dir = 0;//0 = rechts; 1 = links
+		
+		while(!Obj_IsDeleted(objo))
+		{
+			ObjRender_SetPosition(obj, ObjRender_GetX(objo) + xoffset, ObjRender_GetY(objo) + yoffset, 0);
+			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
+			
+			
+			posxlastframe = posxcurrentframe;
+			posxcurrentframe = ObjMove_GetX(objo);
+			if(posxcurrentframe < posxlastframe){dir = 1;}//links
+			else if(posxcurrentframe > posxlastframe){dir = 0;}//rechts
+			
+			if(ObjMove_GetSpeed(objo) != 0)
+			{
+				if(movecounter < movemaxcounter){movecounter++;}
+				else if(version == 3){movecounter++;}
+				if(version >= 4)
+				{
+					movecounter = movemaxcounter;
+				}
+			}
+			else if(movecounter > 0)
+			{
+				movecounter--;
+			}
+			else
+			{
+				ObjRender_SetAngleY(obj, 0);
+			}
+			
+			
+			if(movecounter > 0)
+			{
+				counter = 0;
+				if(version == 0 || version == 2 || version == 4 )//2 different rows of sprites for different directions
+				{
+					zeilencounter = 1 + dir;
+				}
+				else//sprite mirror
+				{
+					ObjRender_SetAngleY(obj, dir * 180);//in der Annahme, dass die Bewegungsanimation auf eine Bewegung nach rechts angepasst ist
+					zeilencounter = 1;
+				}
+				
+				spaltencounter = truncate((movecounter + 0.0001) / speed);//0.0001 Um Floating Point Errors zu vermeiden
+				if(version == 3)
+				{
+					if(movecounter >= movemaxcounter)
+					{
+						movecounter = (animspalten - 1) * speed;
+					}
+				}
+			}
+			else
+			{
+				counter++;
+				zeilencounter = 0;
+				if(counter > speed)
+				{
+					spaltencounter++;
+					counter = 0;
+				}
+				if(spaltencounter > idlespalten)
+				{
+					//zeilencounter++;
+					spaltencounter = 0;
+				}
+			}
+			
+			//ObjText_SetText(counter1, "dir: " ~ ToString(dir));
+			//ObjText_SetText(counter2, "movecounter: " ~ ToString(movecounter));
+			//ObjText_SetText(counter3, "zeilencounter: " ~ ToString(zeilencounter));
+			//ObjText_SetText(counter4, "spaltencounter: " ~ ToString(spaltencounter));
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
+
+task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		ObjRender_SetAngleZ(obj, ObjRender_GetAngleZ(obj) + speed * dir);
+		yield;
+	}
+}
+
+task ObjRender_SetDestAtFrame(obj, x, y, frames)
+{	
+	let xpart = (x - ObjRender_GetX(obj)) / frames;
+	let ypart = (y - ObjRender_GetY(obj)) / frames;
+	
+	//let counterx1 = CreateTestCounter(50, 50);
+	//let counterx2 = CreateTestCounter(50, 100);
+	
+	let expectedX = ObjRender_GetX(obj);
+	let expectedY = ObjRender_GetY(obj);
+	
+	loop(frames)
+	{
+		yield;
+		//ObjText_SetText(counterx1, ToString(expectedX));
+		//ObjText_SetText(counterx2, ObjRender_GetX(obj));
+		if(!CompareFloats(expectedX, ObjRender_GetX(obj))){return;}
+		if(!CompareFloats(expectedY, ObjRender_GetY(obj))){return;}
+		expectedX += xpart;
+		expectedY += ypart;
+		ObjRender_SetPosition(obj, expectedX, expectedY, 0);
+	}
+}
+
+function ObjSprite2D_SetSourceDestCenter(obj, path)
+{
+	LoadTexture(path);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjSprite2D_SetDestCenter(obj);
+}
+
+function ObjSprite2D_SetSourceDestRect(obj, path, x1, y1, x2, y2)
+{
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
+	ObjSprite2D_SetDestRect(obj, x1, y1, x2, y2);
+}
+///////////////////////////////////
+///BOSS FUNCTIONS//////////////////
+///////////////////////////////////
+
+function IsBossLifeZero(obj) //Needs ObjBossID
+{
+	if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+task BossZeroDelete(obj, objb) //Needs ObjBossID
+{
+	while(!Obj_IsDeleted(obj) && ObjEnemy_GetInfo(objb, INFO_LIFE) <= 0)
+	{
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+///////////////////////////////////
+///ENEMY FUNCTIONS/////////////////
+///////////////////////////////////
+task ObjEnemy_ZeroLifeDelete(obj)
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
+		{
+			Obj_Delete(obj);
+			return;
+		}
+		yield;
+	}
+}
+
+task ObjEnemy_CreateHitbox(obj, hurtbox, hitbox)
+{
+	while(!Obj_IsDeleted(obj))
+	{
+		ObjEnemy_SetIntersectionCircleToPlayer(obj, ObjMove_GetX(obj), ObjMove_GetY(obj), hurtbox);
+		ObjEnemy_SetIntersectionCircleToShot(obj, ObjMove_GetX(obj), ObjMove_GetY(obj), hitbox);
+		yield;
+	}
+}
+
+///////////////////////////////////
+///SHOT FUNCTIONS//////////////////
+///////////////////////////////////
+task CreateDelayLaser(x, y, angle, lengthl, width, t)
+{
+	let obj = CreateStraightLaserA1(x, y, angle, lengthl, width, 0, 1, t);
+	ObjStLaser_SetSource(obj, false);
+	loop(t - 1)
+	{yield;}
+	Obj_Delete(obj);
+}
+
+
+///////////////////////////////////
+///STAGE FUNCTIONS/////////////////
+///////////////////////////////////
+
+function WaitForZeroEnemy
+{
+     while(length(GetAllEnemyID()) > 0){yield;}
+}
+
+function WaitForZeroHitboxEnemy
+{
+     while(length(GetIntersectionRegistedEnemyID()) > 0){yield;}
+}
+
+///////////////////////////////////
+///TEXT FUNCTIONS//////////////////
+///////////////////////////////////
+
+task DisplayText(objText, Text)
+{
+	let displayspeed = 1;// higher number = slower
+	
+	let displayText = "";
+	let lettercounter = 0;
+	let endlength = length(Text);
+	
+	while(lettercounter != endlength)
+	{
+		if(!Obj_IsDeleted(objText)){return;}
+		
+		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
+		{
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//HIER KEIN Sound wenn ein Leerzeichen geschrieben wird
+		}
+		else if(Text[lettercounter] == '[')//Wenn Textformatierung kommt
+		{
+			displayText = displayText ~ ['0','0','0'];
+			ascent(i in lettercounter..lettercounter + 3)
+			{
+				displayText[i] = Text[i];
+			}
+			//displayText = displayText ~ Text[lettercounter] ~ Text[lettercounter + 1] ~ Text[lettercounter + 2];
+			lettercounter += 2;
+		}
+		else//Wenn keine Textformatierung und kein Leerzeichen kommt
+		{
+			displayText = displayText ~ ['0']; 
+			displayText[lettercounter] = Text[lettercounter];
+			//Vielleicht HIER ein Sound wenn ein Buchstabe geschrieben wird
+		}
+		
+		ObjText_SetText(objText, displayText);
+		lettercounter++;
+		wait(displayspeed);
+	}
+}
+
+function SearchNextChar(Text, startindex, Char)//returns the index of the searched Char
+{
+	ascent(i in startindex..length(Text))
+	{
+		if(Text[i] == Char){return i;}
+	}
+	
+	RaiseError("Char not found inside the String, starting from the given Index");
+}
+
+///////////////////////////////////
+///DELETE FUNCTIONS////////////////
+///////////////////////////////////
+task Autodelete(obj)// For Objects without or disabled autodelete
+{
+	while(ObjRender_GetX(obj) >= -64 && ObjRender_GetX(obj) <= GetStgFrameWidth() + 64 && ObjRender_GetY(obj) >= -64 && ObjRender_GetY(obj) <=GetStgFrameHeight() + 64){yield;}
+	Obj_Delete(obj);
+}
+
+task DeleteDelay(obj,n)
+{
+	loop(n){yield;}
+	Obj_Delete(obj);
+}
+
+task FadeDeleteDelay(obj,n,n2) //n wait before starting to fade / n2 actual fading time
+{
+	let alpha=255;
+	let alpha1=alpha/n2;
+	loop(n){yield;}
+	loop(n2)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		alpha-=alpha1;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task FadeDelete(obj, n, alpha) //n fading time; alpha startalpha
+{
+	let alpha1=alpha/n;
+	loop(n)
+	{
+		ObjRender_SetAlpha(obj,alpha);
+		alpha-=alpha1;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task DeleteAllBullets(n)
+{
+	loop(n)
+	{
+		DeleteShotAll(TYPE_ALL, TYPE_IMMEDIATE);
+		yield;
+	}
+}
+///////////////////////////////////
+///MATH FUNCTIONS//////////////////
+///////////////////////////////////
+
+function neg(value)
+{
+	value=negative(value);
+	return value;
+}
+
+function theta(input)
+{
+	if(input >= 0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+function sgn(input)
+{
+	if(input > 0)
+	{
+		return 1;
+	}
+	else if(input == 0)
+	{
+		return 0;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+function sqrt (input)
+{
+	return input ^ 0.5;
+}
+
+function ToDegree(input)//Winkelmas
+{
+	return ((360 / (2 * pi)) * input);
+}
+
+function ToRadiant(input) //Bogenmas
+{
+	return ((2 * pi) / 360 * input);
+}
+
+///////////////////////////////////
+///PLAYER FUNCTIONS////////////////
+///////////////////////////////////
+function SetPlayerInvincibility(bool)
+{
+	if(bool == true)
+	{
+		SetCommonData("GeneralPlayerInvincibility", true);
+		PlayerInvincibility;
+	}
+	if(bool == false)
+	{
+		SetCommonData("GeneralPlayerInvincibility", false);
+	}
+	
+	task PlayerInvincibility
+	{
+		while(GetCommonData("GeneralPlayerInvincibility", false) == true)
+		{
+			SetPlayerInvincibilityFrame(10);
+			yield;
+		}
+	}
+}
+
+///////////////////////////////////
+///MISC FUNCTIONS//////////////////
+///////////////////////////////////
+function CreateEmptyFloatArray
+{
+	let array = [1];
+	return array[0..0]; //same as array=slice(array, 0, 0)
+}
+
+function CompareFloats (input1, input2) 
+{
+	let EPSILON = 0.001;
+    let diff = input1 - input2;
+	if(diff < EPSILON && -diff < EPSILON)
+	{
+		return true;
+	}
+    return false;
+}
+
+function CompareFloats2 (input1, input2, EPSILON) 
+{
+    let diff = input1 - input2;
+	if(diff < EPSILON && -diff < EPSILON)
+	{
+		return true;
+	}
+    return false;
+}
+
+function wait (n)
+{
+	loop (n)
+	{
+	yield;
+	}
+}
+
+function rand_int(min, max)
+{
+     return truncate(rand(min, max + 1))
+}
+
+function RandomChoice(Number, Array)
+{
+	let choice = rand_int(0, Number - 1);
+	return Array[choice];
+}
+
+task StopTimer(n)
+{
+	loop(n)
+	{
+		let timer=ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID(),INFO_TIMERF);
+		ObjEnemyBossScene_SetSpellTimer(GetEnemyBossSceneObjectID(),timer+1);
+		yield;
+	}
+}
+
+//Makes the screen shake (gt_bot)
+task ScreenShakeA1(shaketime, intensity){
+	let x = Get2DCameraX;
+	let y = Get2DCameraY;
+	while(shaketime>0){
+		Set2DCameraFocusX(GetStgFrameWidth/2 + rand(-intensity, intensity));
+		Set2DCameraFocusY(GetStgFrameHeight/2 + rand(-intensity, intensity));
+		shaketime--;
+		yield;
+	}
+	Set2DCameraFocusX(GetStgFrameWidth/2);
+	Set2DCameraFocusY(GetStgFrameHeight/2);
+	yield;
+}
+
+task ScreenFlash(n1, n2, n3, R, G, B, priority)
+{
+	let path = CSD ~ "./System/img/dot.png";
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 1, 1);
+	ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
+	ObjRender_SetColor(obj, R, G, B);
+	Obj_SetRenderPriorityI(obj, priority);
+	
+	ascent(i in 1..n1 + 1)
+	{
+		ObjRender_SetAlpha(obj, 255 / n1 * i);
+		yield;
+	}
+	loop(n2){yield;}
+	ascent(i in 1..n1 + 1)
+	{
+		ObjRender_SetAlpha(obj, 255 - 255 / n1 * i);
+		yield;
+	}
+	Obj_Delete(obj);
+	
+}
+
+function CreateMyStageID {SetCommonData("Main Stage Script ID",GetOwnScriptID);}
+function MyStageID { return GetCommonData("Main Stage Script ID", 0); }
+///////////////////////////////////
+///DEBUG FUNCTIONS/////////////////
+///////////////////////////////////
+function CreateTestCounter(x, y)//Creates a simple Textobj to use it as a debug field
+{
+	let obj = ObjText_Create;
+	ObjText_SetFontSize(obj, 20);
+	ObjRender_SetPosition(obj, x, y, 0);
+	Obj_SetRenderPriorityI(obj, 79);
+	ObjText_SetFontBorderType(obj, BORDER_FULL);
+	ObjText_SetFontBorderWidth(obj, 1);
+	ObjText_SetFontBorderColor(obj, 0, 0, 0);
+	return obj;
+}
+
+//0.12m style invincibility (AJS)
+task PlaytestInvincibility{//Makes the Player Incincible while holding SPACE
+	AddVirtualKey(VK_USER1,KEY_SPACE,KEY_INVALID);
+	loop{
+		if(GetVirtualKeyState(VK_USER1)==KEY_HOLD){
+		SetPlayerInvincibilityFrame(30);}
+	yield;}	
+}
+
+task CameraTestValues
+{
+	let counter1 = CreateTestCounter(50, 50);
+	let counter2 = CreateTestCounter(50, 70);
+	let counter3 = CreateTestCounter(50, 90);
+	let counter4 = CreateTestCounter(50, 110);
+	let counter5 = CreateTestCounter(50, 130);
+	let counter6 = CreateTestCounter(50, 150);
+	let counter7 = CreateTestCounter(50, 170);
+	let counter8 = CreateTestCounter(50, 190);
+	let counter9 = CreateTestCounter(50, 210);
+	
+	while(true)
+	{
+		ObjText_SetText(counter1,"Azimuth: " ~ ToString(GetCameraAzimuthAngle));
+		ObjText_SetText(counter2,"Elevation: "  ~ ToString(GetCameraElevationAngle));
+		ObjText_SetText(counter3,"Radius: "  ~ ToString(GetCameraRadius));
+		ObjText_SetText(counter4,"FocusX: "  ~ ToString(GetCameraFocusX));
+		ObjText_SetText(counter5,"FocusY: "  ~ ToString(GetCameraFocusY));
+		ObjText_SetText(counter6,"FocusZ: "  ~ ToString(GetCameraFocusZ));
+		ObjText_SetText(counter7,"Yaw: "  ~ ToString(GetCameraYaw));
+		ObjText_SetText(counter8,"Pitch: "  ~ ToString(GetCameraPitch));
+		ObjText_SetText(counter9,"Roll: "  ~ ToString(GetCameraRoll));
+		yield;
+	}
+}
+
+///////////////////////////////////
+///LASER SHOTSHEET FUNCTIONS///////
+///////////////////////////////////
+/*
+4000 + 
+Colors
+1 Darkred / Dunkelrot
+2 Red / Rot
+3 Purple / Lila
+4 Pink / Pink
+5 DarkBlue / Dunkelblau
+6 Blue / Blau
+7 Blue? / Blau?
+8 Turquoise / Türkis
+9 Dunkelgrün
+10 Grün
+11 gelbgrün
+12 gelg
+13 helles gelbgrün
+14 orange
+15 grau
+16 weiß
+
+ID 0-15 = StraightLaser
+ID 20-35 = LooseLaser
+ID 40-55 = ScaleLaser
+ID 60-75 = LooseLaser2
+*/
+
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+///LASERSHOTSHEET IN ./bulletsheet/LaserShotConstants.dnh///
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+
+#include"./bulletsheet/LaserShotconstants.dnh"
+
+function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime)
+{
+	let alphawait = 10; 
+	let obj = CreateStraightLaserA1(x, y, angle, 0, lwidth, t, ID, 0);
+	ObjStLaser_SetSource(obj, false);
+	ObjShot_SetIntersectionEnable(obj, false);
+	Lasergrowth;
+	CorrectAlpha;
+	return obj;
+	
+	task Lasergrowth
+	{
+		let llength1 = llength / growthtime;
+		let llength2 = 0;
+		wait(alphawait);
+		loop(t)
+		{
+			llength2 += llength1;
+			ObjLaser_SetLength(obj, llength2);
+			yield;
+		}
+	}
+	
+	task CorrectAlpha
+	{
+		let alpha = 255;
+		ObjRender_SetAlpha(obj, 0);
+		wait(alphawait);
+		ObjRender_SetAlpha(obj, alpha);
+	}
+	
+}
+
+function CreateDelayLaserA2(x, y, angle, llength, lwidth, t, ID, growthtime)
+{
+	let obj = CreateStraightLaserA1(x, y, angle, 0, lwidth, t, ID, 0);
+	ObjStLaser_SetSource(obj, false);
+	ObjShot_SetIntersectionEnable(obj, false);
+	ObjRender_SetAlpha(obj, 255);
+	Lasergrowth;
+	return obj;
+	
+	task Lasergrowth
+	{
+		let llength1 = llength / growthtime;
+		let llength2 = 0;
+		loop(t)
+		{
+			llength2 += llength1;
+			ObjLaser_SetLength(obj, llength2);
+			yield;
+		}
+	}
+}
+
+function CreateDelayLaserAC1(x, y, angle, llength, lwidth, t, ID)
+{
+	let alphawait = 10; 
+	let obj = CreateStraightLaserA1(x, y, angle, llength, lwidth, t, ID, 0);
+	ObjStLaser_SetSource(obj, false);
+	ObjShot_SetIntersectionEnable(obj, false);
+	CorrectAlpha;
+	//Fadedelay(obj, t);
+	return obj;
+	
+	task CorrectAlpha
+	{
+		let alpha = 255;
+		ObjRender_SetAlpha(obj, 0);
+		wait(alphawait);
+		ObjRender_SetAlpha(obj, alpha);
+	}
+	/*
+	task Fadedelay(obj, t)
+	{
+		wait(t);
+		let alpha2 = ObjRender_GetAlpha(obj);
+		let alpha = alpha2 / fadetime;
+		loop(t)
+		{
+			alpha2 -= alpha;
+			ObjRender_SetAlpha(obj, alpha2);
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+	*/
+}
+
+function CreateDelayLaserA1(x, y, angle, llength, lwidth, t, ID)
+{
+	let obj = CreateStraightLaserA1(x, y, angle, llength, lwidth, t, ID, 0);
+	ObjStLaser_SetSource(obj, false);
+	ObjShot_SetIntersectionEnable(obj, false);
+	ObjRender_SetAlpha(obj, 255);
+	return obj;
+}
+
+///////////////////////////////////
+///DEFAULT VARIABLES///////////////
+///////////////////////////////////
+let CSD = GetCurrentScriptDirectory;
+let GetCenterX = GetStgFrameWidth / 2;
+let GetCenterY = GetStgFrameHeight / 2;
+let GetFullCenterX = 640 / 2;
+let GetFullCenterY = 480 / 2;
+
+
+
+///////////////////////////////////
+//EVERYTHING BELOW IS FOR LEARNING AND IS MAYBE USEFUL
+///////////////////////////////////
+
+/*
+//Returns the intersection point of two lines (Naut)
+function GetLineIntersectionPoint(let x1, let y1, let x2, let y2, let x3, let y3, let x4, let y4){
+    let point = [0, 0];
+    point[0] = ( ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4)) );
+    point[1] = ( ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / ((x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4)) );
+    return point;
+}
+
+//Returns the intersection point of a line with the screen border (Trickysticks)
+function GetLineBorderPoint(px, py, tx, ty){
+    let ta = atan2(ty-py, tx-px);
+ 
+    if( ta>= atan2(GetClipMinY - py, GetClipMinX - px) && ta<=  atan2(GetClipMinY - py, GetClipMaxX - px)){
+        return [px - (GetClipMinY-py)*tan(ta+90), GetClipMinY];
+    }
+    if( ta>= atan2(GetClipMinY - py, GetClipMaxX - px) && ta<=  atan2(GetClipMaxY - py, GetClipMaxX - px)){
+        return [GetClipMaxX, py + (GetClipMaxX-px)*tan(ta)];
+    }
+    if( ta>= atan2(GetClipMaxY - py, GetClipMaxX - px) && ta<=  atan2(GetClipMaxY - py, GetClipMinX - px)){
+        return [px - (GetClipMaxY-py)*tan(ta-90), GetClipMaxY];
+    }
+    if( ta> atan2(GetClipMaxY - py, GetClipMinX - px) || ta<  atan2(GetClipMinY - py, GetClipMinX - px)){
+        return [GetClipMinX, py + (GetClipMinX-px)*tan(ta+180)];
+    }
+}
+
+
+//Returns true if the object is within the given boundaries (gt_bot)
+function Obj_IsInArea(obj, left, top, right, bottom){
+	if(ObjMove_GetX(obj)<left){
+		return false;
+	}
+               
+	if(ObjMove_GetX(obj)>right){
+		return false;
+	}      
+ 
+	if(ObjMove_GetY(obj)<top){
+		return false;
+	}
+               
+	if(ObjMove_GetY(obj)>bottom){
+		return false;
+	}              
+	return true
+}
+
+//Makes the object spin around the XYZ axes (Python)
+task Obj_SpinXYZ(obj, xspin, yspin, zspin, i){
+	if(i <= 0){
+		while(!Obj_IsDeleted(obj)){
+			ObjRender_SetAngleXYZ(obj, ObjRender_GetAngleX(obj) + xspin, ObjRender_GetAngleY(obj) + yspin, ObjRender_GetAngleZ(obj) + zspin);
+			yield;
+		}
+		return;
+	}else{
+		while(i > 0){
+			ObjRender_SetAngleXYZ(obj, ObjRender_GetAngleX(obj) + xspin, ObjRender_GetAngleY(obj) + yspin, ObjRender_GetAngleZ(obj) + zspin);
+			i--;
+			yield;
+		}
+		ObjRender_SetAngleXYZ(obj, 0, 0, 0);
+		return;
+	}
+}
+
+//(AJS)
+task ExpandFrame(speed){
+    let left;
+    let top;
+    let right;
+    let bottom;
+    let t = 0;
+    let F = [[32,0],[16,0],[416,640],[464,480]];
+     
+    while(t<1){
+    	left = F[0][0]+t*(F[0][1]-F[0][0]);
+    	top = F[1][0]+t*(F[1][1]-F[1][0]);
+   		right = F[2][0]+t*(F[2][1]-F[2][0]);
+    	bottom = F[3][0]+t*(F[3][1]-F[3][0]);
+    	SetStgFrame(left,top,right,bottom,20,80);
+    	SetPlayerClip(left,top,right,bottom);
+    	t+=speed/100;
+    	yield;
+    }
+    SetStgFrame(floor(left),floor(top),F[2][1],ceil(bottom),20,80);
+    SetPlayerClip(floor(left),floor(top),F[2][1],ceil(bottom));
+}
+
+//(AJS)
+task widescreen{
+	let left = 32;
+	let top = 16;
+	let right = 416;
+	let bottom = 464;
+	
+	loop{
+		if(left>0){left-=0.51;}
+		if(top>0){top-=0.25;}
+		if(right<GetScreenWidth){right+=4;}
+		if(bottom<GetScreenHeight){bottom+=0.26;}
+		SetStgFrame(left,top,right,bottom,20,80);
+		SetPlayerClip(left,top,right,bottom);
+		yield;
+	}
+}
+
+
+//Everything after that Python
+
+//Stage intro/tile function mimicking LoLK's titles (Python)
+task StageIntro(img){
+	let stage = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(stage, img);
+	ObjSprite2D_SetSourceRect(stage, 0, 224, 192, 256);
+	ObjSprite2D_SetDestCenter(stage);
+	ObjRender_SetPosition(stage, GetCenterX, GetCenterY - 96, 0);
+	ObjRender_SetAlpha(stage, 0);
+	ObjRender_SetScaleXYZ(stage, 0.6, 0.6, 0.6);
+	Obj_SetRenderPriority(stage, 0.6);
+
+	let pic = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(pic, img);
+	ObjSprite2D_SetSourceRect(pic, 256, 64, 448, 256);
+	ObjSprite2D_SetDestCenter(pic);
+	ObjRender_SetPosition(pic, GetCenterX, GetCenterY - 48, 0);
+	ObjRender_SetAlpha(pic, 0);
+	ObjRender_SetScaleXYZ(pic, 0.6, 0.6, 0.6);
+	ObjRender_SetAngleZ(pic, -90);
+	Obj_SetRenderPriority(pic, 0.59);
+
+	let japtext = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(japtext, img);
+	ObjSprite2D_SetSourceRect(japtext, 0, 0, 640, 64);
+	ObjSprite2D_SetDestCenter(japtext);
+	ObjRender_SetScaleXYZ(japtext, 0.6, 0.6, 0.6);
+	ObjRender_SetPosition(japtext, GetCenterX, GetCenterY - 72, 0);
+	ObjRender_SetAlpha(japtext, 0);
+	Obj_SetRenderPriority(japtext, 0.6);
+
+	let engtext = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(engtext, img);
+	ObjSprite2D_SetSourceRect(engtext, 0, 64, 256, 128);
+	ObjSprite2D_SetDestCenter(engtext);
+	ObjRender_SetScaleXYZ(engtext, 0.6, 0.6, 0.6);
+	ObjRender_SetPosition(engtext, GetCenterX + 48, GetCenterY - 48, 0);
+	ObjRender_SetAlpha(engtext, 0);
+	Obj_SetRenderPriority(engtext, 0.6);
+
+	let fadeout = false;
+	renderalltexts(stage);
+	renderpic;
+	wait(30);
+	renderalltexts(japtext);
+	wait(100);
+	renderalltexts(engtext);
+	wait(180);
+	fadeout = true;
+
+	task renderalltexts(object){
+		let alpha = 0;
+		while(alpha < 255){
+			ObjRender_SetAlpha(object, alpha);
+			alpha += 2;
+			yield;
+		}
+		while(!fadeout){
+			yield;
+		}
+		while(alpha > 0){
+			ObjRender_SetAlpha(object, alpha);
+			alpha -= 4;
+			yield;
+		}
+		Obj_Delete(object);
+	}
+
+	task renderpic{
+		let alpha = 0;
+		let x = GetCenterX;
+		let z = -90;
+		while(alpha < 255){
+			ObjRender_SetAlpha(pic, alpha);
+			ObjRender_SetX(pic, x);
+			ObjRender_SetAngleZ(pic, z);
+			alpha += 2;
+			x += 48/128;
+			z += 90/128;
+			yield;
+		}
+		while(!fadeout){
+			yield;
+		}
+		while(alpha > 0){
+			ObjRender_SetAlpha(pic, alpha);
+			alpha -= 4;
+			yield;
+		}
+		Obj_Delete(pic);
+		Obj_Delete(stage);
+	}
+}
+
+task EnemyName(obj, name, r, g, b){
+  	let objText = ObjText_Create();
+  	ObjText_SetFontSize(objText,12);//new
+  	ObjText_SetFontType(objText, "Russell Square");
+  	ObjText_SetFontColorTop(objText, r, g, b);
+  	ObjText_SetFontColorBottom(objText, r/2, g/2, b/2);
+  	ObjText_SetFontBorderType(objText, BORDER_SHADOW);
+ 	ObjText_SetFontBorderColor(objText,255, 255, 255);
+ 	ObjText_SetFontBorderWidth(objText, 1);
+  	Obj_SetRenderPriority(objText, 0.8);
+ 	ObjRender_SetX(objText, 0);
+  	ObjRender_SetY(objText, 0);
+ 	ObjText_SetFontBorderColor(objText, 0, 0, 0);
+  	ObjText_SetText(objText, name);
+
+  	while(ObjEnemy_GetInfo(obj,INFO_LIFE)>0){
+  	 	yield;
+  	}
+    wait(12);
+  	Obj_Delete(objText);
+}
+
+task BottomEnemyMarker(obj, bossobj){
+	let imgnumber = GetCurrentScriptDirectory ~ "../IMG/Effect/enemymarker.png";
+ 	let objEnemy = ObjPrim_Create(OBJ_SPRITE_2D);
+ 	ObjRender_SetPosition(objEnemy, GetCenterX, GetStgFrameHeight+32, 1); 
+	ObjRender_SetBlendType(objEnemy, BLEND_ALPHA);
+	Obj_SetRenderPriority(objEnemy, 0.85);
+	ObjPrim_SetTexture(objEnemy, imgnumber);
+ 	ObjRender_SetAlpha(objEnemy, 255);
+ 	ObjSprite2D_SetSourceRect(objEnemy, 0, 0, 48, 16);
+	ObjSprite2D_SetDestCenter(objEnemy);
+
+	while(ObjEnemy_GetInfo(bossobj,INFO_LIFE)>0){
+		ObjRender_SetPosition(objEnemy, ObjMove_GetX(obj) + 32, GetStgFrameHeight+24, 1);
+    	yield;
+  	}
+    //wait(60); //So it doesn't look like they disappear in between attacks.
+  	wait(12);//It can only handle 12 yields, currently, before the script is closed.
+  	Obj_Delete(objEnemy);
+}
+
+
+task LifeCircle(renderObj, enemyObj){
+	let path = GetCurrentScriptDirectory() ~ "../System/img/Default_System.png";
+	let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D); //lifebar base
+	let objb = ObjPrim_Create(OBJ_PRIMITIVE_2D); //actual life bar
+	let obj2 = ObjPrim_Create(OBJ_SPRITE_LIST_2D); //boss stars
+	let obj3 = ObjPrim_Create(OBJ_SPRITE_LIST_2D); //life bar knobs
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetPrimitiveType(objb, PRIMITIVE_TRIANGLESTRIP);
+	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
+	ObjPrim_SetTexture(objb, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
+	ObjPrim_SetTexture(obj2, path);
+	ObjPrim_SetTexture(obj3, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
+	Obj_SetRenderPriority(obj, 0.31);
+	Obj_SetRenderPriority(objb, 0.32);
+	Obj_SetRenderPriority(obj2, 0.7);
+	Obj_SetRenderPriority(obj3, 0.33);
+
+	let lastRemStep = -1;
+	let lifeRateRender = 0;
+
+	let vertexcount = 64;
+	let innerrad = 60; //inner radius of the circle
+	let outerrad = 68; //outer radius of the circle
+
+	let objScene = ID_INVALID;
+	let bossEnemy = [];
+
+	ObjPrim_SetVertexCount(obj, vertexcount);
+	ObjPrim_SetVertexCount(objb, vertexcount);
+
+	let lifeM = ObjEnemy_GetInfo(enemyObj, INFO_LIFE); //starting life
+	loop{
+		ObjSpriteList2D_ClearVertexCount(obj2);
+		ObjSpriteList2D_ClearVertexCount(obj3);
+		if(!Obj_IsDeleted(enemyObj)){
+			if(length(GetEnemyBossObjectID) > 0){
+				ObjRender_SetAlpha(obj, 256);
+				ObjRender_SetAlpha(objb, 256);
+				ObjRender_SetAlpha(obj2, 256);
+				ObjRender_SetAlpha(obj3, 256);
+			}else{
+				ObjRender_SetAlpha(obj, 0);
+				ObjRender_SetAlpha(objb, 0);
+				ObjRender_SetAlpha(obj2, 0);
+				ObjRender_SetAlpha(obj3, 0);
+			}
+
+			let life = ObjEnemy_GetInfo(enemyObj, INFO_LIFE); //life remaining
+			ascent(i in 0..vertexcount/2){
+		        let indexvert = i*2;
+		        let angle = i*360/(vertexcount*0.5-1) - 90;
+		        let angle2 = -90-(life/lifeM)*i*360/(vertexcount*0.5-1);
+		        ObjPrim_SetVertexPosition(obj, indexvert+0, ObjRender_GetX(renderObj)+innerrad*cos(angle), ObjRender_GetY(renderObj)+innerrad*sin(angle), 0);
+		        ObjPrim_SetVertexPosition(obj, indexvert+1, ObjRender_GetX(renderObj)+outerrad*cos(angle), ObjRender_GetY(renderObj)+outerrad*sin(angle), 0);
+
+		        ObjPrim_SetVertexUVT(obj, indexvert+0, 10, 0);
+		        ObjPrim_SetVertexUVT(obj, indexvert+1, 20, 32);
+
+
+		        ObjPrim_SetVertexPosition(objb, indexvert+0, ObjRender_GetX(renderObj)+innerrad*cos(angle2), ObjRender_GetY(renderObj)+innerrad*sin(angle2), 0);
+		        ObjPrim_SetVertexPosition(objb, indexvert+1, ObjRender_GetX(renderObj)+outerrad*cos(angle2), ObjRender_GetY(renderObj)+outerrad*sin(angle2), 0);
+
+		        ObjPrim_SetVertexUVT(objb, indexvert+0, 0, 0);
+		        ObjPrim_SetVertexUVT(objb, indexvert+1, 10, 32);
+		    }
+		}else{
+			Obj_Delete(obj);
+			Obj_Delete(objb);
+			Obj_Delete(obj2);
+			Obj_Delete(obj3);
+			return;
+		}
+		yield;
+	}
+}
+
+task ObjMove_SetDestAtHermiteF(obj,dest_x,dest_y,x_dir,x_angle,y_dir,y_angle,frames){
+        real t = 0;
+        real ini_x = ObjRender_GetX(obj);
+        real ini_y = ObjRender_GetY(obj);
+        real speed = (1-0)/frames;
+ 
+        loop(frames){
+                real scale = t/1;
+                real h1a = 2*scale^3 - 3*scale^2 + 1;
+                real h2a = -2*scale^3 + 3*scale^2;
+                real h3a = scale^3 - 2*scale^2 + scale;
+                real h4a = scale^3 - scale^2;
+                real fx = h1a*ini_x + h2a*dest_x + h3a*x_dir + h4a*x_angle;
+               
+                real h1b = 2*scale^3 - 3*scale^2 + 1;
+                real h2b = -2*scale^3 + 3*scale^2;
+                real h3b = scale^3 - 2*scale^2 + scale;
+                real h4b = scale^3 - scale^2;
+                real fy = h1b*ini_y + h2b*dest_y + h3b*y_dir + h4b*y_angle;
+               
+                ObjRender_SetPosition(obj,fx,fy,0);
+               
+                t+=speed;
+                yield;
+        }
+}
+
+*/

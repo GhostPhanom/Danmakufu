@@ -1,0 +1,346 @@
+#include "./rb_Game_gfx_bulletbreak.dnh"
+#include "./rb_Game_gfx_bulletflash.dnh"
+#include "./rb_Game_gfx_laser.dnh"
+
+let imgEffects = GetCurrentScriptDirectory() ~ "img/arby26_explosion.png";
+let imgShot = GetCurrentScriptDirectory() ~ "img/arby26_Shot.png";
+function LoadEffects
+{
+	LoadTexture(imgEffects);
+	LoadTexture(imgShot);
+
+	InitBulletBreak(imgEffects);
+	InitBulletFlash(imgShot);
+	InitLaserGfx(imgShot);
+}
+function UnloadEffects
+{
+	RemoveBulletBreak;
+	RemoveBulletFlash;
+	RemoveLaserGfx;
+
+	RemoveTexture(imgEffects);
+	RemoveTexture(imgShot);
+}
+
+//let shotx_limit = 128;
+let shotx_limit = 512;
+let shotx_count = 0;
+
+task TExplosionNew(x, y, alpha, scale, frames) // Default-like explosion graphic
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, imgEffects);
+	Obj_SetRenderPriority(obj, 0.65);
+	ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	ObjSprite2D_SetSourceRect(obj, 1, 1, 63, 63);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj, x, y, 0);
+	ObjRender_SetAngleZ(obj, rand(0, 360));
+	ObjRender_SetColor(obj, 255, 0, 0);
+
+	let scale_rate = scale/frames;
+	let alpha_rate = alpha/frames;
+	scale = 0;
+	while(alpha > 0)
+	{
+		ObjRender_SetColor(obj, alpha, alpha, alpha);
+		ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+
+		scale += scale_rate;
+		alpha -= alpha_rate;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+task TExplosionNewAlpha(x, y, alpha, scale, frames) // Default-like explosion graphic, alpha
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, imgEffects);
+	Obj_SetRenderPriority(obj, 0.65);
+	//ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	ObjSprite2D_SetSourceRect(obj, 1, 1, 63, 63);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj, x, y, 0);
+	ObjRender_SetAngleZ(obj, rand(0, 360));
+	ObjRender_SetColor(obj, 0, 128, 255);
+
+	let scale_rate = scale/frames;
+	let alpha_rate = alpha/frames;
+	scale = 0;
+	while(alpha > 0)
+	{
+		ObjRender_SetAlpha(obj, alpha);
+		ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+
+		scale += scale_rate;
+		alpha -= alpha_rate;
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+
+task TExplosionSpark(x, y, angle, spd)
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, imgEffects);
+	Obj_SetRenderPriority(obj, 0.65);
+	ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+	ObjSprite2D_SetSourceRect(obj, 128, 128, 160, 176);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetAngleZ(obj, angle+90);
+
+	spd = spd+rand(-1,1);
+	let x_d = cos(angle)*spd;
+	let y_d = sin(angle)*spd;
+	TAlpha;
+	TScale;
+	loop(45) {
+		ObjRender_SetPosition(obj, x, y, 0);
+		x += x_d;
+		y += y_d;
+		yield;
+	}
+	Obj_Delete(obj);
+
+	task TAlpha {
+		let rd = rand(32,96);
+		let gn = rand(32,96);
+		let bl = rand(32,96);
+		let rd_d = rd/15;
+		let gn_d = gn/15;
+		let bl_d = bl/15;
+		loop(15)
+		{
+			ObjRender_SetColor(obj, rd, gn, bl);
+			rd += rd_d;
+			gn += gn_d;
+			bl += bl_d;
+			yield;
+		}
+		loop(15)
+		{
+			yield;
+		}
+		rd_d = -rd_d;
+		gn_d = -gn_d;
+		bl_d = -bl_d;
+		loop(15)
+		{
+			ObjRender_SetColor(obj, rd, gn, bl);
+			rd += rd_d;
+			gn += gn_d;
+			bl += bl_d;
+			yield;
+		}
+	}
+	task TScale {
+		let scale = 1;
+		let scale_d = -1/45;
+		loop(45)
+		{
+			ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+			scale += scale_d;
+			yield;
+		}
+	}
+}
+
+
+task TSparkle2(time, x, y, speedx, speedy, scale, scale2, rd, gn, bl, frames, blend_type) // 
+{
+	if(shotx_count < shotx_limit) {
+		shotx_count++;
+		time = time*(1-shotx_count/shotx_limit);
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		Obj_SetRenderPriority(obj, 0.61);
+		ObjPrim_SetTexture(obj, imgEffects);
+		ObjSprite2D_SetSourceRect(obj, 1,161,32,192);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj, blend_type);
+		//ObjRender_SetAlpha(obj, 255);
+		ObjRender_SetColor(obj, rd, gn, bl);
+
+		let tframe = 0;
+		let scale_inc = (scale2-scale)/time;
+		let rd_inc = -rd/time;
+		let gn_inc = -gn/time;
+		let bl_inc = -bl/time;
+		let a_i = rand(-10, 10);
+		let angle = rand(0, 360);
+		//let alpha = 512;
+		//let alpha_i = -alpha/time;
+		if(blend_type == BLEND_ALPHA) {
+			while(!Obj_IsDeleted(obj) && (tframe < time))
+			{
+				//ObjRender_SetAlpha(obj, alpha);
+				//alpha += alpha_i;
+
+				ObjRender_SetPosition(obj, x, y, 0);
+				x += speedx;
+				y += speedy;
+
+				ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+				scale += scale_inc;
+
+				ObjRender_SetAngleZ(obj, angle);
+				angle+= a_i;
+
+				tframe++;
+				yield;
+			}
+		}
+		else {
+			while(!Obj_IsDeleted(obj) && (tframe < time))
+			{
+				ObjRender_SetColor(obj, rd, gn, bl);
+				rd += rd_inc;
+				gn += gn_inc;
+				bl += bl_inc;
+
+				ObjRender_SetPosition(obj, x, y, 0);
+				x += speedx;
+				y += speedy;
+
+				ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+				scale += scale_inc;
+
+				ObjRender_SetAngleZ(obj, angle);
+				angle+= a_i;
+
+				tframe++;
+				yield;
+			}
+		}
+		shotx_count--;
+		Obj_Delete(obj);
+	}
+}
+
+
+task TSparkle3Anim(time, x, y, speedx, speedy, scale, scale2, rd, gn, bl, frames, blend_type)
+{
+	if(shotx_count < shotx_limit) {
+		shotx_count++;
+		time = time*(1-shotx_count/shotx_limit);
+
+		let obj = true;
+		let tframe = 0;
+		let scale_inc = (scale2-scale)/time;
+		let rd_inc = -rd/time;
+		let gn_inc = -gn/time;
+		let bl_inc = -bl/time;
+		let a_i = rand(-1, 1);
+		let angle = rand(0, 360);
+		//let alpha = 512;
+		//let alpha_i = -255/time;
+		let anim_frame = 0;
+		let anim_rate = 8/time;
+		let al = 255;
+		while(obj && (tframe < time))
+		{
+			let a_frame = truncate(anim_frame);
+			anim_frame += anim_rate;
+			BulletBreakFrame(a_frame, x,y, angle, scale, rd,gn,bl,al);
+
+			x += speedx;
+			y += speedy;
+
+			scale += scale_inc;
+
+			angle+= a_i;
+
+			al+=-255/time;
+			//rd += rd_inc;
+			//gn += gn_inc;
+			//bl += bl_inc;
+
+			tframe++;
+			yield;
+		}
+		obj=false;
+		shotx_count--;
+	}
+}
+task TSparkle3Anim_old(time, x, y, speedx, speedy, scale, scale2, rd, gn, bl, frames, blend_type)
+{
+	if(shotx_count < shotx_limit) {
+		shotx_count++;
+		time = time*(1-shotx_count/shotx_limit);
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		Obj_SetRenderPriority(obj, 0.61);
+		ObjPrim_SetTexture(obj, imgEffects);
+		ObjSprite2D_SetSourceRect(obj, 1,193,32,224);
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetBlendType(obj, blend_type);
+		//ObjRender_SetAlpha(obj, 255);
+		ObjRender_SetColor(obj, rd, gn, bl);
+
+		let tframe = 0;
+		let scale_inc = (scale2-scale)/time;
+		let rd_inc = -rd/time;
+		let gn_inc = -gn/time;
+		let bl_inc = -bl/time;
+		let a_i = rand(-1, 1);
+		let angle = rand(0, 360);
+		//let alpha = 512;
+		//let alpha_i = -255/time;
+		let anim_frame = 0;
+		let anim_rate = 8/time;
+		if(blend_type == BLEND_ALPHA) {
+			while(!Obj_IsDeleted(obj) && (tframe < time))
+			{
+				let a_frame = truncate(anim_frame);
+				ObjSprite2D_SetSourceRect(obj, 1 +a_frame*32,193,32 +a_frame*32,224);
+				anim_frame += anim_rate;
+
+				//ObjRender_SetAlpha(obj, alpha);
+				//alpha += alpha_i;
+
+				ObjRender_SetPosition(obj, x, y, 0);
+				x += speedx;
+				y += speedy;
+
+				ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+				scale += scale_inc;
+
+				ObjRender_SetAngleZ(obj, angle);
+				angle+= a_i;
+
+				tframe++;
+				yield;
+			}
+		}
+		else {
+			while(!Obj_IsDeleted(obj) && (tframe < time))
+			{
+				let a_frame = truncate(anim_frame);
+				ObjSprite2D_SetSourceRect(obj, 1 +a_frame*32,193,32 +a_frame*32,224);
+				anim_frame += anim_rate;
+
+				ObjRender_SetColor(obj, rd, gn, bl);
+				rd += rd_inc;
+				gn += gn_inc;
+				bl += bl_inc;
+
+				ObjRender_SetPosition(obj, x, y, 0);
+				x += speedx;
+				y += speedy;
+
+				ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+				scale += scale_inc;
+
+				ObjRender_SetAngleZ(obj, angle);
+				angle+= a_i;
+
+				tframe++;
+				yield;
+			}
+		}
+		Obj_Delete(obj);
+		shotx_count--;
+	}
+}

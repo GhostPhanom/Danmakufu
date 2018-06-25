@@ -1,0 +1,540 @@
+task CreatePoem
+{
+	let DokiFont = CSD ~ "./DokiDoki/Halogen.ttf"; //Halogen
+	InstallFont(DokiFont);
+	
+	let MousePosX = 0;
+	let MousePosY = 0;
+	
+	let PoemPartCount = 5;
+	let PoemPartCounter = 1;
+	
+	let FigureScale = 0.7;
+	let FigureY = 320;
+	let FigureStartX = 50;
+	let FigureDisX = 80;
+	let FigureRadiusX = 15;
+	
+	let objYuri;
+	let YuriState = "Stand";
+	let YuriHappyPath = CSD ~ "./DokiDoki/YuriHappy.png";
+	let YuriNormalPath = CSD ~ "./DokiDoki/YuriNormal.png";
+	let YuriGlitchPath = CSD ~ "./DokiDoki/YuriGlitch.png";
+
+	let objNatsuki;
+	let NatsukiState = "Stand";
+	let NatsukiNormalPath = CSD ~ "./DokiDoki/NatsukiNormal.png";
+	let NatsukiHappyPath = CSD ~ "./DokiDoki/NatsukiHappy.png";
+
+	let objSayori;
+	let SayoriState = "Stand";
+	let SayoriNormalPath = CSD ~ "./DokiDoki/SayoriNormal.png";
+	let SayoriHappyPath = CSD ~ "./DokiDoki/SayoriHappy.png";
+	
+	let StartWordFieldX = 175;
+	let StartWordFieldY = 112;
+	let WordSpalten = 2;
+	let WordZeilen = 4;
+	
+	let SingleWordWidth = 200;
+	let SingleWordHeight = 40;
+	let WordDisX = 150;
+	let WordDisY = 61;
+
+	let WordList = 
+	[
+		"dreadful", "Yuri", "0", 
+		"sparkle", "Natsuki", "0",
+		"sunshine", "Sayori", "0",
+		"dreadful2", "Yuri", "0", 
+		"dreadful3", "Yuri", "0", 
+		"dreadful4", "Yuri", "0", 
+		"dreadful5", "Yuri", "0", 
+		"sparkle2", "Natsuki", "0",
+		"sparkle3", "Natsuki", "0",
+		"sparkle4", "Natsuki", "0",
+		"sparkle5", "Natsuki", "0",
+		"sunshine2", "Sayori", "0",
+		"sunshine3", "Sayori", "0",
+		"sunshine4", "Sayori", "0"	
+	];
+	let Wordlistlength = (length(WordList) / 3) - 1;
+	
+	
+	let WordChoices = CreateStringArray(WordSpalten * WordZeilen * 3); //In dem Array sind: Der anzuzeigende String, die Aktion und die Position des Eintrags in der Wordlist
+	
+	let objBook = CreateBook;
+	CreateCaracters;
+	CreatePoemCounter;
+	
+	CreateAllChoices;
+	SetAllChoices;
+	
+	UpdateMouse;
+	
+	task CreateCaracters
+	{
+		objSayori = CreateSayori;
+		yield;
+		objNatsuki = CreateNatsuki;
+		yield;
+		objYuri = CreateYuri;
+	}
+	
+	task CreatePoemCounter
+	{
+		let obj = ObjText_Create;
+		ObjText_SetFontType(obj, "Halogen");
+		ObjText_SetFontSize(obj, 32);
+		ObjText_SetFontColorTop(obj, 0, 0, 0);
+		ObjText_SetFontColorBottom(obj, 0, 0, 0);
+		//ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderColor(obj, 228, 0, 118);
+		ObjText_SetHorizontalAlignment(obj, ALIGNMENT_LEFT);
+		//ObjText_SetMaxWidth(obj, SingleWordWidth);
+		ObjText_SetSidePitch(obj, 0);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetX(obj, 500);
+		ObjRender_SetY(obj, 32);
+		
+		while(PoemPartCounter <= PoemPartCount)
+		{
+			ObjText_SetText(obj, IntToString(PoemPartCounter) ~ "/" ~ IntToString(PoemPartCount));
+			yield;
+		}
+		Obj_Delete(obj);
+		DeletePoem;
+	}
+	
+	function CreateSayori
+	{
+		LoadTexture(SayoriNormalPath);
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, SayoriNormalPath);
+		ObjSprite2D_SetSourceRect(obj, 0, 1, GetTextureWidth(SayoriNormalPath) + 1, GetTextureHeight(SayoriNormalPath));
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj, FigureScale, FigureScale, FigureScale);
+		Obj_SetRenderPriorityI(obj, 96);
+		ObjRender_SetY(obj, FigureY);
+		ObjRender_SetX(obj, FigureStartX + FigureDisX * 0);
+		PositionControl(obj, SayoriNormalPath, SayoriHappyPath, "Sayori");
+		return obj;
+	}
+	function CreateNatsuki
+	{
+		LoadTexture(NatsukiNormalPath);
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, NatsukiNormalPath);
+		ObjSprite2D_SetSourceRect(obj, 0, 1, GetTextureWidth(NatsukiNormalPath) + 1, GetTextureHeight(NatsukiNormalPath));
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj, FigureScale, FigureScale, FigureScale);
+		Obj_SetRenderPriorityI(obj, 96);
+		ObjRender_SetY(obj, FigureY);
+		ObjRender_SetX(obj, FigureStartX + FigureDisX * 1);
+		PositionControl(obj, NatsukiNormalPath, NatsukiHappyPath, "Natsuki");
+		return obj;
+	}
+	function CreateYuri
+	{
+		LoadTexture(YuriNormalPath);
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, YuriNormalPath);
+		ObjSprite2D_SetSourceRect(obj, 0, 1, GetTextureWidth(YuriNormalPath) + 1, GetTextureHeight(YuriNormalPath));
+		ObjSprite2D_SetDestCenter(obj);
+		ObjRender_SetScaleXYZ(obj, FigureScale, FigureScale, FigureScale);
+		Obj_SetRenderPriorityI(obj, 96);
+		ObjRender_SetY(obj, FigureY);
+		ObjRender_SetX(obj, FigureStartX + FigureDisX * 2);
+		PositionControl(obj, YuriNormalPath, YuriHappyPath, "Yuri");
+		return obj;
+	}
+	
+	task PositionControl(obj, NormalPath, HappyPath, CaracterState) 
+		{
+			let CaracterX2 = ObjRender_GetX(obj);
+			let CaracterX1 = CaracterX2;
+			let MiddleX = FigureStartX + FigureDisX * 0;
+			let JumpHeight = 40;
+			
+			let JumpCooldown1 = 200;
+			let JumpCooldown2 = 350;
+			
+			let counter = 60;
+			let counter1 = round(rand(JumpCooldown1, JumpCooldown2)); //JumpCounter
+			while(WordChoices[0] != "DELETE POEM")
+			{
+				if(counter1 > 0){counter1--;}
+				if(counter1 == 0)
+				{
+					counter1 = round(rand(JumpCooldown1, JumpCooldown2));
+					if(CaracterState == "Yuri"){YuriState = "Jump";}
+					else if(CaracterState == "Natsuki"){NatsukiState = "Jump";}
+					else if(CaracterState == "Sayori"){SayoriState = "Jump";}
+				}
+				if(PoemPartCounter > PoemPartCount){break;}
+				
+				//Sayori
+				if(CaracterState == "Sayori" && SayoriState == "DoubleJump" )
+				{
+					let n = 40;
+					let angle2 = 0;
+					let angle1 = 180 / (n / 2);
+					ObjPrim_SetTexture(obj, HappyPath);
+					loop(n)
+					{
+						if(angle2 == 180){angle2 = 0;}
+						angle2 += angle1;
+						ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+						yield;
+					}
+					ObjPrim_SetTexture(obj, NormalPath);
+					SayoriState = "Stand";
+				}
+				
+				if(CaracterState == "Sayori" && SayoriState == "Jump")	
+				{
+					let n = 25;
+					let angle2 = 0;
+					let angle1 = 180 / n;
+					
+					let JumpVersion = round(rand(0, 1));
+					if(JumpVersion == 0) //StandingJump
+					{
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							yield;
+						}
+						SayoriState = "Stand";
+					}
+					if(JumpVersion == 1) //MovingJump
+					{
+						let StartX = ObjRender_GetX(obj);
+						let TargetX = rand(CaracterX2 - FigureRadiusX, CaracterX2 + FigureRadiusX);
+						let MoveX = (TargetX - StartX) / n;
+						if(MoveX >= 0) {ObjRender_SetAngleY(obj, 180);}
+						if(MoveX < 0) {ObjRender_SetAngleY(obj, 0);}
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							ObjRender_SetX(obj, ObjRender_GetX(obj) + MoveX);
+							yield;
+						}
+						SayoriState = "Stand";
+					}
+				}
+				
+				//Natsuki
+				if(CaracterState == "Natsuki" && NatsukiState == "DoubleJump" )
+				{
+					let n = 40;
+					let angle2 = 0;
+					let angle1 = 180 / (n / 2);
+					ObjPrim_SetTexture(obj, HappyPath);
+					loop(n)
+					{
+						if(angle2 == 180){angle2 = 0;}
+						angle2 += angle1;
+						ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+						yield;
+					}
+					ObjPrim_SetTexture(obj, NormalPath);
+					NatsukiState = "Stand";
+				}
+				
+				if(CaracterState == "Natsuki" && NatsukiState == "Jump")	
+				{
+					let n = 25;
+					let angle2 = 0;
+					let angle1 = 180 / n;
+					
+					let JumpVersion = round(rand(0, 1));
+					if(JumpVersion == 0) //StandingJump
+					{
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							yield;
+						}
+						NatsukiState = "Stand";
+					}
+					if(JumpVersion == 1) //MovingJump
+					{
+						let StartX = ObjRender_GetX(obj);
+						let TargetX = rand(CaracterX2 - FigureRadiusX, CaracterX2 + FigureRadiusX);
+						let MoveX = (TargetX - StartX) / n;
+						if(MoveX >= 0) {ObjRender_SetAngleY(obj, 180);}
+						if(MoveX < 0) {ObjRender_SetAngleY(obj, 0);}
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							ObjRender_SetX(obj, ObjRender_GetX(obj) + MoveX);
+							yield;
+						}
+						NatsukiState = "Stand";
+					}
+				}
+				
+				//Yuri
+				if(CaracterState == "Yuri" && YuriState == "DoubleJump" )
+				{
+					let n = 40;
+					let angle2 = 0;
+					let angle1 = 180 / (n / 2);
+					ObjPrim_SetTexture(obj, HappyPath);
+					loop(n)
+					{
+						if(angle2 == 180){angle2 = 0;}
+						angle2 += angle1;
+						ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+						yield;
+					}
+					ObjPrim_SetTexture(obj, NormalPath);
+					YuriState = "Stand";
+				}
+				
+				if(CaracterState == "Yuri" && YuriState == "Jump")	
+				{
+					let n = 25;
+					let angle2 = 0;
+					let angle1 = 180 / n;
+					
+					let JumpVersion = round(rand(0, 1));
+					if(JumpVersion == 0) //StandingJump
+					{
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							yield;
+						}
+						YuriState = "Stand";
+					}
+					if(JumpVersion == 1) //MovingJump
+					{
+						let StartX = ObjRender_GetX(obj);
+						let TargetX = rand(CaracterX2 - FigureRadiusX, CaracterX2 + FigureRadiusX);
+						let MoveX = (TargetX - StartX) / n;
+						if(MoveX >= 0) {ObjRender_SetAngleY(obj, 180);}
+						if(MoveX < 0) {ObjRender_SetAngleY(obj, 0);}
+						loop(n)
+						{
+							angle2 += angle1;
+							ObjRender_SetY(obj, FigureY - JumpHeight * sin(angle2));
+							ObjRender_SetX(obj, ObjRender_GetX(obj) + MoveX);
+							yield;
+						}
+						YuriState = "Stand";
+					}
+				}
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	
+	function CreateBook
+	{
+		let path = CSD ~ "./DokiDoki/notebook.png";
+		LoadTexture(path);
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path) -250, GetTextureHeight(path));
+		ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
+		Obj_SetRenderPriorityI(obj, 95);
+		CheckExistence;
+		return obj;
+		
+		task CheckExistence
+		{
+			while(WordChoices[0] != "DELETE POEM")
+			{
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+	
+	task TakeAction(Action)
+	{
+		alternative(Action)
+		case("Sayori")
+		{
+			PlayDokiSelectionSound(70);
+			SayoriState = "DoubleJump";
+			PoemPartCounter++;
+			ClearAllChoices;
+			SetAllChoices;
+		}
+		case("Yuri")
+		{
+			PlayDokiSelectionSound(70);
+			YuriState = "DoubleJump";
+			PoemPartCounter++;
+			ClearAllChoices;
+			SetAllChoices;
+		}
+		case("Natsuki")
+		{
+			PlayDokiSelectionSound(70);
+			NatsukiState = "DoubleJump";
+			PoemPartCounter++;
+			ClearAllChoices;
+			SetAllChoices;
+		}
+	}
+	
+	function DeletePoem
+	{
+		WordChoices[0] = "DELETE POEM";
+	}
+	
+	function ClearAllChoices
+	{
+		ascent(i in 0..(length(WordChoices) / 3))
+		{
+			WordChoices[i * 3] = "";
+			WordChoices[i * 3 + 1] = "";
+			WordChoices[i * 3 + 2] = "0";	
+		}
+		ascent(i in 0..(length(WordList)))
+		{
+			if(WordList[i] == "1")
+			{
+				WordList[i] = "0";
+			}
+		}
+		
+	}
+	
+	function SetAllChoices
+	{
+		ascent(i in 0..(length(WordChoices) / 3))
+		{
+			SelectWord(i * 3);		
+		}
+	}
+	
+	function CreateAllChoices
+	{
+		let index = 0;
+		ascent(i in 0..2)
+		{
+			ascent(h in 0..4)
+			{
+				CreateChoice(StartWordFieldX + (SingleWordWidth / 2) + (WordDisX * i), StartWordFieldY + (SingleWordHeight / 2) + (WordDisY * h), index);
+				index++;
+			}
+		}
+	}
+	
+	function CreateChoice (x, y, index)
+	{
+		let obj = ObjText_Create;
+		//ObjText_SetText(obj, "Score");
+		ObjText_SetFontType(obj, "Halogen");
+		ObjText_SetFontSize(obj, 33);
+		//ObjText_SetFontBold(obj, true);
+		ObjText_SetFontColorTop(obj, 0, 0, 0);
+		ObjText_SetFontColorBottom(obj, 0, 0, 0);
+		ObjText_SetFontBorderWidth(obj, 1);
+		//ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderColor(obj, 228, 0, 118);
+		ObjText_SetHorizontalAlignment(obj, ALIGNMENT_LEFT);
+		ObjText_SetMaxWidth(obj, SingleWordWidth);
+		ObjText_SetSidePitch(obj, 0);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetX(obj, x);
+		ObjRender_SetY(obj, y);
+		
+		
+		CheckMousePosition(obj, x, y, index);
+		
+		task CheckMousePosition(obj, x, y, index)
+		{
+			let counter = 0;
+			while(WordChoices[0] != "DELETE POEM")
+			{
+				ObjText_SetText(obj, WordChoices[index * 3]);
+				if(GetMouseX >= x && GetMouseX <= x + ObjText_GetTotalWidth(obj) && GetMouseY >= y && GetMouseY <= y + SingleWordHeight && GetMouseState(MOUSE_LEFT) == KEY_PUSH && counter < 1)
+				{
+					WordList[atoi(WordChoices[index * 3 + 2]) + 2] = "2";
+					ObjText_SetFontBorderType(obj, BORDER_NONE);
+					TakeAction(WordChoices[index * 3 + 1]);
+					counter = 10;
+				}
+				else if(GetMouseX >= x && GetMouseX <= x + ObjText_GetTotalWidth(obj) && GetMouseY >= y && GetMouseY <= y + SingleWordHeight)
+				{
+					ObjText_SetFontBorderType(obj, BORDER_FULL);
+					ObjText_SetFontBorderColor(obj, 228, 0, 118);
+				}
+				else
+				{
+					ObjText_SetFontBorderType(obj, BORDER_NONE);
+					ObjText_SetFontBorderColor(obj, 0, 255, 0);
+				}
+				yield;
+				counter--;
+			}
+			Obj_Delete(obj);
+		}
+	}
+	
+	function SelectWord (Arrayindex)
+	{
+		let ChoiceFound = false;
+		while(ChoiceFound == false)
+		{
+			let Choice = round(rand(0, Wordlistlength));
+			if(WordList[Choice * 3 + 2] == "0")
+			{
+				WordChoices[Arrayindex] = WordList[Choice * 3]; //Anzuzeigender String
+				WordChoices[Arrayindex + 1] = WordList[Choice * 3 + 1]; //Aktion
+				WordChoices[Arrayindex + 2] = IntToString(Choice * 3); //Position in der Wordlist
+				WordList[Choice * 3 + 2] = "1";
+				ChoiceFound = true;
+			}
+		}
+	}
+	
+	task UpdateMouse
+	{
+		while(WordChoices[0] != "DELETE POEM")
+		{
+			MousePosX = GetMouseX;
+			MousePosY = GetMouseY;
+			yield;
+		}
+	}
+	
+	function PlayDokiSelectionSound(v)
+	{
+		let obj = ObjSound_Create;
+		ObjSound_Load(obj, CSD ~ "./DokiDoki/DokiSelect.wav");
+		ObjSound_SetVolumeRate(obj, v);
+		ObjSound_Play(obj);
+	}
+	
+	function CreateIntArray(n)
+	{
+		let Array = [0];
+		loop(n - 1)
+		{
+			Array = Array ~ [0];
+		}
+		return Array;
+	}
+	
+	function CreateStringArray(n)
+	{
+		let Array = [""];
+		loop(n - 1)
+		{
+			Array = Array ~ [""];
+		}
+		return Array;
+	}
+}
