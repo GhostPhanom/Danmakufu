@@ -37,6 +37,10 @@
 		{
 			PlayVideo(value[1], atoi(value[2]), ator(value[3]));
 		} 
+		if (value[0]=="BG")
+		{
+			Titlescreen3;
+		} 
 	}
 }
 
@@ -48,14 +52,20 @@ let loadingBar = -1;
     yield;
 }
 
+task Titlescreen3
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestRect(obj, CSD ~ "./Sprite/Titlescreen.png", 0, 0, 640, 480);
+	ObjRender_SetAngleZ(obj, 180);
+	Obj_SetRenderPriorityI(obj, 99);
+}
+
 task LoadVideos
 {
 	wait(19);
 	CreateLoadingScreen;
 	yield;
-	LoadVideo("Video4", 1507);
-	LoadVideo("Video3", 215);
-	LoadVideo("Video1", 741);
+	LoadVideo("Video1", 535);
 	DeleteLoadingScreen;
 }
 
@@ -124,9 +134,9 @@ task PlayVideo(folder, frames, duration) //duration in sec / 30 FPS Version
 	
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjPrim_SetTexture(obj, videopath ~ IntToString(0) ~ ".jpg");
-	ObjSprite2D_SetSourceRect(obj, 0, 0, size - 4, size - 4);
-	ObjSprite2D_SetDestRect(obj, x + 2, y + 2, x + size - 2, y + size - 2);
-	Obj_SetRenderPriorityI(obj, 10);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 640, 480);
+	ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
+	Obj_SetRenderPriorityI(obj, 61);
 	
 	/* //Path Debug
 	let test = CreateTestCounter(-600, 200);

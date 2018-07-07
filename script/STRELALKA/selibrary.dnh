@@ -90,6 +90,10 @@ let se;
 let s = ObjSound_Create;
 
 task PlaySound(str,v,w){
+	if(str == "zitrone"){ObjSound_Load(s,MainSTG~"bgm/Zitrone.wav");}
+	if(str == "anwaehlen"){ObjSound_Load(s,MainSTG~"bgm/anwaehlen.mp3");}
+	if(str == "subspace"){ObjSound_Load(s,MainSTG~"bgm/Subspace.wav");}
+	if(str == "goauld_shot"){ObjSound_Load(s,MainSTG~"bgm/Goauld Shot.wav");}
 	if(str == "capture"){ObjSound_Load(s,MainSTG~"sound/capture.wav");}
 	if(str == "Shot1"){ObjSound_Load(s,MainSTG~"sound/Shot1.wav");}
 	if(str == "Shot2"){ObjSound_Load(s,MainSTG~"sound/Shot2.wav");}
@@ -208,6 +212,11 @@ task PlaySound(str,v,w){
 
 
 task LoadSE{
+	LoadSound("./../../bgm/Zitrone.wav");
+	LoadSound("./../../bgm/Subspace.wav");
+	LoadSound("./../../bgm/anwaehlen.mp3");
+	LoadSound("./../../bgm/Goauld Shot.wav");
+
 	LoadSound("./../../sound/capture.wav");
 	LoadSound("./../../sound/Shot1.wav");
 	LoadSound("./../../sound/Shot2.wav");

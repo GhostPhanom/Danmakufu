@@ -34,6 +34,18 @@ function CorrectTiming2(w, t)
 	return w;
 }
 
+task ObjMusic_LowerVolume(obj, vol, n)
+{
+	let curvol = ObjSound_GetVolumeRate(obj);
+	let volpart = vol - curvol;
+	loop(n)
+	{
+		curvol -= volpart;
+		ObjSound_SetVolumeRate(obj, curvol);
+		yield;
+	}
+}
+
 ///////////////////////////////////
 ///MOVE FUNCTIONS//////////////////
 ///////////////////////////////////
@@ -329,6 +341,15 @@ task ObjRender_SetDestAtFrame(obj, x, y, frames)
 		expectedX += xpart;
 		expectedY += ypart;
 		ObjRender_SetPosition(obj, expectedX, expectedY, 0);
+	}
+}
+
+task ObjRender_SetFollow(obj, obj2)//obj , obj to follow
+{
+	while(!Obj_IsDeleted(obj) && !Obj_IsDeleted(obj2))
+	{
+		ObjRender_SetPosition(obj, ObjRender_GetX(obj2), ObjRender_GetY(obj2), 0);
+		yield;
 	}
 }
 
