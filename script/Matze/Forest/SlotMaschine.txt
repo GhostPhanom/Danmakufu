@@ -1,0 +1,192 @@
+    #TouhouDanmakufu[Plural]
+    #ScriptVersion[3]
+    #Title["SlotMaschine"]
+    #Text["blaaa"]
+	#BGM[""]
+    #System["./system/Default_System.txt"]
+	
+	#include"../Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
+#include"../Generalfunction.dnh"
+#include"../effectlibrary.dnh"
+#include"../selibrary.dnh"
+	
+	
+	
+   
+  
+	
+	
+	
+    @Event{
+       
+    }
+    @Initialize{
+	   
+		
+	   
+		
+		
+		
+        MainTask;
+    }
+	
+	
+    @MainLoop
+	{
+        
+		
+        yield;
+    }
+	
+    task MainTask
+    {	
+	
+	Kasten;
+	
+	
+    }
+	
+	
+	
+	task Kasten
+	{
+		let SlotPanelsTXT = CSD ~ "./Forest/slot_panels4.png";
+		let MaschineTXT   = CSD ~ "./Forest/OPERATION wews slots maschine.png"; //320x480   <------PFEIL
+		
+		LoadTexture(SlotPanelsTXT);
+		LoadTexture(MaschineTXT);
+		
+	
+		//------------------------------------------------------------------------------------------
+		let Maschine = ObjPrim_Create(OBJ_SPRITE_2D);
+		
+		let MaschineX1=GetCenterX-GetTextureWidth(MaschineTXT)/2;
+		let MaschineY1=0;
+		
+		let MaschineX2=GetCenterX+GetTextureWidth(MaschineTXT)/2;
+		let MaschineY2=GetStgFrameHeight;
+		
+		let MaschineScaling;
+		let MaschineScalingX  = (MaschineX2-MaschineX1)/GetTextureWidth(MaschineTXT);
+		//RaiseError(MaschineScalingX);
+		
+		ObjPrim_SetTexture(Maschine,MaschineTXT);
+		
+		ObjSprite2D_SetSourceRect(Maschine,0,0,GetTextureWidth(MaschineTXT),GetTextureHeight(MaschineTXT));
+		ObjSprite2D_SetDestRect(Maschine,MaschineX1,MaschineY1,MaschineX2,MaschineY2);
+		
+		
+		
+		//-----------------------Strich-------------------------------------------
+		
+		let Strich = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(Strich,"");
+		ObjSprite2D_SetSourceRect(Strich,0,0,1,1);
+		ObjSprite2D_SetDestRect(Strich,0,GetCenterY-1,384,GetCenterY+1);
+		Obj_SetRenderPriorityI(Strich,79);
+		
+		
+		//--------------------------------------------Panels--------------------
+		
+		
+		let SlotScaling=256/64*MaschineScalingX;
+		//RaiseError(SlotScaling);
+		let SlotWidth=256/SlotScaling;
+		let SlotXOffSet=(14*MaschineScalingX)+MaschineX1;
+		
+		let SlotPanelsEins = ObjPrim_Create(OBJ_SPRITE_2D);
+		
+		PanelScrollEins(SlotPanelsEins);
+
+		ObjPrim_SetTexture(SlotPanelsEins,SlotPanelsTXT);
+		ObjSprite2D_SetSourceRect(SlotPanelsEins,0,0,GetTextureWidth(SlotPanelsTXT),GetTextureHeight(SlotPanelsTXT));
+		ObjSprite2D_SetDestRect(SlotPanelsEins,SlotXOffSet,0,SlotXOffSet+SlotWidth,GetStgFrameHeight);
+		
+		task PanelScrollEins(obj)
+		{
+			let ScrollingSpeed=0;
+			let ScrollingMaxSpeed=100;
+			let ScrollingTimer=60;
+			let ScrollingState=0;       //   0 --> "Bremsen"       1 --> "Beschleunigen"      2 --> "Auf Bremspunkt warten"            
+			let ScrollingCounter=0;
+			let ScrollingBremsweg=0;
+			
+			
+			ascent(i in 0..ScrollingTimer)
+			{
+				ScrollingBremsweg+=ScrollingMaxSpeed-ScrollingMaxSpeed/ScrollingTimer*i;
+			}
+			let ScrollingBremsPunkt=(ScrollingBremsweg%256 - 256) * -1;
+			
+			loop
+			{
+				if(ScrollingState == 2)
+				{
+					let remainingway = (ScrollingCounter * -1) % 256;
+					let Bremspunkt = (ScrollingBremsPunkt + 256);
+					let Bremsdis = Bremspunkt - remainingway;
+					let Bremstimepart = Bremsdis / ScrollingMaxSpeed;
+					
+					while(Bremstimepart % 1 < 0.5)
+					{
+						Bremsdis += 256;
+						Bremstimepart = Bremsdis / ScrollingMaxSpeed;
+						if(Bremstimepart >= 60){Bremstimepart = 30;break;}//Fallback
+					}
+					let Bremspunktzeit = ceil(Bremstimepart);
+					let Bremsdispart = Bremsdis / Bremspunktzeit;
+					
+					loop(Bremspunktzeit)
+					{
+						ObjSprite2D_SetSourceRect(SlotPanelsEins,0,0+ScrollingCounter,GetTextureWidth(SlotPanelsTXT),GetTextureHeight(SlotPanelsTXT)+ScrollingCounter);
+						ScrollingCounter+=Bremsdispart * -1;
+						yield;
+					}
+					ScrollingState=0;
+				}
+				else if(ScrollingState==0)
+				{
+					ScrollingSpeed-=ScrollingMaxSpeed/ScrollingTimer;
+					
+					if(ScrollingSpeed<0)
+					{
+						ScrollingSpeed=0;
+					}
+				}
+				else
+				{
+					ScrollingSpeed+=ScrollingMaxSpeed/ScrollingTimer;
+					
+					if(ScrollingSpeed>ScrollingMaxSpeed)
+					{
+						ScrollingSpeed=ScrollingMaxSpeed;
+					}
+				}
+				
+				if(GetVirtualKeyState(VK_SHOT)==KEY_PUSH)
+				{
+					if(ScrollingState==0)
+					{
+						ScrollingState=1;
+					}
+					else if(ScrollingState==1)
+					{
+						ScrollingState=2;
+					}
+				}
+				ObjSprite2D_SetSourceRect(SlotPanelsEins,0,0+ScrollingCounter,GetTextureWidth(SlotPanelsTXT),GetTextureHeight(SlotPanelsTXT)+ScrollingCounter);
+				ScrollingCounter+=ScrollingSpeed * -1;
+				yield;
+			}
+		
+		}
+	
+	}
+	
+	
+	
+	
+		
+		
+	
+	

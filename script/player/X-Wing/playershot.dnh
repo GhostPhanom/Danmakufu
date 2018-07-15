@@ -18,6 +18,16 @@ ShotData
 	alpha = 64
 	collision = 4
 }
+ShotData
+{
+    id = 3
+    rect = (0,0,54,54)
+    render = ALPHA
+    alpha = 150
+    collision = 16
+    angular_velocity = -4
+    fixed_angle=false
+} 
 /*
 ShotData
 { 
