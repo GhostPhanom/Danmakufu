@@ -299,6 +299,18 @@ task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
 	}
 }
 
+task ObjRender_SetAlphaAtFrame(obj, startalpha, endalpha, t)
+{
+	let alphapart = (endalpha - startalpha) / t;
+	
+	loop(t)
+	{
+		startalpha += alphapart;
+		ObjRender_SetAlpha(obj, startalpha);
+		yield;
+	}
+}
+
 task ObjRender_SetDestAtFrame(obj, x, y, frames)
 {	
 	let xpart = (x - ObjRender_GetX(obj)) / frames;
