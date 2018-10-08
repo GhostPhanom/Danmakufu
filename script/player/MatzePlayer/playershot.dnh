@@ -1,0 +1,56 @@
+shot_image = "./Shotsheet.png"
+
+// A typical shotdata. Parameters: (id, texture location, render type, alpha value, collision radius)
+ShotData
+{
+	id = 0
+	AnimationData
+	{
+		animation_data=(5,0,0,8,8)
+		animation_data=(5,8,0,16,8)
+		animation_data=(5,16,0,24,8)
+		animation_data=(5,24,0,32,8)
+
+	}
+	render = ADD_ARGB
+	alpha = 255
+	angular_velocity = -4
+	collision = 6
+}
+
+ShotData //Graphicless
+{
+	id = 1
+	rect = (0,0,0,0)
+	render = ALPHA
+	alpha = 64
+	collision = 6
+}
+ShotData
+{
+    id = 3
+    rect = (0,0,54,54)
+    render = ALPHA
+    alpha = 150
+    collision = 16
+    angular_velocity = -4
+    fixed_angle=false
+} 
+/*
+ShotData
+{ 
+	id=3 
+	AnimationData
+	{
+		animation_data=(1,384,0,415,63)
+		animation_data=(1,416,0,447,63)
+		animation_data=(1,448,0,479,63)
+		animation_data=(1,480,0,511,63)
+		animation_data=(1,384,64,415,127)
+		animation_data=(1,416,64,447,127)
+		animation_data=(1,448,64,479,127)
+		animation_data=(1,480,64,511,127)
+	}
+	render=ALPHA collision = (0, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false 
+}
+*/

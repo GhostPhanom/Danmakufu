@@ -110,6 +110,20 @@ function NormalizeAngle(angle)//Should be used if angle is needed for mathematic
  	return angle;
 }
 
+task FollowObj(origin, followtarget)
+{
+	while(!Obj_IsDeleted(origin) && !Obj_IsDeleted(followtarget))
+	{
+		ObjRender_SetPosition(origin, ObjRender_GetX(followtarget), ObjRender_GetY(followtarget), 0);
+		yield;
+	}
+	if(!Obj_IsDeleted(origin))
+	{
+		WriteLog("Deleted Obj because the followtarget was killed");
+		Obj_Delete(origin);
+	}
+}
+
 //(Blargel)
 function AngularDistance(angle1, angle2){ //Should be useful for homing bullets
 	let distance = NormalizeAngle(angle2 - angle1);
@@ -685,7 +699,7 @@ task ScreenShakeA1(shaketime, intensity){
 
 task ScreenFlash(n1, n2, n3, R, G, B, priority)
 {
-	let path = CSD ~ "./System/img/dot.png";
+	let path = "";
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjPrim_SetTexture(obj, path);
 	ObjSprite2D_SetSourceRect(obj, 0, 0, 1, 1);
@@ -723,6 +737,25 @@ function CreateTestCounter(x, y)//Creates a simple Textobj to use it as a debug 
 	ObjText_SetFontBorderWidth(obj, 1);
 	ObjText_SetFontBorderColor(obj, 0, 0, 0);
 	return obj;
+}
+function CreateTestCounterList(x, y, size, count)//Creates a simple Textobj to use it as a debug field
+{
+	let array = [];
+	
+	ascent(i in 0..count)
+	{
+		let obj = ObjText_Create;
+		ObjText_SetFontSize(obj, size);
+		ObjRender_SetPosition(obj, x, y + size * i, 0);
+		Obj_SetRenderPriorityI(obj, 79);
+		ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderWidth(obj, 1);
+		ObjText_SetFontBorderColor(obj, 0, 0, 0);
+		
+		array = array ~ [obj];
+	}
+
+	return array;
 }
 
 //0.12m style invincibility (AJS)
