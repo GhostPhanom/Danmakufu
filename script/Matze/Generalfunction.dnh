@@ -661,6 +661,14 @@ function wait (n)
 	}
 }
 
+function DeleteObjArray(array)
+{
+	ascent(i in 0..length(array))
+	{
+		Obj_Delete(array[i]);
+	}
+}
+
 function rand_int(min, max)
 {
      return truncate(rand(min, max + 1))
