@@ -624,13 +624,51 @@ function SetPlayerInvincibility(bool)
 }
 
 ///////////////////////////////////
-///MISC FUNCTIONS//////////////////
+///ARRAY FUNCTIONS/////////////////
 ///////////////////////////////////
+function FloatArrayToString(array)
+{
+	let returnstring = "";
+	ascent(i in 0..length(array))
+	{
+		returnstring = returnstring ~ ToString(array[i]);
+	}
+	return returnstring;
+}
+
+function IntArrayToString(array)
+{
+	let returnstring = "";
+	ascent(i in 0..length(array))
+	{
+		returnstring = returnstring ~ IntToString(array[i]);
+	}
+	return returnstring;
+}
+
+function ShuffleArray(array)
+{
+	let temp = 0;
+	let choice = 0;
+	descent(i in 1..length(array))
+	{
+		choice = rand_int(0, i);
+		temp = array[i];
+		array[i] = array[choice];
+		array[choice] = temp;
+	}
+	return array;
+}
+
 function CreateEmptyFloatArray
 {
 	let array = [1];
 	return array[0..0]; //same as array=slice(array, 0, 0)
 }
+
+///////////////////////////////////
+///MISC FUNCTIONS//////////////////
+///////////////////////////////////
 
 function CompareFloats (input1, input2) 
 {
@@ -674,9 +712,9 @@ function rand_int(min, max)
      return truncate(rand(min, max + 1))
 }
 
-function RandomChoice(Number, Array)
+function RandomChoice(Array)
 {
-	let choice = rand_int(0, Number - 1);
+	let choice = rand_int(0, length(Array) - 1);
 	return Array[choice];
 }
 
