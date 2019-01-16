@@ -455,7 +455,7 @@ task DisplayText(objText, Text)
 	
 	while(lettercounter != endlength)
 	{
-		if(!Obj_IsDeleted(objText)){return;}
+		if(Obj_IsDeleted(objText)){return;}
 		
 		if(Text[lettercounter] == ' ')//Wenn ein Leerzeichen kommt
 		{
