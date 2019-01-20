@@ -325,6 +325,20 @@ task ObjRender_SetAlphaAtFrame(obj, startalpha, endalpha, t)
 	}
 }
 
+task ObjRender_SetScaleAtFrame(obj, startx, starty, endx, endy, t)
+{
+	let xpart = (endx - startx) / t;
+	let ypart = (endy - starty) / t;
+	
+	loop(t)
+	{
+		startx += xpart;
+		starty += ypart;
+		ObjRender_SetScaleXYZ(obj, startx, starty, 0);
+		yield;
+	}
+}
+
 task ObjRender_SetDestAtFrame(obj, x, y, frames)
 {	
 	let xpart = (x - ObjRender_GetX(obj)) / frames;
