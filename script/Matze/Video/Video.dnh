@@ -1,6 +1,8 @@
 
-
+//NotifyEvent(GetCommonData("VideoScriptID", 9999999), EV_USER, ["PlayVideo", "Video1", "535", "17.3"]);
 #include"../Generalfunction.dnh"
+
+let loading = false;
 
 @Initialize
 {
@@ -9,6 +11,7 @@
 	//PlayVideo("Video1", 741, 49.46);
 	
 	LoadVideos;
+	//TestVideo;
 	
 	SetCommonData("VideoScriptID", GetOwnScriptID());
 	//CreateShotA1(100, 100, 2, 90, 31, 0);
@@ -35,7 +38,13 @@
 		} 
 		if (value[0]=="PlayVideo")
 		{
+			while(loading){yield;}
 			PlayVideo(value[1], atoi(value[2]), ator(value[3]));
+		} 
+		if (value[0]=="PlayTestVideo")
+		{
+			while(loading){yield;}
+			PlayTestVideo(value[1], atoi(value[2]), ator(value[3]));
 		} 
 	}
 }
@@ -50,13 +59,59 @@ let loadingBar = -1;
 
 task LoadVideos
 {
-	wait(19);
+	loading = true;
+	wait(20);
 	CreateLoadingScreen;
-	yield;
-	LoadVideo("Video4", 1507);
-	LoadVideo("Video3", 215);
-	LoadVideo("Video1", 741);
+	wait(10);
+	//LoadVideo("Video4", 1507);
+	//LoadVideo("Video3", 215);
+	//LoadVideo("Video1", 741);
+	//LoadVideo("Video5", 1389);
+	LoadVideo("Video9", 1391);
+	//LoadVideo2("Video5", 1389);
 	DeleteLoadingScreen;
+	yield;
+	loading = false;
+}
+
+task PlayTestVideo(folder, frames, duration) //duration in sec / 30 FPS Version
+{
+	let videopath = GetCurrentScriptDirectory ~ folder ~ "/";
+
+	let x = videoPlayerX;
+	let y = videoPlayerY;
+	let size = videoPlayerSize;
+	
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, videopath ~ IntToString(0) ~ ".jpg");
+	//ObjSprite2D_SetSourceRect(obj, 0, 0, size - 4, size - 4);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 320, 240);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetPosition(obj, 321, 241, 0);
+	ObjRender_SetScaleXYZ(obj, 2, 2, 1);
+	//ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
+	Obj_SetRenderPriorityI(obj, 90);
+	
+	PlaySound(videopath ~ "Ton.ogg");
+	
+	/* //Path Debug
+	let test = CreateTestCounter(-600, 200);
+	ObjText_SetText(test, videopath ~ IntToString(0) ~ ".jpg");
+	*/
+	
+	let timeinframes = CorrectTiming2(round(duration * 60), 45);
+	let timeperframe = timeinframes / frames;
+	let elapsedtime = 0;
+	
+	while(elapsedtime <= timeinframes)
+	{
+		let timecounter = truncate(elapsedtime / timeperframe);
+		ObjPrim_SetTexture(obj, videopath ~ IntToString(timecounter) ~ ".jpg");
+		
+		elapsedtime ++;
+		yield;
+	}
+	Obj_Delete(obj);
 }
 
 function CreateLoadingScreen
@@ -124,7 +179,8 @@ task PlayVideo(folder, frames, duration) //duration in sec / 30 FPS Version
 	
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjPrim_SetTexture(obj, videopath ~ IntToString(0) ~ ".jpg");
-	ObjSprite2D_SetSourceRect(obj, 0, 0, size - 4, size - 4);
+	//ObjSprite2D_SetSourceRect(obj, 0, 0, size - 4, size - 4);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, 640, 480);
 	ObjSprite2D_SetDestRect(obj, x + 2, y + 2, x + size - 2, y + size - 2);
 	Obj_SetRenderPriorityI(obj, 10);
 	
@@ -173,7 +229,31 @@ function LoadVideo(folder, frames)
 	let videopath = GetCurrentScriptDirectory ~ folder ~ "/";
 	ascent(i in 0..frames + 1)
 	{
+		LoadTextureInLoadThread(videopath ~ IntToString(i) ~ ".jpg");
+	}
+}
+
+function LoadVideo2(folder, frames)
+{
+	let text = ObjText_Create;
+	Obj_SetRenderPriorityI(text, 99);
+	ObjText_SetFontSize(text, 40);
+	ObjRender_SetPosition(text, 320, 240, 0);
+	
+	let counter = 0;
+	
+	let videopath = GetCurrentScriptDirectory ~ folder ~ "/";
+	ascent(i in 0..frames + 1)
+	{
+		counter++;
 		LoadTexture(videopath ~ IntToString(i) ~ ".jpg");
+		if(counter == 50)
+		{
+			ObjText_SetText(text, IntToString(i) ~ "/" ~ IntToString(frames));
+			WriteLog(IntToString(i));
+			counter = 0;
+			wait(10);
+		}
 	}
 }
 

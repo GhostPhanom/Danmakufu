@@ -5,18 +5,42 @@
 ///////////////////////////////////
 function ObjMusic_CreateSE(path, vol)
 {
+	//LoadSound(path);
+	let obj = ObjSound_Create;
+	ObjSound_Load(obj, path);
+	ObjSound_Play(obj);
+	ObjSound_SetVolumeRate(obj, vol);
+	Selfdelete;
+	return obj;
+	
+	task Selfdelete
+	{
+		yield;
+		while(ObjSound_IsPlaying(obj))
+		{
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
+/*
+function ObjMusic_CreateSE(path, vol)
+{
 	let obj = ObjSound_Create;
 	ObjSound_Load(obj, path);
 	ObjSound_Play(obj);
 	ObjSound_SetVolumeRate(obj, vol);
 	return obj;
 }
-
+*/
 function ObjMusic_CreateBGM(path, vol)
 {
+	LoadSound(path);
 	let obj = ObjSound_Create;
+	ObjSound_SetSoundDivision(obj, SOUND_BGM);
 	ObjSound_Load(obj, path);
 	ObjSound_Play(obj);
+	ObjSound_SetRestartEnable(obj, true);
 	ObjSound_SetLoopEnable(obj, true);
 	ObjSound_SetVolumeRate(obj, vol);
 	return obj;
@@ -313,6 +337,17 @@ task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
 	}
 }
 
+task ObjRender_SetSpinAtFrame(obj, targetspin, t)
+{
+	let dis = targetspin - ObjRender_GetAngleZ(obj);
+	let dispart = dis / t;
+	loop(t)
+	{
+		ObjRender_SetAngleZ(obj, ObjRender_GetAngleZ(obj) + dispart);
+		yield;
+	}
+}
+
 task ObjRender_SetAlphaAtFrame(obj, startalpha, endalpha, t)
 {
 	let alphapart = (endalpha - startalpha) / t;
@@ -538,6 +573,7 @@ task FadeDeleteDelay(obj,n,n2) //n wait before starting to fade / n2 actual fadi
 	}
 	Obj_Delete(obj);
 }
+
 
 task FadeDelete(obj, n, alpha) //n fading time; alpha startalpha
 {
