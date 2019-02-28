@@ -112,6 +112,17 @@ task TPlural{
     let obj = ObjEnemyBossScene_Create();
     ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerN1.dnh");
     ObjEnemyBossScene_Add(obj, 0, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 1, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 2, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 3, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 4, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 5, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 6, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 7, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 8, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 9, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 10, dir ~ "./ShortFights/EmporerS1.dnh");
+    ObjEnemyBossScene_Add(obj, 11, dir ~ "./ShortFights/EmporerS1.dnh");
     ObjEnemyBossScene_LoadInThread(obj);
     ObjEnemyBossScene_Regist(obj);
     while(!Obj_IsDeleted(obj)){
