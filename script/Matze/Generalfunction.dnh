@@ -328,6 +328,21 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 	}
 }
 
+function ObjSprite2D_SetSourceDestCenter(obj, path)
+{
+	LoadTexture(path);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+	ObjSprite2D_SetDestCenter(obj);
+}
+
+function ObjSprite2D_SetSourceDestRect(obj, path, x1, y1, x2, y2)
+{
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
+	ObjSprite2D_SetDestRect(obj, x1, y1, x2, y2);
+}
+
 task ObjRender_SetSpin(obj, speed, dir)//dir 1 or -1
 {
 	while(!Obj_IsDeleted(obj))
@@ -396,21 +411,6 @@ task ObjRender_SetDestAtFrame(obj, x, y, frames)
 		expectedY += ypart;
 		ObjRender_SetPosition(obj, expectedX, expectedY, 0);
 	}
-}
-
-function ObjSprite2D_SetSourceDestCenter(obj, path)
-{
-	LoadTexture(path);
-	ObjPrim_SetTexture(obj, path);
-	ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
-	ObjSprite2D_SetDestCenter(obj);
-}
-
-function ObjSprite2D_SetSourceDestRect(obj, path, x1, y1, x2, y2)
-{
-	ObjPrim_SetTexture(obj, path);
-	ObjSprite2D_SetSourceRect(obj, x1, y1, x2, y2);
-	ObjSprite2D_SetDestRect(obj, x1, y1, x2, y2);
 }
 ///////////////////////////////////
 ///BOSS FUNCTIONS//////////////////
