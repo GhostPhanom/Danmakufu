@@ -1,0 +1,47 @@
+//Needs 24bit Color Mode WINDOWS! BMP! 
+//BMP are coded from bottom left to top right
+
+//NEEDS TO BE MODIFIED FOR SPECIFIC USES
+//IM0024856770
+//IM0024850509
+//Explanation: With each ObjFileB_ReadXXX the _Seek moves the length of the datatype forward
+
+function ParseBMP
+{
+	let path = GetCurrentScriptDirectory ~ "./Test2.bmp";
+	let obj = ObjFile_Create(OBJ_FILE_BINARY);
+	ObjFile_Open(obj, path);
+	if(ObjFile_GetSize(obj) == 0){RaiseError("Invalid Path or Empty File Selected");}
+	ObjFileB_SetByteOrder(obj, ENDIAN_LITTLE);
+	if(ObjFileB_ReadShort(obj) != 19778){RaiseError("File is no Windows BMP File! No 424Dx0(LittleE:19778) at Header start");}//Reads the first 2 Bytes
+	ObjFileB_Seek(obj, 10);
+	let headeroffset = ObjFileB_ReadInteger(obj);//start of picture data
+	ObjFileB_Seek(obj, 18);
+	let picturewidth = ObjFileB_ReadInteger(obj);
+	//let rowwithpadding = (picturewidth * 3) % 4;
+	let skippedbytes = (picturewidth * 3) % 4;
+	//let skippedbytes = rowwithpadding - 3 * picturewidth;
+	
+	let pictureheight = absolute(ObjFileB_ReadInteger(obj));
+	ObjFileB_Seek(obj, 28);
+	if(ObjFileB_ReadShort(obj) != 24){RaiseError("BMP File is not 24bit encoded!");}
+	ObjFileB_Seek(obj, headeroffset);
+	
+	//Do stuff with the BMP
+	ascent(j in 0..pictureheight)//height
+	{
+		ascent(i in 0..picturewidth)//width
+		{
+			//WriteLog("R:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " G:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " B:" ~ itoa(ObjFileB_ReadByte(obj)));
+			let objs = CreateShotA1(200 + 1 * i, 300 - 1 * j, 0, 0, 9876, 0);
+			let colors = [ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj)];
+			ObjRender_SetColor(objs, colors[2], colors[1], colors[0]);//blue green red
+			WriteLog("Colom: " ~ itoa(j) ~ " Blue: " ~ itoa(colors[0]) ~ " Green: " ~ itoa(colors[1]) ~ " Red: " ~ itoa(colors[2]));
+		}
+		ObjFileB_Seek(obj, ObjFileB_GetPointer(obj) + skippedbytes); 
+	}
+}
+
+//ShotData{ id=9876 rect=(8,2,9,3) render=ALPHA collision = (1, 0, 0) angular_velocity = 0 delay_color= (0, 0, 200) fixed_angle=false }
+
+

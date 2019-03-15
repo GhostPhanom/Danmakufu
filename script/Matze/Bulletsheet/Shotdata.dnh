@@ -1542,3 +1542,5 @@ ShotData{ id=1111 rect=(640,402,649,417) render=ALPHA collision = (3, 0, 0) angu
 ShotData{ id=1112 rect=(650,402,699,451) render=ALPHA collision = (16, 0, 0) angular_velocity = 3 delay_color= (200, 200, 255) fixed_angle=false }
 ShotData{ id=1113 rect=(700,402,709,441) render=ALPHA collision = (3, 0, 0) angular_velocity = 0 delay_color= (0, 0, 200) fixed_angle=false }
 delay_rect = (0,2016,32,2048)
+
+ShotData{ id=9876 rect=(8,2,9,3) render=ALPHA collision = (1, 0, 0) angular_velocity = 0 delay_color= (0, 0, 200) fixed_angle=false }

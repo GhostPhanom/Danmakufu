@@ -1,0 +1,25 @@
+function ASCIItoDEC(ASCII) //Takes x ASCII Letters and returns them as one Number, used for comparision of bytevalues to ASCII Letters
+{//							IMPORTANT: ASCII LETTERS, NOT HEX REPRESENTATION!!!
+
+}
+
+function ObjFileB_ReadUByte(obj)
+{
+	let bytevalue = ObjFileB_ReadByte(obj);
+	if(bytevalue >= 0)
+	{
+		return bytevalue;
+	}
+	else
+	{
+		let value = 0;
+		if(bytevalue > -65){value += 64; bytevalue -= 64;}
+		if(bytevalue > -97){value += 32; bytevalue -= 32;}
+		if(bytevalue > -113){value += 16; bytevalue -= 16;}
+		if(bytevalue > -121){value += 8; bytevalue -= 8;}
+		if(bytevalue > -125){value += 4; bytevalue -= 4;}
+		if(bytevalue > -127){value += 2; bytevalue -= 2;}
+		if(bytevalue > -128){value += 1; bytevalue -= 1;}
+		return(value + 128);
+	}
+}

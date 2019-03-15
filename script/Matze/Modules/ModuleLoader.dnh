@@ -1,0 +1,2 @@
+#include"./bmpparser/bmpparser.dnh"
+#include"./byte operations/byte.dnh"

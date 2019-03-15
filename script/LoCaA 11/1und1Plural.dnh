@@ -45,11 +45,11 @@ case(EV_USER)
 task TPlural{
     let dir = GetCurrentScriptDirectory();
     let obj = ObjEnemyBossScene_Create();
-    ObjEnemyBossScene_Add(obj, 0, dir ~ "./1und1N1.dnh");
-    ObjEnemyBossScene_Add(obj, 0, dir ~ "./1und1S1.dnh");
-    /*ObjEnemyBossScene_Add(obj, 1, dir ~ "./1und1N2.dnh");
-    ObjEnemyBossScene_Add(obj, 1, dir ~ "./1und1S2.dnh");
-	ObjEnemyBossScene_Add(obj, 2, dir ~ "./1und1N3.dnh");
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./LOCCA_N1.dnh");
+    ObjEnemyBossScene_Add(obj, 0, dir ~ "./LOCCA_S1.dnh");
+    ObjEnemyBossScene_Add(obj, 1, dir ~ "./LOCCA_N2.dnh");
+    ObjEnemyBossScene_Add(obj, 1, dir ~ "./LOCCA_S2.dnh");
+	/*ObjEnemyBossScene_Add(obj, 2, dir ~ "./1und1N3.dnh");
     ObjEnemyBossScene_Add(obj, 2, dir ~ "./1und1S3.dnh");*/
     ObjEnemyBossScene_LoadInThread(obj);
     ObjEnemyBossScene_Regist(obj);
