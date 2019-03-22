@@ -33,10 +33,10 @@ function ParseBMP
 		ascent(i in 0..picturewidth)//width
 		{
 			//WriteLog("R:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " G:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " B:" ~ itoa(ObjFileB_ReadByte(obj)));
-			let objs = CreateShotA1(200 + 1 * i, 300 - 1 * j, 0, 0, 9876, 0);
+			let objs = CreateShotA1(0 + 6 * i, 480 - 6 * j, 0, 0, 61, 0);
 			let colors = [ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj)];
 			ObjRender_SetColor(objs, colors[2], colors[1], colors[0]);//blue green red
-			WriteLog("Colom: " ~ itoa(j) ~ " Blue: " ~ itoa(colors[0]) ~ " Green: " ~ itoa(colors[1]) ~ " Red: " ~ itoa(colors[2]));
+			//WriteLog("Colom: " ~ itoa(j) ~ " Blue: " ~ itoa(colors[0]) ~ " Green: " ~ itoa(colors[1]) ~ " Red: " ~ itoa(colors[2]));
 		}
 		ObjFileB_Seek(obj, ObjFileB_GetPointer(obj) + skippedbytes); 
 	}
