@@ -39,10 +39,11 @@ function ObjMusic_CreateBGM(path, vol)
 	let obj = ObjSound_Create;
 	ObjSound_SetSoundDivision(obj, SOUND_BGM);
 	ObjSound_Load(obj, path);
-	ObjSound_Play(obj);
 	ObjSound_SetRestartEnable(obj, true);
 	ObjSound_SetLoopEnable(obj, true);
 	ObjSound_SetVolumeRate(obj, vol);
+	ObjSound_Play(obj);
+
 	return obj;
 }
 

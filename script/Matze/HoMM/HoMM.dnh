@@ -1,0 +1,533 @@
+task PlayHoMM
+{
+	let ObeliskSound = GetCurrentScriptDirectory ~ "Obelisk.wav";
+	LoadSound(ObeliskSound);
+	
+	let music = GetCurrentScriptDirectory ~ "Musik.ogg";
+	/*
+	let objm = ObjSound_Create();
+	ObjSound_Load(objm, music);
+	ObjSound_SetSoundDivision(objm, SOUND_BGM);
+	ObjSound_SetRestartEnable(objm, true);
+	ObjSound_SetLoopEnable(objm, true);
+	ObjSound_SetVolumeRate(objm, 100);
+	ObjSound_Play(objm);
+	*/
+	let objm = ObjMusic_CreateBGM(music, 100); 	
+	
+	let HoMMphase = 0; //0 active, 1 end
+	let turnphase = 0; //0 MovePhase, 1 AttackPhase, 2 InputBlocked
+	let MouseX = 0;
+	let MouseY = 0;
+	CheckMouse;
+	CheckPlayfield;
+	
+	let startx = 100;
+	let starty = 50;
+	let reihen = 10;//Die Felder sind mit 0 bis n-1 durchnummeriert
+	let zeilen = 10;
+	let blockwidth = 30;
+	let gapwidth = 10;
+	
+	let fighterarray = [];
+	let fighternummer = [];
+	let activeFighter = -1;
+	let activeFighterNumber = -1;
+	let activeFighterReihe = -1;
+	let activeFighterZeile = -1;
+	let activeFighterTyp = -1;
+	let activeFighterBewegung = -1;
+	let activeFighterRange = -1;
+	
+	CreateCommonDataArea("HoMM");
+	ascent(i in 0..zeilen)
+	{
+		let array = [];
+		loop(reihen)
+		{
+			array = array ~ [-1];
+		}
+		SetAreaCommonData("HoMM", ToString(i), array);
+	}
+	
+	let BG = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(BG, "");
+	ObjSprite2D_SetSourceRect(BG, 0, 0, 0, 0);
+	ObjSprite2D_SetDestRect(BG, 0, 0, 640, 480);
+	ObjRender_SetColor(BG, 50, 50, 50);
+	Obj_SetRenderPriorityI(BG, 85);
+	
+	ascent(i in 0..zeilen)//Nachschlageliste für die FelderIDs
+	{
+		let array = [];
+		
+		ascent(j in 0..reihen)
+		{
+			array = array ~ [CreateField(startx + blockwidth / 2 + (gapwidth + blockwidth) * j, starty + blockwidth / 2 + (gapwidth + blockwidth) * i, j, i)];
+		}
+		SetAreaCommonData("HoMM", ToString(i), array);
+	}
+	
+
+	//activeFighterBewegung = -1;
+	wait(180);
+	CreateEnemy(0, 1, 8, 2, 100, 10, 0);//fraktion, reihe, zeile, gegnertyp, health, damage, misc
+	CreateEnemy(0, 3, 8, 1, 100, 10, 0);
+	CreateEnemy(0, 5, 8, 2, 100, 10, 0);
+	CreateEnemy(0, 7, 8, 2, 100, 10, 0);
+	CreateEnemy(1, 5, 2, 0, 100, 10, 66);
+	CreateEnemy(1, 4, 2, 0, 100, 10, 66);
+	CreateEnemy(1, 8, 1, 0, 100, 10, 66);
+	CreateEnemy(1, 1, 1, 0, 100, 10, 66);
+	activeFighter = fighterarray[0];
+	activeFighterNumber = 0;
+	activeFighterReihe = Obj_GetValueD(activeFighter, "Reihe", -1);
+	activeFighterZeile = Obj_GetValueD(activeFighter, "Zeile", -1);
+	activeFighterTyp = Obj_GetValueD(activeFighter, "Typ", -1);
+	if(Obj_GetValueD(activeFighter, "Typ", -1) == 0){activeFighterBewegung = 0; activeFighterRange = 99;}//Turret
+	if(Obj_GetValueD(activeFighter, "Typ", -1) == 1){activeFighterBewegung = 3; activeFighterRange = 99;}//Archer
+	if(Obj_GetValueD(activeFighter, "Typ", -1) == 2){activeFighterBewegung = 5; activeFighterRange = 1;}//Melee
+	UpdateEnemyFieldPositionData;
+	ButtonControl;
+	//Obj_Delete(GetFieldID(7, 3));
+	
+	task ButtonControl
+	{
+		while(HoMMphase == 0)
+		{
+			if(turnphase == 0)
+			{
+				if(GetKeyState(KEY_W) == KEY_PUSH || GetKeyState(KEY_SPACE) == KEY_PUSH)
+				{
+					turnphase = 1;
+					UpdateEnemyFieldPositionData;
+					CheckIfEnemyInRange;
+				}
+			}
+			
+			yield;
+		}
+	}
+	
+	task CheckPlayfield
+	{
+		SetStgFrame(0, 0, 640, 480, 20, 80);
+		while(HoMMphase == 0){yield;}
+		SetStgFrame(32, 16, 416, 464, 20, 80);
+	}
+	
+	function EnemyAttack
+	{
+		let enemy = fighterarray[activeFighterNumber];
+		let damage = Obj_GetValueD(enemy, "Damage", 1);
+		
+		let targetarray = [];
+		
+		ascent(i in 0..length(fighterarray))
+		{
+			if(Obj_GetValueD(fighterarray[i], "Fraktion", 99) == 0)
+			{
+				targetarray = targetarray ~ [fighterarray[i]];
+			}
+		}
+		let target = RandomChoice(targetarray);
+		//target = target[0];
+		let targetremaininghealth = Obj_GetValueD(target, "Health", 9999) - damage;
+		Obj_SetValue(target, "Health", targetremaininghealth);
+		
+		//Attack Animation
+		let t1 = 50;
+		let t2 = 60;
+		
+		ObjMusic_CreateSE(ObeliskSound, 100);
+		
+		let offsety = 5;
+		let obj = CreateStraightLaserA1(ObjRender_GetX(enemy), ObjRender_GetY(enemy) + offsety, GetPointAngle(ObjRender_GetX(target), ObjRender_GetY(target), ObjRender_GetX(enemy), ObjRender_GetY(enemy) + offsety), GetObjectDistance(target, enemy), 20, t2, 2, t1);
+		Obj_SetRenderPriorityI(obj, 89);
+		
+		wait(t1 + t2 + 10);
+		
+		if(targetremaininghealth <= 0)
+		{
+			//Death Animation
+			//RemoveFigure(target); //IS NOT USED
+		}
+		
+		UpdateEnemyFieldPositionData;
+		ChangeActiveFigure;
+	}
+	
+	function AttackEnemy(objf)
+	{
+		let enemy = Obj_GetValue(objf, "Figur");
+		let player = fighterarray[activeFighterNumber];
+		let damage = Obj_GetValueD(player, "Damage", 1);
+		let enemyremaininghealth = Obj_GetValueD(enemy, "Health", 9999) - damage;
+		let playerremaininghealth = Obj_GetValueD(player, "Health", 9999);
+		
+		
+		//Attack Animation
+		let t1 = 90;
+		let t2 = 60;
+		
+		let obj = CreateStraightLaserA1(ObjRender_GetX(player), ObjRender_GetY(player), GetAngleTo(player, enemy), GetObjectDistance(player, enemy), 20, t2, 4, t1);
+		Obj_SetRenderPriorityI(obj, 89);
+		
+		wait(t1 + t2 + 10);
+		
+		
+		Obj_SetValue(enemy, "Health", enemyremaininghealth);
+		
+		if(enemyremaininghealth > 0 && Obj_GetValueD(enemy, "AlreadyCountered", true) == false && Obj_GetValueD(player, "Typ", -1) != 1)
+		{
+			Obj_SetValue(enemy, "AlreadyCountered", true);
+			damage = playerremaininghealth - Obj_GetValueD(enemy, "Damage", 1);
+			
+			//CounterAttackAnimation
+			//Attack Animation
+			t1 = 50;
+			t2 = 60;
+			
+			ObjMusic_CreateSE(ObeliskSound, 100);
+			
+			let offsety = 5;
+			let obj = CreateStraightLaserA1(ObjRender_GetX(enemy), ObjRender_GetY(enemy) + offsety, GetPointAngle(ObjRender_GetX(player), ObjRender_GetY(player), ObjRender_GetX(enemy), ObjRender_GetY(enemy) + offsety), GetObjectDistance(player, enemy), 20, t2, 2, t1);
+			Obj_SetRenderPriorityI(obj, 89);
+			
+			wait(t1 + t2 + 10);
+			
+			Obj_SetValue(player, "Health", playerremaininghealth);
+			if(playerremaininghealth <= 0)
+			{
+				//Death Animation
+				//RemoveFigure(player); //IS NOT USED
+			}
+		}
+		else if(enemyremaininghealth <= 0)
+		{
+			//Explosion Animation
+			
+			RemoveFigure(enemy);
+		}
+		
+		UpdateEnemyFieldPositionData;
+		ChangeActiveFigure;
+	}
+	
+	function RemoveFigure(obj)
+	{
+		ascent(i in 0..length(fighterarray))
+		{
+			if(fighterarray[i] == obj)
+			{
+				fighterarray = erase(fighterarray, i);
+				if(activeFighterNumber > i)
+				{
+					activeFighterNumber = activeFighterNumber - 1;
+				}
+				Obj_Delete(obj);
+				break;
+			}
+		}
+	}
+	
+	function ChangeActiveFigure
+	{
+		
+		if(length(fighterarray) - 1 == activeFighterNumber)//Everyone had a turn
+		{
+			activeFighterNumber = 0;
+			activeFighter = fighterarray[activeFighterNumber];
+			ascent(i in 0..length(fighterarray))
+			{
+				Obj_SetValue(fighterarray[i], "AlreadyCountered", false);
+			}
+		}
+		else
+		{
+			activeFighterNumber = activeFighterNumber + 1;
+			activeFighter = fighterarray[activeFighterNumber];
+		}
+		
+		WriteLog(itoa(activeFighterNumber));
+		WriteLog("Fraktion" ~ itoa(Obj_GetValueD(activeFighter, "Fraktion", -1)));
+		
+		turnphase = 0;
+		activeFighterReihe = Obj_GetValueD(activeFighter, "Reihe", -1);
+		activeFighterZeile = Obj_GetValueD(activeFighter, "Zeile", -1);
+		activeFighterTyp = Obj_GetValueD(activeFighter, "Typ", -1);
+		if(Obj_GetValueD(activeFighter, "Typ", -1) == 0){activeFighterBewegung = 0; activeFighterRange = 99;}
+		if(Obj_GetValueD(activeFighter, "Typ", -1) == 1){activeFighterBewegung = 3; activeFighterRange = 99;}
+		if(Obj_GetValueD(activeFighter, "Typ", -1) == 2){activeFighterBewegung = 5; activeFighterRange = 1;}
+		
+		if(Obj_GetValueD(activeFighter, "Fraktion", -1) == 1)//Enemyturn
+		{
+			turnphase = 5; //INPUT IS BLOCKED
+			EnemyAttack;
+		}
+	}
+	
+	task CheckIfEnemyInRange//Needed as check if no Enemy is in Range
+	{
+		wait(1);
+		let count = 0;
+		ascent(i in 0..zeilen)
+		{
+			let array = GetAreaCommonData("HoMM", ToString(i), [-100]);
+			if(array[0] == -100){RaiseError("AreaCommonData: 'HoMM' does not exist!!!");}
+			
+			ascent(j in 0..reihen)
+			{
+				if(Obj_GetValueD(array[j], "InAttackRange", -1) == 1)
+				{
+					count++;
+				}
+			}
+		}
+		if(count == 0)
+		{
+			ChangeActiveFigure;
+		}
+	}
+	
+	function MoveTargetToPosition(objf)
+	{
+		Obj_SetValue(fighterarray[activeFighterNumber], "Zeile", Obj_GetValue(objf, "Zeile"));
+		Obj_SetValue(fighterarray[activeFighterNumber], "Reihe", Obj_GetValue(objf, "Reihe"));
+		activeFighterReihe = Obj_GetValue(objf, "Reihe");
+		activeFighterZeile = Obj_GetValue(objf, "Zeile");
+		turnphase = 1;
+		UpdateEnemyFieldPositionData;
+		CheckIfEnemyInRange;
+	}
+	
+	function UpdateEnemyFieldPositionData
+	{
+		ascent(i in 0..zeilen)
+		{
+			let array = GetAreaCommonData("HoMM", ToString(i), [-100]);
+			if(array[0] == -100){RaiseError("AreaCommonData: 'HoMM' does not exist!!!");}
+			
+			ascent(j in 0..reihen)
+			{
+				Obj_SetValue(array[j], "Figur", -1);
+				Obj_SetValue(array[j], "Fraktion", -1);
+				Obj_SetValue(array[j], "Typ", -1);
+				Obj_SetValue(array[j], "InAttackRange", -1);
+			}
+		}
+		
+		ascent(i in 0..length(fighterarray))
+		{
+			let fieldID = GetFieldID(Obj_GetValue(fighterarray[i], "Reihe"), Obj_GetValue(fighterarray[i], "Zeile"));
+			Obj_SetValue(fieldID, "Figur", fighterarray[i]);
+			Obj_SetValue(fieldID, "Fraktion", Obj_GetValueD(fighterarray[i], "Fraktion", -10));
+			Obj_SetValue(fieldID, "Typ", Obj_GetValueD(fighterarray[i], "Typ", -10));
+		}
+	}
+	
+	function CreateEnemy(fraktion, reihe, zeile, gegnertyp, health, damage, misc)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+
+		Obj_SetRenderPriorityI(obj, 87);
+		//ObjSprite2D_SetDestCenter(obj);
+		if(misc == 0)
+		{
+			//ObjPrim_SetTexture(obj, "");
+			ObjSprite2D_SetSourceRect(obj, 0, 0, 10, 10);
+			ObjSprite2D_SetDestRect(obj, -5, -5, 5, 5);
+			if(fraktion == 0)//Freundlich
+			{
+				ObjRender_SetColor(obj, 128, 128, 128);
+			}
+			else//Feindlich
+			{
+				ObjRender_SetColor(obj, 50, 50, 255);
+			}
+		}
+		else if(misc == 66)
+		{
+			let path = GetCurrentScriptDirectory ~ "Obelisk.png";
+			ObjSprite2D_SetSourceDestCenter(obj, path);
+			ObjRender_SetScaleXYZ(obj, 0.7, 0.7, 1);
+			ObjRender_SetAlpha(obj, 200);
+		}
+		
+		
+		let startfield = GetFieldID(reihe, zeile);
+		
+		Obj_SetValue(obj, "Reihe", reihe);
+		Obj_SetValue(obj, "Zeile", zeile);
+		Obj_SetValue(obj, "Fraktion", fraktion);
+		Obj_SetValue(obj, "Typ", gegnertyp);
+		Obj_SetValue(obj, "Health", health);
+		Obj_SetValue(obj, "Damage", damage);
+		Obj_SetValue(obj, "misc", misc);
+		
+		Obj_SetValue(obj, "AlreadyCountered", false);
+		
+		fighterarray = fighterarray ~ [obj];
+		
+		Movement;
+		return;
+		
+		task Movement
+		{
+			while(!Obj_IsDeleted(obj))
+			{
+				let field = GetFieldID(Obj_GetValue(obj, "Reihe"), Obj_GetValue(obj, "Zeile"));
+				ObjRender_SetPosition(obj, ObjRender_GetX(field), ObjRender_GetY(field), 0);
+				yield
+			}
+		}
+	}
+	
+	function CreateField(x, y, reihe, zeile)
+	{
+		let xborderL = x - blockwidth / 2;
+		let xborderR = x + blockwidth / 2;
+		let yborderT = y - blockwidth / 2;
+		let yborderB = y + blockwidth / 2;
+		
+		let objf = ObjPrim_Create(OBJ_SPRITE_2D);
+		//ObjPrim_SetTexture(objf, "");
+		ObjSprite2D_SetSourceRect(objf, 0, 0, blockwidth, blockwidth);
+		ObjSprite2D_SetDestRect(objf, blockwidth / -2, blockwidth / -2, blockwidth / 2, blockwidth / 2);
+		ObjRender_SetPosition(objf, x, y, 1);
+		Obj_SetRenderPriorityI(objf, 86);
+		ObjRender_SetColor(objf, 0, 0, 130);
+		
+		Obj_SetValue(objf, "Reihe", reihe);
+		Obj_SetValue(objf, "Zeile", zeile);
+		
+		Obj_SetValue(objf, "Figur", -10);
+		Obj_SetValue(objf, "Fraktion", -10);
+		Obj_SetValue(objf, "Typ", -10);
+		Obj_SetValue(objf, "InAttackRange", -10);
+		
+		Check;
+		
+		return objf;
+		
+		task Check //MAIN INTELLIGENCE OF EACH FIELD
+		{
+			while(HoMMphase == 0)
+			{
+				if(turnphase == 0)
+				{
+					if(activeFighter == Obj_GetValueD(objf, "Figur", -1))
+					{
+						ObjRender_SetColor(objf, 220, 220, 220);
+						Obj_SetVisible(objf, true);
+					}
+					else if(Obj_GetValueD(objf, "Fraktion", -1) == -1)//Empty Field
+					{
+						//if() Hier Bewegungsabfrage
+						if(absolute(reihe - activeFighterReihe) +  absolute(zeile - activeFighterZeile) <= activeFighterBewegung)
+						//if(true)
+						{
+							if(MouseX > xborderL && MouseX < xborderR && MouseY > yborderT && MouseY < yborderB)
+							{
+								ObjRender_SetColor(objf, 150, 255, 150);
+								if(GetMouseState(MOUSE_LEFT) == KEY_PUSH)
+								{
+									MoveTargetToPosition(objf);
+									//RaiseError("SooS Reihe: " ~ ToString(reihe) ~ " Zeile: " ~ ToString(zeile));
+								}
+							}
+							else
+							{
+								ObjRender_SetColor(objf, 0, 255, 0);
+							}
+							Obj_SetVisible(objf, true);
+						}
+					}
+					else
+					{
+						ObjRender_SetColor(objf, 0, 0, 130);
+					}
+				}
+				else if(turnphase == 1)
+				{
+					if(activeFighter == Obj_GetValueD(objf, "Fighter", -1))
+					{
+						ObjRender_SetColor(objf, 220, 220, 220);
+						Obj_SetVisible(objf, true);
+					}
+					else if(Obj_GetValueD(objf, "Fraktion", -1) == 1)//Enemy
+					{
+						//if() Hier Reichweitenabfrage
+						if(absolute(reihe - activeFighterReihe) +  absolute(zeile - activeFighterZeile) <= activeFighterRange)
+						{
+							Obj_SetValue(objf, "InAttackRange", 1);
+							if(MouseX > xborderL && MouseX < xborderR && MouseY > yborderT && MouseY < yborderB)
+							{
+								ObjRender_SetColor(objf, 255, 150, 150);
+								if(GetMouseState(MOUSE_LEFT) == KEY_PUSH)
+								{
+									//RaiseError("Dead Reihe: " ~ ToString(reihe) ~ " Zeile: " ~ ToString(zeile));
+									AttackEnemy(objf);
+								}
+							}
+							else
+							{
+								ObjRender_SetColor(objf, 255, 0, 0);
+							}
+							Obj_SetVisible(objf, true);
+						}
+						else
+						{
+							Obj_SetValue(objf, "InAttackRange", -1);
+							ObjRender_SetColor(objf, 0, 0, 130);
+						}
+					}
+					else
+					{
+						ObjRender_SetColor(objf, 0, 0, 130);
+					}
+				}
+				else
+				{
+					ObjRender_SetColor(objf, 0, 0, 130);
+				}
+				yield;
+			}
+			Obj_Delete(objf);
+		}
+	}
+	
+	function CheckEnemyArray(obj, zeile, reihe) //gibt aus ob auf dem angegebenen Feld eine Figur steht
+	{
+		let ergebnis = false;
+		ascent(i in 0.. length(fighterarray))
+		{
+			if(fighterarray[i] == obj && Obj_GetValueD(fighterarray[i], "Zeile", -1) == zeile && Obj_GetValueD(fighterarray[i], "Reihe", -1) == reihe)
+			{
+				ergebnis = true;
+			}
+		}
+		return ergebnis;
+	}
+	
+	function GetFieldID(reihe, zeile)
+	{
+		let array = GetAreaCommonData("HoMM", ToString(zeile), [-10]);
+		if(array[0] == -10){RaiseError("Ungültiges Feld angefragt!")}
+		return array[reihe];
+	}
+	
+	task CheckMouse
+	{
+		let counter = CreateTestCounter(10, 50);
+		Obj_SetRenderPriorityI(counter, 90);
+		while(HoMMphase == 0)
+		{
+			ObjText_SetText(counter, MouseX);
+			MouseX = GetMouseX;
+			MouseY = GetMouseY;
+			yield;
+		}
+	}
+}
+
