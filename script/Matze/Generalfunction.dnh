@@ -5,12 +5,12 @@
 ///////////////////////////////////
 function ObjMusic_CreateSE(path, vol)
 {
-	//LoadSound(path);
+	LoadSound(path);
 	let obj = ObjSound_Create;
 	ObjSound_Load(obj, path);
 	ObjSound_Play(obj);
 	ObjSound_SetVolumeRate(obj, vol);
-	Selfdelete;
+	//Selfdelete;
 	return obj;
 	
 	task Selfdelete
@@ -124,7 +124,6 @@ function IsInStageFrame(obj, xcorrect, ycorrect)
 		return false;
 	}
 }
-
 function NormalizeAngle(angle)//Should be used if angle is needed for mathematical stuff and can get angle<0||angle>360 
 {
 	angle %= 360;
@@ -326,6 +325,197 @@ function ObjRender_SetIMAnimation(objo, path, version, speed, xpartwidth, ypartw
 			yield;
 		}
 		Obj_Delete(obj);
+	}
+}
+
+function ObjRender_SetFULLAnimation(objo, path, version, attackversion, speed, xpartwidth, ypartwidth, idlespalten, animspalten, attackspalten, xscale, yscale, xoffset, yoffset)//Idle/Move Animation; Nur eine Zeile für eine Animationsart
+{
+//Obj origin, texture, Version: 
+//(0 = counter starts at 0 and ends at 0; 1 = 0 but without directionlogic; 2 = 0 but last two frames repeating; 3 = 0 but last two frames repeating and w/o directionlogic;
+//4 = counter starts at max and ends at 0; 5 = 4 but without directionlogic;),
+//animationspeed, width of one frame, height of one frame, how many Spalten has the idle part of the spritesheet, how many Spalten has the animation part of the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
+//attackversion 0 loop animation; 1 loop last 2 frames; freezes at last frame
+
+//ObjRender_SetAttackState(obj, length in frames);
+
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(obj, path);
+	ObjSprite2D_SetSourceRect(obj, 0, 0, xpartwidth, ypartwidth);
+	ObjSprite2D_SetDestCenter(obj);
+	ObjRender_SetScaleXYZ(obj, xscale, yscale, 1);
+	
+	idlespalten--;//Fix for logicerror
+	animspalten--;
+	attackspalten--;
+	
+	Animation;
+	
+	Obj_SetValue(objo, "SetAnimation_Attackanimation", false);
+	
+	return obj;
+	
+	task Animation
+	{
+		/* //DEBUG
+		let counter1 = CreateTestCounter(50, 50);
+		let counter2 = CreateTestCounter(50, 70);
+		let counter3 = CreateTestCounter(50, 90);
+		let counter4 = CreateTestCounter(50, 110);
+		*/
+		
+		let counter = 0;
+		let zeilencounter = 0;
+		let spaltencounter = 0;
+		
+		let movecounter = 0;
+		let movemaxcounter = (animspalten + 1) * speed - 1;
+		
+		let attackcounter = 0;
+		let attackmaxcounter = (attackspalten + 1) * speed - 1; 
+		let attackactive = false;
+		
+		let posxlastframe = ObjMove_GetX(objo);
+		let posxcurrentframe = ObjMove_GetX(objo);
+		let dir = 0;//0 = rechts; 1 = links
+		
+		while(!Obj_IsDeleted(objo))
+		{
+			ObjRender_SetPosition(obj, ObjRender_GetX(objo) + xoffset, ObjRender_GetY(objo) + yoffset, 0);
+			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
+			
+			
+			posxlastframe = posxcurrentframe;
+			posxcurrentframe = ObjMove_GetX(objo);
+			if(posxcurrentframe < posxlastframe){dir = 1;}//links
+			else if(posxcurrentframe > posxlastframe){dir = 0;}//rechts
+			
+			if(ObjMove_GetSpeed(objo) != 0)
+			{
+				if(movecounter < movemaxcounter){movecounter++;}
+				else if(version == 3){movecounter++;}
+				if(version >= 4)
+				{
+					movecounter = movemaxcounter;
+				}
+			}
+			else if(movecounter > 0)
+			{
+				movecounter--;
+			}
+			else
+			{
+				ObjRender_SetAngleY(obj, 0);
+			}
+			
+			//WriteLog(Obj_GetValueD(objo, "SetAnimation_Attackanimation", false));
+			
+			if(Obj_GetValueD(objo, "SetAnimation_Attackanimation", false) == true)
+			{
+				WriteLog("LEL");
+				if(attackactive == false)
+				{
+					attackactive = true;
+					spaltencounter = 0;
+					counter = 0;
+				}
+				
+				if(version == 0 || version == 2 || version == 4 )//2 different rows of sprites for different directions
+				{
+					zeilencounter = 3;
+				}
+				else//movesprite mirror
+				{
+					zeilencounter = 2;
+				}
+				ObjRender_SetAngleY(obj, 0);
+				
+				attackcounter++;
+				
+				if(attackcounter > speed)
+				{
+					if(spaltencounter < attackspalten && attackversion != 2)//Not freezing Animation
+					{
+						spaltencounter++;
+					}
+					attackcounter = 0;
+				}
+				
+				if(spaltencounter > attackspalten)
+				{
+					if(attackversion == 1)
+					{
+						spaltencounter = attackspalten - 1;
+					}
+					else
+					{
+						spaltencounter = 0;
+					}
+				}
+				
+			}
+			else if(movecounter > 0)
+			{
+				attackcounter = 0;
+				attackactive = false;
+				counter = 0;
+				if(version == 0 || version == 2 || version == 4 )//2 different rows of sprites for different directions
+				{
+					zeilencounter = 1 + dir;
+				}
+				else//sprite mirror
+				{
+					ObjRender_SetAngleY(obj, dir * 180);//in der Annahme, dass die Bewegungsanimation auf eine Bewegung nach rechts angepasst ist
+					zeilencounter = 1;
+				}
+				
+				spaltencounter = truncate((movecounter + 0.0001) / speed);//0.0001 Um Floating Point Errors zu vermeiden
+				if(version == 3)
+				{
+					if(movecounter >= movemaxcounter)
+					{
+						movecounter = (animspalten - 1) * speed;
+					}
+				}
+			}
+			else
+			{
+				attackcounter = 0;
+				attackactive = false;
+				counter++;
+				zeilencounter = 0;
+				if(counter > speed)
+				{
+					spaltencounter++;
+					counter = 0;
+				}
+				if(spaltencounter > idlespalten)
+				{
+					//zeilencounter++;
+					spaltencounter = 0;
+				}
+			}
+			
+			//ObjText_SetText(counter1, "dir: " ~ ToString(dir));
+			//ObjText_SetText(counter2, "movecounter: " ~ ToString(movecounter));
+			//ObjText_SetText(counter3, "zeilencounter: " ~ ToString(zeilencounter));
+			//ObjText_SetText(counter4, "spaltencounter: " ~ ToString(spaltencounter));
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
+
+task ObjRender_SetAttackState(obj, frames)
+{
+	if(!Obj_IsDeleted(obj))
+	{
+		Obj_SetValue(obj, "SetAnimation_Attackanimation", true);
+	}
+	if(frames <= 0){return;}
+	wait(frames);
+	if(!Obj_IsDeleted(obj))
+	{
+		Obj_SetValue(obj, "SetAnimation_Attackanimation", false);
 	}
 }
 

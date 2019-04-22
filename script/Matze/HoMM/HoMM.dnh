@@ -71,10 +71,10 @@ task PlayHoMM
 
 	//activeFighterBewegung = -1;
 	wait(180);
-	CreateEnemy(0, 1, 8, 2, 100, 10, 0);//fraktion, reihe, zeile, gegnertyp, health, damage, misc
-	CreateEnemy(0, 3, 8, 1, 100, 10, 0);
-	CreateEnemy(0, 5, 8, 2, 100, 10, 0);
-	CreateEnemy(0, 7, 8, 2, 100, 10, 0);
+	CreateEnemy(0, 1, 8, 2, 100, 10, 1);//fraktion, reihe, zeile, gegnertyp, health, damage, misc
+	CreateEnemy(0, 3, 8, 1, 100, 10, 2);
+	CreateEnemy(0, 5, 8, 2, 100, 10, 1);
+	CreateEnemy(0, 7, 8, 1, 100, 10, 2);
 	CreateEnemy(1, 5, 2, 0, 100, 10, 66);
 	CreateEnemy(1, 4, 2, 0, 100, 10, 66);
 	CreateEnemy(1, 8, 1, 0, 100, 10, 66);
@@ -170,10 +170,90 @@ task PlayHoMM
 		let t1 = 90;
 		let t2 = 60;
 		
+		if(Obj_GetValue(player, "misc") == 1)
+		{
+			let random = rand_int(1, 2);
+			if(random == 1)
+			{
+				let obj = ObjRender_SetIAnimation(enemy, GetCurrentScriptDirectory ~ "feuer.png", 4, 192, 192, 1, 8, 0.4, 0.4, 0, 0);
+				Obj_SetRenderPriorityI(obj, 90);
+				ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "Slash1.ogg", 100);
+				ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "Fire1.ogg", 100);
+				
+				wait(5 * 8);
+				Obj_Delete(obj);
+			}
+			else
+			{
+				let obj = ObjRender_SetIAnimation(enemy, GetCurrentScriptDirectory ~ "eis.png", 4, 192, 192, 1, 7, 0.4, 0.4, 0, 0);
+				Obj_SetRenderPriorityI(obj, 90);
+				ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "Slash1.ogg", 100);
+				ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "Ice4.ogg", 100);
+				
+				wait(5 * 7);
+				Obj_Delete(obj);
+			}
+		}
+		else if(Obj_GetValue(player, "misc") == 2)
+		{
+			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory ~ "AWing.png");
+			ObjRender_SetScaleXYZ(obj, 0.6, 0.6, 0);
+			ObjRender_SetPosition(obj, ObjRender_GetX(player), ObjRender_GetY(player), 0);
+			Obj_SetRenderPriorityI(obj, 90);
+			ObjRender_SetAngleZ(obj, GetAngleTo(obj, enemy) + 90);
+			
+			wait(30);
+			
+			ascent(i in 0..3)
+			{
+				CreateShot(30 + ObjRender_GetAngleZ(obj));
+				CreateShot(150 + ObjRender_GetAngleZ(obj));
+				wait(15);
+			}
+			
+			wait(60);
+			
+			Obj_Delete(obj);
+			task CreateShot(angle)
+			{
+				let dis = 30;
+				let objs = ObjPrim_Create(OBJ_SPRITE_2D);
+				ObjSprite2D_SetSourceDestCenter(objs, GetCurrentScriptDirectory ~ "schuss.png");
+				ObjRender_SetPosition(objs, ObjRender_GetX(obj) + dis * cos(angle), ObjRender_GetY(obj) + dis * sin(angle), 0);
+				ObjRender_SetScaleXYZ(objs, 0.6, 0.6, 0);
+				Obj_SetRenderPriorityI(objs, 90);
+				ObjRender_SetAngleZ(objs, GetAngleTo(objs, enemy) + 90);
+				ObjRender_SetDestAtFrame(objs, ObjRender_GetX(enemy), ObjRender_GetY(enemy), 60);
+				ObjMusic_CreateSE(GetCurrentScriptDirectory ~ "arwingschuss.wav", 100);
+				
+				wait(60);
+				Obj_Delete(objs);
+			}
+			
+			
+			/*
+			let random = rand_int(1, 5);
+			ascent(i in 0..random)
+			{
+				CreateAWing;
+			}
+			
+			task CreateAWing
+			{
+				
+			}
+			*/
+		}
+		
+		/*
 		let obj = CreateStraightLaserA1(ObjRender_GetX(player), ObjRender_GetY(player), GetAngleTo(player, enemy), GetObjectDistance(player, enemy), 20, t2, 4, t1);
 		Obj_SetRenderPriorityI(obj, 89);
+		*/
 		
-		wait(t1 + t2 + 10);
+		
+		
+		//wait(t1 + t2 + 10);
 		
 		
 		Obj_SetValue(enemy, "Health", enemyremaininghealth);
