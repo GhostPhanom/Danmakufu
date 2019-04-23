@@ -411,7 +411,10 @@ function ObjRender_SetFULLAnimation(objo, path, version, attackversion, speed, x
 			
 			if(Obj_GetValueD(objo, "SetAnimation_Attackanimation", false) == true)
 			{
-				WriteLog("LEL");
+				//WriteLog("LEL");
+				//WriteLog(spaltencounter);
+				//WriteLog(attackcounter);
+				
 				if(attackactive == false)
 				{
 					attackactive = true;
@@ -433,14 +436,14 @@ function ObjRender_SetFULLAnimation(objo, path, version, attackversion, speed, x
 				
 				if(attackcounter > speed)
 				{
-					if(spaltencounter < attackspalten && attackversion != 2)//Not freezing Animation
+					if(spaltencounter < attackspalten)
 					{
 						spaltencounter++;
 					}
 					attackcounter = 0;
 				}
 				
-				if(spaltencounter > attackspalten)
+				if(spaltencounter > attackspalten && attackversion != 2)//Not freezing Animation
 				{
 					if(attackversion == 1)
 					{
@@ -1177,14 +1180,15 @@ ID 60-75 = LooseLaser2
 
 #include"./bulletsheet/LaserShotconstants.dnh"
 
-function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime)
+function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime, alpha)
 {
 	let alphawait = 10; 
 	let obj = CreateStraightLaserA1(x, y, angle, 0, lwidth, t, ID, 0);
 	ObjStLaser_SetSource(obj, false);
 	ObjShot_SetIntersectionEnable(obj, false);
 	Lasergrowth;
-	CorrectAlpha;
+	ObjRender_SetAlpha(obj, alpha);
+	//CorrectAlpha;
 	return obj;
 	
 	task Lasergrowth

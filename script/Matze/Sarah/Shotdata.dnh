@@ -1,0 +1,9 @@
+#UserShotData
+
+shot_image = "./fluffy_name.png"
+ShotData{ id=10001 rect=(0,0,31,31) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (0, 0, 0) fixed_angle=false }
+ShotData{ id=10002 rect=(0,32,31,63) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
+ShotData{ id=10003 rect=(0,64,31,95) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (255, 63, 63) fixed_angle=false }
+ShotData{ id=10004 rect=(0,96,31,127) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (255, 127, 63) fixed_angle=false }
+ShotData{ id=10005 rect=(0,128,31,159) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (255, 255, 63) fixed_angle=false }
+ShotData{ id=10006 rect=(0,160,31,191) render=ADD_ARGB collision = (12, 0, 0) angular_velocity = 0 delay_color= (191, 255, 0) fixed_angle=false }
