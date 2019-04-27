@@ -610,6 +610,8 @@ task ObjRender_SetDestAtFrame(obj, x, y, frames)
 ///BOSS FUNCTIONS//////////////////
 ///////////////////////////////////
 
+
+//if(IsBossLifeZero(objBoss)){return;}
 function IsBossLifeZero(obj) //Needs ObjBossID
 {
 	if(ObjEnemy_GetInfo(obj, INFO_LIFE) <= 0)
@@ -1182,36 +1184,24 @@ ID 60-75 = LooseLaser2
 
 function CreateDelayLaserAC2(x, y, angle, llength, lwidth, t, ID, growthtime, alpha)
 {
-	let alphawait = 10; 
 	let obj = CreateStraightLaserA1(x, y, angle, 0, lwidth, t, ID, 0);
 	ObjStLaser_SetSource(obj, false);
 	ObjShot_SetIntersectionEnable(obj, false);
 	Lasergrowth;
 	ObjRender_SetAlpha(obj, alpha);
-	//CorrectAlpha;
 	return obj;
 	
 	task Lasergrowth
 	{
 		let llength1 = llength / growthtime;
 		let llength2 = 0;
-		wait(alphawait);
-		loop(t)
+		loop(growthtime)
 		{
 			llength2 += llength1;
 			ObjLaser_SetLength(obj, llength2);
 			yield;
 		}
 	}
-	
-	task CorrectAlpha
-	{
-		let alpha = 255;
-		ObjRender_SetAlpha(obj, 0);
-		wait(alphawait);
-		ObjRender_SetAlpha(obj, alpha);
-	}
-	
 }
 
 function CreateDelayLaserA2(x, y, angle, llength, lwidth, t, ID, growthtime)

@@ -12,6 +12,20 @@ function ObjFileB_ReadUByte(obj)
 	}
 	else
 	{
+		return bytevalue + 256;
+	}
+}
+
+/*
+function ObjFileB_ReadUByte(obj)
+{
+	let bytevalue = ObjFileB_ReadByte(obj);
+	if(bytevalue >= 0)
+	{
+		return bytevalue;
+	}
+	else
+	{
 		let value = 0;
 		if(bytevalue > -65){value += 64; bytevalue -= 64;}
 		if(bytevalue > -97){value += 32; bytevalue -= 32;}
@@ -23,3 +37,4 @@ function ObjFileB_ReadUByte(obj)
 		return(value + 128);
 	}
 }
+*/
