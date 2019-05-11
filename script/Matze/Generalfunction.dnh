@@ -1108,13 +1108,13 @@ function Create3DTestCube(x, y, z)
 task Reset3DCamera
 {
 	SetCameraFocusXYZ(0, 0, 0);
-	SetCameraRadius(0);
+	SetCameraRadius(600);
 	SetCameraAzimuthAngle(0);
 	SetCameraElevationAngle(0);
 	SetCameraYaw(0);
 	SetCameraPitch(0);
 	SetCameraRoll(0);
-	SetCameraPerspectiveClip(10, 2000);
+	SetCameraPerspectiveClip(0, 2000);
 }
 
 task CameraTestValues
