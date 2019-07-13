@@ -1,0 +1,297 @@
+task BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxradius, scale, spinspeed, ttogrow, ttomove, ttoshrink, bulletgraphicid, alpha)
+{
+	/*
+	ascent(i in 0 .. 10){
+		  //BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxradius, scale, spinspeed, ttogrow, ttomove, ttoshrink, bulletgraphicid, alpha)
+			BulletExplosionEffectO(objBoss, 0, 0, GetPlayerObjectID, 9, 200, 1, 5, 100, 50, 60, 201+i%8, 63);
+		}*/
+	let anglex = rand(0.2, 0.8);
+	let angley = rand(0.2, 0.8);
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetPosition(obj, ObjRender_GetX(originobj) + xoffset, ObjRender_GetY(originobj) + yoffset, 0);
+	let angle = rand(0, 360);
+	let radius = 0;
+	let radiuspart = maxradius / ttogrow;
+	ascent(i in 0..number)
+	{
+		Bullets(360 / number * i);
+	}
+	/*
+	loop(ttogrow)
+	{
+		radius += radiuspart;
+		angle += spinspeed;
+		yield;
+	}
+	*/
+	let cospart = 90 / ttogrow;
+	let t = ttomove + ttogrow;
+	let grow = 0;
+	ascent(i in 0..ttomove + ttogrow)
+	{
+		if(grow <= ttogrow)
+		{
+			radius = maxradius * sin(cospart * i);;
+		}
+		angle += spinspeed;
+		let disangle = GetAngleTo(obj, targetobj);
+		let dispart = GetObjectDistance(obj, targetobj) / t;
+		ObjRender_SetPosition(obj, ObjRender_GetX(obj) + dispart * cos(disangle), ObjRender_GetY(obj) + dispart * sin(disangle), 0);
+		
+		grow++;
+		t--;
+		yield;
+	}
+	cospart = 90 / ttoshrink;
+	ascent(i in 0..ttoshrink)
+	{
+		angle += spinspeed;
+		radius = maxradius * cos(cospart * i);
+		spinspeed -= spinspeed * (1.5 / ttoshrink);
+		ObjRender_SetPosition(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), 0);
+		yield;
+	}
+	/*
+	radiuspart = maxradius / ttoshrink;
+	loop(ttoshrink)
+	{
+		angle += spinspeed;
+		radius -= radiuspart;
+		spinspeed -= spinspeed * (1.5 / ttoshrink);
+		ObjRender_SetPosition(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), 0);
+		yield;
+	}*/
+	Obj_Delete(obj);
+	
+	task Bullets(angleoffset)
+	{
+		let objb = CreateShotA1(0, 0, 0, 0, bulletgraphicid, 0);
+		ObjShot_SetIntersectionEnable(objb, false);
+		ObjShot_SetAutoDelete(objb, false);
+		ObjRender_SetScaleXYZ(objb, scale, scale, 1);
+		ObjRender_SetAlpha(objb, alpha);
+		Afterglow;
+		loop(ttogrow + ttomove + ttoshrink)
+		{
+			ObjMove_SetPosition(objb, ObjRender_GetX(obj) + radius * cos(angleoffset + angle) * anglex, ObjRender_GetY(obj) + radius * sin(angleoffset + angle) * angley);
+			yield;
+		}
+		Obj_Delete(objb);
+		
+		task Afterglow
+		{
+			let time = 10;
+			let startscale = scale * 0.8;
+			let scalepart = startscale / time;
+			let alphapart = alpha / time;
+			yield;
+			while(!Obj_IsDeleted(objb))
+			{
+				CreateImage;
+				wait(1);
+			}
+			
+			task CreateImage
+			{
+				let scale = startscale;
+				let objg = CreateShotA1(0, 0, 0, 0, bulletgraphicid, 0);
+				ObjShot_SetIntersectionEnable(objg, false);
+				ObjShot_SetAutoDelete(objg, false);
+				ObjMove_SetPosition(objg, ObjMove_GetX(objb), ObjMove_GetY(objb));
+				ObjRender_SetBlendType(objg, BLEND_ADD_RGB);
+				ascent(i in 0..time)
+				{
+					ObjRender_SetScaleXYZ(objg, scale - scalepart * i, scale - scalepart * i, 1);
+					ObjRender_SetAlpha(objg, alpha - alphapart * i);
+					yield;
+				}
+				Obj_Delete(objg);
+				
+			}
+		}
+	}
+}
+
+
+
+
+
+
+task BulletEffectA(obj1, x, y, obj2, way, rMax, scale, time, grap, alpha, color){ //FROM EXTRA BOSSRUSH
+	let angleX = rand(0, 360);
+	let angleY = rand(0, 360);
+	let angleZ = rand(0, 360);
+	let X = ObjMove_GetX(obj1)+x;
+	let Y = ObjMove_GetY(obj1)+y;
+	ascent(i in 0 .. way){
+		Effect(angleX, angleY, angleZ+360*i/way, rMax, time);
+	}
+	
+	ascent(i in 0 .. time-10){
+		X += (ObjMove_GetX(obj2)-X)*0.1*(1-cos(90*i/(time-10)));
+		Y += (ObjMove_GetY(obj2)-Y)*0.1*(1-cos(90*i/(time-10)));
+		yield;
+	}
+	ascent(i in 1 .. 11){
+		X += (ObjMove_GetX(obj2)-X)*(1-cos(90*i/10));
+		Y += (ObjMove_GetY(obj2)-Y)*(1-cos(90*i/10));
+		yield;
+	}
+	
+	task Effect(angleX, angleY, angleZ, r, time){
+		let obj = CreateShotA1(0, 0, 0, 0, grap, 0);
+		ObjRender_SetAlpha(obj, alpha);
+		ObjShot_SetIntersectionEnable(obj, false);
+		ObjRender_SetScaleXYZ(obj, scale, scale, scale);
+		ObjShot_SetAutoDelete(obj, false);
+		ascent(i in 0 .. time){
+			if(Obj_IsDeleted(obj)){return;}
+			let x = cos(angleY)*cos(angleZ) -cos(angleX)*sin(angleY)*sin(angleZ);
+			let y = sin(angleY)*cos(angleZ) +cos(angleX)*cos(angleY)*sin(angleZ);
+			let r = rMax*sin(180*i/time);
+//			ObjRender_SetScaleXYZ(obj, scale, scale, 1.0);
+			ObjMove_SetPosition(obj, X+r*x, Y+r*y);
+			angleZ += 6*(time-i)/time;
+			//AI(X+r*x, Y+r*y, scale, 12, i/time);
+			yield;
+		}
+		Obj_Delete(obj);
+		
+		task AI(x, y, scale, AItime, cRate){
+			let obj = CreateShotA1(x, y, 0, 0, grap, 0);
+			ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+			ObjShot_SetIntersectionEnable(obj, false);
+			ObjShot_SetDeleteFrame(obj, AItime);
+			ObjRender_SetColor(obj, color, color, color);
+			descent(i in 1 .. AItime+1){
+				ObjRender_SetScaleXYZ(obj, scale*i/AItime, scale*i/AItime, scale*i/AItime);
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+}
+
+task BulletEffectB(obj1, x, y, x2, y2, way, rMax, scale, time, grap, alpha, color){
+	let angleX = rand(0, 360);
+	let angleY = rand(0, 360);
+	let angleZ = rand(0, 360);
+	let X = ObjMove_GetX(obj1)+x;
+	let Y = ObjMove_GetY(obj1)+y;
+	ascent(i in 0 .. way){
+		Effect(angleX, angleY, angleZ+360*i/way, rMax, time);
+	}
+	
+	ascent(i in 0 .. time-10){
+		X += (x2-X)*0.1*(1-cos(90*i/(time-10)));
+		Y += (y2-Y)*0.1*(1-cos(90*i/(time-10)));
+		yield;
+	}
+	ascent(i in 1 .. 11){
+		X += (x2-X)*(1-cos(90*i/10));
+		Y += (y2-Y)*(1-cos(90*i/10));
+		yield;
+	}
+	
+	task Effect(angleX, angleY, angleZ, r, time){
+		let obj = CreateShotA1(0, 0, 0, 0, grap, 0);
+		ObjRender_SetAlpha(obj, alpha);
+		ObjShot_SetIntersectionEnable(obj, false);
+		ObjRender_SetScaleXYZ(obj, scale, scale, scale);
+		ObjShot_SetAutoDelete(obj, false);
+		ascent(i in 0 .. time){
+			if(Obj_IsDeleted(obj)){return;}
+			let x = cos(angleY)*cos(angleZ) -cos(angleX)*sin(angleY)*sin(angleZ);
+			let y = sin(angleY)*cos(angleZ) +cos(angleX)*cos(angleY)*sin(angleZ);
+			let r = rMax*sin(180*i/time);
+//			ObjRender_SetScaleXYZ(obj, scale, scale, 1.0);
+			ObjMove_SetPosition(obj, X+r*x, Y+r*y);
+			angleZ += 6*(time-i)/time;
+			AI(X+r*x, Y+r*y, scale, 12, i/time);
+			yield;
+		}
+		Obj_Delete(obj);
+		
+		task AI(x, y, scale, AItime, cRate){
+			let obj = CreateShotA1(x, y, 0, 0, grap, 0);
+			ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+			ObjShot_SetIntersectionEnable(obj, false);
+			ObjShot_SetDeleteFrame(obj, AItime);
+			ObjRender_SetColor(obj, color, color, color);
+			descent(i in 1 .. AItime+1){
+				ObjRender_SetScaleXYZ(obj, scale*i/AItime, scale*i/AItime, scale*i/AItime);
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+}
+
+
+
+task BulletEffectA_Img(obj1, x, y, obj2, way, rMax, scale, time, grap, alpha, color){
+	let imgStar = "";
+	let angleX = rand(0, 360);
+	let angleY = rand(0, 360);
+	let angleZ = rand(0, 360);
+	let X = ObjMove_GetX(obj1)+x;
+	let Y = ObjMove_GetY(obj1)+y;
+	ascent(i in 0 .. way){
+		Effect(angleX, angleY, angleZ+360*i/way, rMax, time, grap);
+	}
+	
+	ascent(i in 0 .. time-10){
+		X += (ObjMove_GetX(obj2)-X)*0.1*(1-cos(90*i/(time-10)));
+		Y += (ObjMove_GetY(obj2)-Y)*0.1*(1-cos(90*i/(time-10)));
+		yield;
+	}
+	ascent(i in 1 .. 11){
+		X += (ObjMove_GetX(obj2)-X)*(1-cos(90*i/10));
+		Y += (ObjMove_GetY(obj2)-Y)*(1-cos(90*i/10));
+		yield;
+	}
+	
+	task Effect(angleX, angleY, angleZ, r, time, grap){
+		let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, imgStar);//?????????????????
+		Obj_SetRenderPriority(obj, 0.40);
+		ObjSprite2D_SetSourceRect(obj, 32*grap, 0, 32+32*grap, 32);
+		ObjSprite2D_SetDestRect(obj, -16, -16, 16, 16);
+		ObjRender_SetColor(obj, 63, 63, 255);
+		ObjRender_SetAlpha(obj, alpha);
+		ObjRender_SetScaleXYZ(obj, scale, scale, scale);
+		let RenderZ = 0;
+		ascent(i in 0 .. time){
+			if(Obj_IsDeleted(obj)){return;}
+			let x = cos(angleY)*cos(angleZ) -cos(angleX)*sin(angleY)*sin(angleZ);
+			let y = sin(angleY)*cos(angleZ) +cos(angleX)*cos(angleY)*sin(angleZ);
+			let r = rMax*sin(180*i/time);
+//			ObjRender_SetScaleXYZ(obj, scale, scale, 1.0);
+			ObjRender_SetPosition(obj, X+r*x, Y+r*y, 0);
+			ObjRender_SetAngleZ(obj, RenderZ);
+			AI(X+r*x, Y+r*y, scale, 12, i/time, RenderZ);
+			angleZ += 6*(time-i)/time;
+			RenderZ += 2;
+			yield;
+		}
+		Obj_Delete(obj);
+		
+		task AI(x, y, scale, AItime, cRate, RenderZ){
+			let obj=ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjPrim_SetTexture(obj, imgStar);//?????????????????
+			Obj_SetRenderPriority(obj, 0.40);
+			ObjSprite2D_SetSourceRect(obj, 32*grap, 0, 32+32*grap, 32);
+			ObjSprite2D_SetDestRect(obj, -16, -16, 16, 16);
+			ObjRender_SetColor(obj, 63, 63, 255);
+			ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+			ObjRender_SetColor(obj, color, color, color);
+			ObjRender_SetAngleZ(obj, RenderZ);
+			ObjRender_SetPosition(obj, x, y, 0);
+			descent(i in 1 .. AItime+1){
+				ObjRender_SetScaleXYZ(obj, scale*i/AItime, scale*i/AItime, scale*i/AItime);
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+}
