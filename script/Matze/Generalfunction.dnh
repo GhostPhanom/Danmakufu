@@ -915,6 +915,12 @@ function CreateEmptyFloatArray
 ///////////////////////////////////
 ///MISC FUNCTIONS//////////////////
 ///////////////////////////////////
+function WaitForKey(button)
+{
+	yield;
+	while(button != KEY_PUSH){yield;}
+	yield;
+}
 
 function CompareFloats (input1, input2) 
 {
