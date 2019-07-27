@@ -918,7 +918,7 @@ function CreateEmptyFloatArray
 function WaitForKey(button)
 {
 	yield;
-	while(button != KEY_PUSH){yield;}
+	while(GetVirtualKeyState(button) != KEY_PUSH){yield;}
 	yield;
 }
 
@@ -1338,25 +1338,6 @@ function Obj_IsInArea(obj, left, top, right, bottom){
 	return true
 }
 
-//Makes the object spin around the XYZ axes (Python)
-task Obj_SpinXYZ(obj, xspin, yspin, zspin, i){
-	if(i <= 0){
-		while(!Obj_IsDeleted(obj)){
-			ObjRender_SetAngleXYZ(obj, ObjRender_GetAngleX(obj) + xspin, ObjRender_GetAngleY(obj) + yspin, ObjRender_GetAngleZ(obj) + zspin);
-			yield;
-		}
-		return;
-	}else{
-		while(i > 0){
-			ObjRender_SetAngleXYZ(obj, ObjRender_GetAngleX(obj) + xspin, ObjRender_GetAngleY(obj) + yspin, ObjRender_GetAngleZ(obj) + zspin);
-			i--;
-			yield;
-		}
-		ObjRender_SetAngleXYZ(obj, 0, 0, 0);
-		return;
-	}
-}
-
 //(AJS)
 task ExpandFrame(speed){
     let left;
@@ -1536,82 +1517,6 @@ task BottomEnemyMarker(obj, bossobj){
   	Obj_Delete(objEnemy);
 }
 
-
-task LifeCircle(renderObj, enemyObj){
-	let path = GetCurrentScriptDirectory() ~ "../System/img/Default_System.png";
-	let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D); //lifebar base
-	let objb = ObjPrim_Create(OBJ_PRIMITIVE_2D); //actual life bar
-	let obj2 = ObjPrim_Create(OBJ_SPRITE_LIST_2D); //boss stars
-	let obj3 = ObjPrim_Create(OBJ_SPRITE_LIST_2D); //life bar knobs
-	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP);
-	ObjPrim_SetPrimitiveType(objb, PRIMITIVE_TRIANGLESTRIP);
-	ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
-	ObjPrim_SetTexture(objb, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
-	ObjPrim_SetTexture(obj2, path);
-	ObjPrim_SetTexture(obj3, GetCurrentScriptDirectory() ~ "../System/img/lifebar.png");
-	Obj_SetRenderPriority(obj, 0.31);
-	Obj_SetRenderPriority(objb, 0.32);
-	Obj_SetRenderPriority(obj2, 0.7);
-	Obj_SetRenderPriority(obj3, 0.33);
-
-	let lastRemStep = -1;
-	let lifeRateRender = 0;
-
-	let vertexcount = 64;
-	let innerrad = 60; //inner radius of the circle
-	let outerrad = 68; //outer radius of the circle
-
-	let objScene = ID_INVALID;
-	let bossEnemy = [];
-
-	ObjPrim_SetVertexCount(obj, vertexcount);
-	ObjPrim_SetVertexCount(objb, vertexcount);
-
-	let lifeM = ObjEnemy_GetInfo(enemyObj, INFO_LIFE); //starting life
-	loop{
-		ObjSpriteList2D_ClearVertexCount(obj2);
-		ObjSpriteList2D_ClearVertexCount(obj3);
-		if(!Obj_IsDeleted(enemyObj)){
-			if(length(GetEnemyBossObjectID) > 0){
-				ObjRender_SetAlpha(obj, 256);
-				ObjRender_SetAlpha(objb, 256);
-				ObjRender_SetAlpha(obj2, 256);
-				ObjRender_SetAlpha(obj3, 256);
-			}else{
-				ObjRender_SetAlpha(obj, 0);
-				ObjRender_SetAlpha(objb, 0);
-				ObjRender_SetAlpha(obj2, 0);
-				ObjRender_SetAlpha(obj3, 0);
-			}
-
-			let life = ObjEnemy_GetInfo(enemyObj, INFO_LIFE); //life remaining
-			ascent(i in 0..vertexcount/2){
-		        let indexvert = i*2;
-		        let angle = i*360/(vertexcount*0.5-1) - 90;
-		        let angle2 = -90-(life/lifeM)*i*360/(vertexcount*0.5-1);
-		        ObjPrim_SetVertexPosition(obj, indexvert+0, ObjRender_GetX(renderObj)+innerrad*cos(angle), ObjRender_GetY(renderObj)+innerrad*sin(angle), 0);
-		        ObjPrim_SetVertexPosition(obj, indexvert+1, ObjRender_GetX(renderObj)+outerrad*cos(angle), ObjRender_GetY(renderObj)+outerrad*sin(angle), 0);
-
-		        ObjPrim_SetVertexUVT(obj, indexvert+0, 10, 0);
-		        ObjPrim_SetVertexUVT(obj, indexvert+1, 20, 32);
-
-
-		        ObjPrim_SetVertexPosition(objb, indexvert+0, ObjRender_GetX(renderObj)+innerrad*cos(angle2), ObjRender_GetY(renderObj)+innerrad*sin(angle2), 0);
-		        ObjPrim_SetVertexPosition(objb, indexvert+1, ObjRender_GetX(renderObj)+outerrad*cos(angle2), ObjRender_GetY(renderObj)+outerrad*sin(angle2), 0);
-
-		        ObjPrim_SetVertexUVT(objb, indexvert+0, 0, 0);
-		        ObjPrim_SetVertexUVT(objb, indexvert+1, 10, 32);
-		    }
-		}else{
-			Obj_Delete(obj);
-			Obj_Delete(objb);
-			Obj_Delete(obj2);
-			Obj_Delete(obj3);
-			return;
-		}
-		yield;
-	}
-}
 
 task ObjMove_SetDestAtHermiteF(obj,dest_x,dest_y,x_dir,x_angle,y_dir,y_angle,frames){
         real t = 0;
