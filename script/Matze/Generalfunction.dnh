@@ -5,16 +5,18 @@
 ///////////////////////////////////
 function ObjMusic_CreateSE(path, vol)
 {
+	//TO KEEP SOUND IN MEMORY THEY MUST BE LOADED IN INITZIALISE(@LOADING); Can be Loaded via a seperate Script
 	LoadSound(path);
 	let obj = ObjSound_Create;
 	ObjSound_Load(obj, path);
 	ObjSound_Play(obj);
 	ObjSound_SetVolumeRate(obj, vol);
-	//Selfdelete;
+	Selfdelete;
 	return obj;
 	
 	task Selfdelete
 	{
+		yield;
 		yield;
 		while(ObjSound_IsPlaying(obj))
 		{
