@@ -1,5 +1,0 @@
-open battleship-eclipse.de
-thomasgordon
-WieEsWohlSchmeckt
-get ./entwicklerdebug 
-quit
