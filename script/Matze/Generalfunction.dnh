@@ -165,6 +165,12 @@ function ReflectionAngle (angle, mirror){//Calculates the reflection angle based
 ///////////////////////////////////
 ///RENDER FUNCTIONS////////////////
 ///////////////////////////////////
+function ObjSprite2D_Clean(obj)
+{
+	ObjRender_SetPosition(obj, floor(ObjRender_GetX(obj)), floor(ObjRender_GetY(obj)), floor(ObjRender_GetZ(obj)));
+}
+
+
 function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeilen, spalten, xscale, yscale, xoffset, yoffset)//Idle Animation
 {//Obj origin, texture, animationspeed, width of one frame, height of one frame, how many rows has the spritesheet, how many Spalten has the spritesheet, xscale, yscale, x missplace from origin obj, y missplace from origin obj
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
@@ -192,7 +198,7 @@ function ObjRender_SetIAnimation(objo, path, speed, xpartwidth, ypartwidth, zeil
 			ObjSprite2D_SetSourceRect(obj, 0 + xpartwidth * spaltencounter, 1 + ypartwidth * zeilencounter, xpartwidth - 1 + xpartwidth * spaltencounter, ypartwidth + ypartwidth * zeilencounter);
 			
 			counter++;
-			if(counter > speed)
+			if(counter >= speed)
 			{
 				spaltencounter++;
 				counter = 0;
