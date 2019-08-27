@@ -516,7 +516,7 @@ function ObjRender_SetFULLAnimation(objo, path, version, attackversion, speed, x
 	}
 }
 
-task ObjRender_SetAttackState(obj, frames)
+task ObjRender_SetAttackState(obj, frames)//Part of ObjRender_SetFULLAnimation
 {
 	if(!Obj_IsDeleted(obj))
 	{
