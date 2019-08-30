@@ -3,6 +3,35 @@
 ///////////////////////////////////
 ///SOUND FUNCTIONS/////////////////
 ///////////////////////////////////
+task ObjMusic_FadeoutDelete(obj, n, startvolume)
+{
+	ascent(i in 0..n)
+	{
+		ObjSound_SetVolumeRate(obj, startvolume - startvolume / n * i);
+		yield;
+	}
+	Obj_Delete(obj);
+}
+
+task ObjMusic_AddPauseStop(obj)
+{
+	SetCommonData("MusicCheck", GetCommonData("MusicCheck", []) ~ [obj]);
+	while(!Obj_IsDeleted(obj))
+	{
+		yield;
+	}
+	let list = GetCommonData("MusicCheck", []);
+	ascent(i in 0..length(list))
+	{
+		if(list[i] == obj)
+		{
+			list = slice(list, i, i + 1);
+			SetCommonData("MusicCheck", list);
+			break;
+		}
+	}
+}
+
 function ObjMusic_CreateSE(path, vol)
 {
 	//TO KEEP SOUND IN MEMORY THEY MUST BE LOADED IN INITZIALISE(@LOADING); Can be Loaded via a seperate Script
