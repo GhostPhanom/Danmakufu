@@ -98,22 +98,26 @@ function ObjMove_SetDestAtRandom(obj, x1, y1, x2, y2, frame)
 	ObjMove_SetDestAtFrame(obj, rand(x1, x2), rand(y1, y2), frame);
 }
 
-task ObjMove_SetDestAtFrame2(obj, x, y, n)
+task ObjMove_SetDestAtFrame2(obj, x, y, n) //No Abort Check if Obj was moved by other means
 {
 	let originx = ObjMove_GetX(obj);
 	let originy = ObjMove_GetY(obj);
 	
 	let angle = GetPointAngle(originx, originy, x, y) + 180;
 	let distance = GetDistance(originx, originy, x, y);
-	let dis = 0;
 	
-	loop(n)
+	ObjMove_SetAngle(obj, angle);
+
+	let sinpart = 90 / n;
+	ascent(i in 0..n)
 	{
-		dis += distance / n;
-		ObjMove_SetPosition(obj, originx + dis * cos(angle), originy + dis * sin(angle));
+		if(Obj_IsDeleted(obj)){return;}
+		let speedpart = distance * sin(sinpart * (i + 1)) - distance * sin(sinpart * i);
+		ObjMove_SetSpeed(obj, speedpart);
 		yield;
 	}
-	
+	ObjMove_SetSpeed(obj, 0);
+	ObjMove_SetPosition(obj, x, y);
 }
 ///////////////////////////////////
 ///POSITION/ANGLE FUNCTIONS////////
@@ -191,6 +195,7 @@ function AngularDistance(angle1, angle2){ //Should be useful for homing bullets
 function ReflectionAngle (angle, mirror){//Calculates the reflection angle based on the angle of the object and the angle of the mirror
    return 2*mirror-angle;
 }
+
 ///////////////////////////////////
 ///RENDER FUNCTIONS////////////////
 ///////////////////////////////////
@@ -1320,6 +1325,106 @@ let GetCenterX = GetStgFrameWidth / 2;
 let GetCenterY = GetStgFrameHeight / 2;
 let GetFullCenterX = 640 / 2;
 let GetFullCenterY = 480 / 2;
+
+
+
+///////////////////////////////////
+///ULTIMA PRIMITIVE FUNCTIONS//////
+///////////////////////////////////
+task Create2DObject(image,vertex,vertex_length,blend_type,priority,posY,alpha,speed,colorR,colorG,colorB){
+let vertexcount = vertex;
+let radius = 550;
+let divideby = radius;
+let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+ObjPrim_SetPrimitiveType(obj,PRIMITIVE_TRIANGLESTRIP);
+ObjPrim_SetVertexCount(obj,vertexcount);
+ObjPrim_SetTexture(obj,image);
+ObjRender_SetColor(obj,colorR,colorG,colorB);
+
+ObjRender_SetPosition(obj,GetStgFrameWidth/2,posY,00);
+ascent(i in 0..vertexcount){
+let indexvert = i*2;
+let left = i*(512/3);
+let angle = 360/(vertexcount/2-1)*i;
+ObjPrim_SetVertexUVT(obj,indexvert,-left,0);
+ObjPrim_SetVertexUVT(obj,indexvert+1,-left,512);
+ObjPrim_SetVertexPosition(obj,indexvert+0,(0)*cos(angle),(0)*sin(angle),0);
+ObjPrim_SetVertexPosition(obj,indexvert+1,(radius)*cos(angle),(radius)*sin(angle),0);
+
+Obj_SetRenderPriorityI(obj,priority);
+if(blend_type=="ADD"){ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);}
+if(blend_type=="SUB"){ObjRender_SetBlendType(obj,BLEND_SUBTRACT);}
+
+//loop(1){yield;}
+}
+let mx = 0;
+loop{
+mx-=speed;
+ascent(i in 0..vertexcount){
+let indexvert = i*2;
+
+let angle = 360/(vertexcount/2)*i;
+ObjPrim_SetVertexUVT(obj,indexvert,128*cos(angle),0+mx);
+ObjPrim_SetVertexUVT(obj,indexvert+1,128*cos(angle),vertex_length+mx);
+
+}
+ObjRender_SetAlpha(obj,alpha);
+yield;
+}
+ObjRender_SetZWrite(obj,true);
+ObjRender_SetZTest(obj,true);
+ObjRender_SetAngleX(obj,90);
+ObjRender_SetPosition(obj,0,0,00);
+//return obj
+}
+
+task Create2DObject2(image,vertex,vertex_length,blend_type,priority,posY,alpha,speed,colorR,colorG,colorB){
+let vertexcount = vertex;
+let radius = 500;
+let divideby = radius;
+let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+ObjPrim_SetPrimitiveType(obj,PRIMITIVE_TRIANGLESTRIP);
+ObjPrim_SetVertexCount(obj,vertexcount);
+ObjPrim_SetTexture(obj,image);
+ObjRender_SetColor(obj,colorR,colorG,colorB);
+
+ObjRender_SetPosition(obj,GetStgFrameWidth/2,posY,00);
+ascent(i in 0..vertexcount){
+let indexvert = i*2;
+let left = i*(512/3);
+let angle = 360/(vertexcount/2-1)*i;
+ObjPrim_SetVertexUVT(obj,indexvert,-left,0);
+ObjPrim_SetVertexUVT(obj,indexvert+1,-left,512);
+ObjPrim_SetVertexPosition(obj,indexvert+0,(0)*cos(angle),(0)*sin(angle),0);
+ObjPrim_SetVertexPosition(obj,indexvert+1,(radius)*cos(angle),(radius)*sin(angle),0);
+
+Obj_SetRenderPriorityI(obj,priority);
+if(blend_type=="ADD"){ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);}
+if(blend_type=="SUB"){ObjRender_SetBlendType(obj,BLEND_SUBTRACT);}
+
+//loop(1){yield;}
+}
+let mx = 0;
+loop{
+mx-=speed;
+ascent(i in 0..vertexcount){
+let indexvert = i*2;
+
+let angle = 360/(vertexcount/2)*i;
+ObjPrim_SetVertexUVT(obj,indexvert,128*cos(angle),0+mx);
+ObjPrim_SetVertexUVT(obj,indexvert+1,128*cos(angle),vertex_length+mx);
+
+}
+ObjRender_SetAlpha(obj,GetCommonData("BGAlpha",0));
+yield;
+}
+ObjRender_SetZWrite(obj,true);
+ObjRender_SetZTest(obj,true);
+ObjRender_SetAngleX(obj,90);
+ObjRender_SetPosition(obj,0,0,00);
+//return obj
+}
+
 
 
 

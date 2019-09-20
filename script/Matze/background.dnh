@@ -1,0 +1,125 @@
+let CSD = GetCurrentScriptDirectory;
+let objScene = GetEnemyBossSceneObjectID;
+
+#include".\PrimitiveTest.dnh"
+
+let OnSpell = false;
+
+@Initialize{
+	SetCameraFocusX(0);
+	SetCameraFocusY(0);
+	SetCameraFocusZ(0);
+	SetCameraRadius(1200);
+    SetCameraElevationAngle(-10);
+	SetCameraAzimuthAngle(90);
+	
+	Background;
+	SpellBG;
+	test;
+}
+ 
+@MainLoop{
+    //OnSpell = (GetEnemyBossSceneObjectID != ID_INVALID && ObjEnemyBossScene_GetInfo(GetEnemyBossSceneObjectID, INFO_IS_SPELL)); 
+	yield;
+}
+
+task test
+{
+	wait(180);
+	OnSpell = true;
+	SetCommonData("SpellCard",true);
+}
+
+function SpriteCreate{
+let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+ObjPrim_SetTexture(obj,CSD~"./img/stgbg2.png");
+Obj_SetRenderPriorityI(obj,20);
+ObjRender_SetAngleX(obj,-50);
+ObjSprite3D_SetSourceDestRect(obj,0,0,512,512);
+ObjRender_SetScaleXYZ(obj,1,1,1.5);
+ObjRender_SetBlendType(obj,BLEND_ALPHA);
+ObjRender_SetColor(obj,150,150,150);
+return obj
+}
+
+function SpriteCreate2{
+let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+ObjPrim_SetTexture(obj,CSD~"./img/stgbg3.png");
+Obj_SetRenderPriorityI(obj,20);
+ObjRender_SetAngleX(obj,-50);
+ObjSprite3D_SetSourceDestRect(obj,0,0,512,512);
+ObjRender_SetScaleXYZ(obj,1,1,1.5);
+ObjRender_SetColor(obj,150,150,150);
+ObjRender_SetBlendType(obj,BLEND_ADD_ARGB);
+return obj
+}
+
+task Background{
+SetCameraElevationAngle(-20);
+Create2DObject(GetCurrentScriptDirectory~"./img/stgbg4.png",256,324,"ADD",22,5,120,0.75,255,255,255);
+
+	let obj1 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj1, BLEND_ALPHA);
+	Obj_SetRenderPriorityI(obj1, 21);
+	ObjPrim_SetTexture(obj1, GetCurrentScriptDirectory~"./img/stgbg1.png");
+	ObjRender_SetScaleXYZ(obj1, 1.1, 0.7, 1);
+	ObjSprite2D_SetSourceRect(obj1, 0, 0, 328, 220);
+	ObjSprite2D_SetDestRect(obj1, -256, -256, 256, 256);
+	ObjRender_SetPosition(obj1, GetStgFrameWidth/2, GetStgFrameHeight/2-130, 0);
+
+let obj = [SpriteCreate];
+let obj2 = [SpriteCreate2];
+ObjRender_SetAlpha(obj[0],255);
+	let movel = 0;
+	let movel2 = 0;
+	let movel3 = 0;
+	loop{
+	
+    movel+=0;
+    movel2+=1.5;
+	movel3+=2.5;
+    ObjSprite3D_SetSourceDestRect(obj[0],512,0+movel2,(512*6)+movel,(512*6)+movel2); 
+	ObjSprite3D_SetSourceDestRect(obj2[0],512,0+movel3,(512*6)+movel,(512*6)+movel3);  	
+	yield;
+	}
+}
+
+task SpellBG{
+	let obj1 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetBlendType(obj1, BLEND_ALPHA);
+	Obj_SetRenderPriorityI(obj1, 23);
+	ObjPrim_SetTexture(obj1, GetCurrentScriptDirectory~"./img/splbg1.png");
+	ObjRender_SetScaleXYZ(obj1, 1.4, 1.4, 1);
+	ObjSprite2D_SetSourceRect(obj1, 0, 0, 512, 512);
+	ObjSprite2D_SetDestRect(obj1, -256, -256, 256, 256);
+	ObjRender_SetPosition(obj1, GetScreenWidth/2, GetScreenHeight/2, 0);
+	
+	Create2DObject2(GetCurrentScriptDirectory~"./img/splbg2.png",256,1024,"SUB",24,GetStgFrameHeight/2-120,GetCommonData("BGAlpha",0),2,100,100,255);
+		
+	let frame = 0;
+	let alpha = 0;
+	let alpha2 = 0;
+	let angle = 0;
+	let angle2 = 0;
+	let rect = 800;
+	let rect2 = 1000;
+	let slide = 0;
+	loop{				
+		if(GetCommonData("SpellCard",false)){
+			if(alpha < 255) { alpha += 255/90;}
+			SetCommonData("BGAlpha",alpha);} 
+		else {if(alpha>0){alpha -= 4;}
+		SetCommonData("BGAlpha",alpha);}
+		
+		frame++;
+		ObjRender_SetAlpha(obj1, alpha);
+		//angle+=0.5;
+		slide+=0.5;
+		ObjSprite2D_SetSourceRect(obj1,0,0,600,40000+slide);
+		ObjSprite2D_SetDestCenter(obj1);
+		ObjRender_SetPosition(obj1,GetScreenWidth/2,GetScreenHeight/2-(slide*1.5),0);
+		rect+=1;
+		//rect2++;
+		yield;}
+}
+function wait(w) { loop(w) { yield; } } 
