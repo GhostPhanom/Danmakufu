@@ -1,0 +1,361 @@
+#include"../Generalfunction.dnh"
+@Initialize
+{
+	MainTask;
+}
+@MainLoop
+{
+	yield;
+}
+
+let dir = GetCurrentScriptDirectory();
+
+task MainTask
+{
+	let BG = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestRect(BG, dir ~ "../System/img/dot.png", 0, 0, 640, 480);
+	ObjRender_SetColor(BG, 0, 0, 0);
+	Obj_SetRenderPriorityI(BG, 94);
+
+	let circle = dir ~ "stgbg4.png";
+	let star = dir ~ "star.png";
+
+	//BlueBG(60, 300, 60, 120);
+	//return;
+
+	wait(20);
+
+	Music(40);
+	CreateStar(50, 20, 50);
+	CreateCircle(65);
+	CreateCircle(71);
+
+	wait(130);
+	RedBG(30, 240, 60);
+	wait(30);
+	CreateFont(dir ~ "schrift1.png", 30, 160, 30);
+	wait(60);
+	Bild1(dir ~ "bild1.png", 30, 110, 30);
+	wait(60);
+	BlueBG(60, 600, 10, 120);
+	wait(120);
+	wait(30);
+	Bild2(dir ~ "bild2.png", 30, 120, 30);
+	wait(180);
+	Flame(30, 120, 30);
+
+	task Flame(t1, t2, t3)
+	{
+		let path1 = dir ~ "./flame1.png";
+		let path2 = dir ~ "./flame2.png";
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+
+		let objo = ObjRender_SetIAnimation(obj, dir ~ "flame.png", 4, 256, 256, 1, 2, 1, 1, 0, 0);
+		Obj_SetRenderPriorityI(objo, 96);
+		ObjRender_SetBlendType(objo, BLEND_ADD_ARGB);
+
+		ObjRender_SetAlphaAtFrame(objo, 0, 200, t1);
+
+		wait(t1 + t2);
+
+		ObjRender_SetAlphaAtFrame(objo, 200, 0, t3);
+		wait(t3);
+		Obj_Delete(objo);
+		Obj_Delete(obj);
+	}
+
+	task Bild2(path, t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		ObjRender_SetPosition(obj, 320, 0, 0);
+		Obj_SetRenderPriorityI(obj, 96);
+
+		ObjRender_SetDestAtFrame(obj, 320, 500, t1 + t2 + t3);
+
+		ObjRender_SetAlphaAtFrame(obj, 0, 200, t1);
+
+		wait(t1 + t2);
+
+		ObjRender_SetAlphaAtFrame(obj, 200, 0, t3);
+		wait(t3);
+		Obj_Delete(obj);
+	}
+
+	task Bild1(path, t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		ObjRender_SetPosition(obj, 320, 300, 0);
+		Obj_SetRenderPriorityI(obj, 96);
+
+		ObjRender_SetScaleAtFrame(obj, 0.8, 0.8, 0.5, 0.5, t1 + t2 + t3);
+		ObjRender_SetDestAtFrame(obj, 320, 150, t1 + t2 + t3);
+
+		ObjRender_SetAlphaAtFrame(obj, 0, 200, t1);
+
+		wait(t1 + t2);
+
+		ObjRender_SetAlphaAtFrame(obj, 200, 0, t3);
+		wait(t3);
+		Obj_Delete(obj);
+	}
+
+	task CreateFont(path, t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+		Obj_SetRenderPriorityI(obj, 97);
+
+		ascent(i in 0..t1)
+		{
+			ObjRender_SetAlpha(obj, 255 / t1 * i);
+			yield;
+		}
+		ObjRender_SetAlpha(obj, 255);
+
+		wait(t2);
+
+		ascent(i in 0..t3)
+		{
+			ObjRender_SetAlpha(obj,255 - 255 / t3 * i);
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+
+	task BlueBG(t1, t2, t3, t0)
+	{
+		let path = dir ~ "./bluebg.png";
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetAlpha(obj, 0);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+
+		let globalalpha = 0;
+
+		Stars;
+
+		wait(t0);
+
+		ascent(i in 0..t1)
+		{
+			globalalpha = 255 / t1 * i;
+			ObjRender_SetAlpha(obj, globalalpha);
+			yield;
+		}
+		globalalpha = 255;
+		ObjRender_SetAlpha(obj, 255);
+
+		wait(t2);
+
+		ascent(i in 0..t3)
+		{
+			ObjRender_SetAlpha(obj,255 - 255 / t3 * i);
+			yield;
+		}
+		Obj_Delete(obj);
+
+		task Stars
+		{
+			while(!Obj_IsDeleted(obj))
+			{
+				CreateLine;
+				CreateLine;
+				CreateLine;
+
+				yield;
+				task CreateLine
+				{
+					let iradius = 0;
+					let r = 0; 
+					let ispeed = 2.5;
+					let rspeed = 0.06;
+					let dir = rand(0, 360);
+					let objs = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+					ObjPrim_SetPrimitiveType(objs, PRIMITIVE_LINELIST);
+					ObjPrim_SetVertexCount(objs, 2);
+					ObjPrim_SetVertexColor(objs, 0, 255, 255, 255);
+					ObjPrim_SetVertexColor(objs, 1, 255, 255, 255);
+					ObjRender_SetAlpha(objs, 255);
+					Obj_SetRenderPriorityI(objs, 95);
+
+					let cosr = cos(dir);
+					let sinr = sin(dir);
+
+					if(globalalpha != 255){AlphaCheck;}
+
+					while(iradius < 750)
+					{
+						iradius += ispeed;
+						r += rspeed;
+						ObjPrim_SetVertexPosition(objs, 0, 320 + iradius * cosr, 240 + iradius * sinr, 0);
+						ObjPrim_SetVertexPosition(objs, 1, 320 + (iradius + r) * cosr, 240 + (iradius + r) * sinr, 0);
+						yield;
+					}
+					Obj_Delete(objs);
+
+					task AlphaCheck
+					{
+						while(!Obj_IsDeleted(objs) && globalalpha != 255)
+						{
+							ObjRender_SetAlpha(objs, globalalpha);
+							yield;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	task RedBG(t1, t2, t3)
+	{
+		let path = dir ~ "./redbg.png";
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetAlpha(obj, 0);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+
+		Zoom;
+
+		ascent(i in 0..t1)
+		{
+			ObjRender_SetAlpha(obj, 255 / t1 * i);
+			yield;
+		}
+		ObjRender_SetAlpha(obj, 255);
+
+		wait(t2);
+
+		ascent(i in 0..t3)
+		{
+			ObjRender_SetAlpha(obj,255 - 255 / t3 * i);
+			yield;
+		}
+		Obj_Delete(obj);
+
+		task Zoom
+		{
+			let scale = 1;
+			let scalespeed = 0.001;
+			while(!Obj_IsDeleted(obj))
+			{
+				scale += scalespeed;
+				ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+				yield;
+			}
+		}
+	}
+
+	task Music(t1)
+	{
+		wait(t1);
+		ObjMusic_CreateBGM(dir ~ "intro.ogg", 70);
+	}
+
+	task CreateCircle(t1)
+	{
+		LoadTexture(circle);
+		let texturewidth = GetTextureWidth(circle);
+		let textureheight = GetTextureHeight(circle);
+
+		let oradius = 0;
+		let iradius = 0;
+
+		let lineparts = 256;
+		let picturerepeat = 6;
+
+
+
+		let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+		ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP);
+		ObjPrim_SetVertexCount(obj, lineparts * 2 + 2);
+		ObjPrim_SetTexture(obj, circle);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
+
+		ascent(i in 0..lineparts + 1)
+		{
+			ObjPrim_SetVertexUVT(obj, i * 2, texturewidth * picturerepeat / lineparts * i, 0);
+			ObjPrim_SetVertexUVT(obj, i * 2 + 1, texturewidth * picturerepeat / lineparts * i, textureheight);
+		}
+
+		Movement;
+
+		wait(t1);
+
+		let ispeed = 6;
+		let r = 0;
+		let rspeed = 15;
+
+		loop(20)
+		{
+			iradius += ispeed;
+			r += rspeed;
+			oradius = iradius + r;
+			yield;
+		}
+		loop(0)
+		{
+			iradius += ispeed;
+			oradius = iradius + r;
+			yield;
+		}
+		loop(60)
+		{
+			r -= rspeed / 4;
+			oradius += (ispeed - 1);
+			iradius = oradius - r;
+			yield;
+		}
+		Obj_Delete(obj);
+
+		task Movement()
+		{
+			let linedis = 360 / lineparts;
+			while(!Obj_IsDeleted(obj))
+			{
+				ascent(i in 0..lineparts + 1)
+				{
+					ObjPrim_SetVertexPosition(obj, i * 2, 320 + oradius * cos(linedis * i), 240 + oradius * sin(linedis * i), 0);
+					ObjPrim_SetVertexPosition(obj, i * 2 + 1, 320 + iradius * cos(linedis * i), 240 + iradius * sin(linedis * i), 0);
+				}
+				yield;
+			}
+		}
+
+	}
+
+	task CreateStar(t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, star);
+		Obj_SetRenderPriorityI(obj, 95);
+		ObjRender_SetAlpha(obj, 0);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+		ObjRender_SetScaleXYZ(obj, 0.5, 0.5, 0.6);
+
+		ascent(i in 0..t1)
+		{
+			ObjRender_SetAlpha(obj, 180 / t1 * i);
+			yield;
+		}
+		ObjRender_SetAlpha(obj, 180);
+
+		wait(t2);
+
+		ascent(i in 0..t3)
+		{
+			ObjRender_SetAlpha(obj,180 - 180 / t3 * i);
+			yield;
+		}
+		Obj_Delete(obj);
+	}
+}
