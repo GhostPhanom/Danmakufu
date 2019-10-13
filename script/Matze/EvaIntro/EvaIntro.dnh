@@ -1,6 +1,7 @@
 #include"../Generalfunction.dnh"
 @Initialize
 {
+	LoadTextures;
 	MainTask;
 }
 @MainLoop
@@ -9,6 +10,24 @@
 }
 
 let dir = GetCurrentScriptDirectory();
+
+function LoadTextures
+{
+	LoadTexture(dir ~ "bg.png");
+	LoadTexture(dir ~ "bild1.png");
+	LoadTexture(dir ~ "bild2.png");
+	LoadTexture(dir ~ "bluebg.png");
+	LoadTexture(dir ~ "clouds.png");
+	LoadTexture(dir ~ "explo1.png");
+	LoadTexture(dir ~ "flame.png");
+	LoadTexture(dir ~ "kreuz.png");
+	LoadTexture(dir ~ "redbg.png");
+	LoadTexture(dir ~ "schrift1.png");
+	LoadTexture(dir ~ "schrift2.png");
+	LoadTexture(dir ~ "schrift3.png");
+	LoadTexture(dir ~ "skin.png");
+	LoadTexture(dir ~ "stgbg4.png");
+}
 
 task MainTask
 {
@@ -27,8 +46,8 @@ task MainTask
 
 	Music(40);
 	CreateStar(50, 20, 50);
-	CreateCircle(65);
-	CreateCircle(71);
+	CreateCircle(65, 95);
+	CreateCircle(71, 95);
 
 	wait(130);
 	RedBG(30, 240, 60);
@@ -37,22 +56,169 @@ task MainTask
 	wait(60);
 	Bild1(dir ~ "bild1.png", 30, 110, 30);
 	wait(60);
-	BlueBG(60, 600, 10, 120);
+	BlueBG(60, 400, 10, 120);
 	wait(120);
 	wait(30);
-	Bild2(dir ~ "bild2.png", 30, 120, 30);
+	Bild2(dir ~ "bild2.png", 30, 90, 30);
+	wait(150);
+	Flame(30, 300, 30);
+	CreateFont(dir ~ "schrift2.png", 30, 150, 30);
 	wait(180);
-	Flame(30, 120, 30);
+	CreateCircle(0, 95);
+	CreateCircle(6, 95);
+	ScreenFlash(30, 10, 1, 255, 255, 255, 99);
+	wait(40);
+	Cloud(0, 240, 0);
+	Explosion(0, 120, 0);
+	Sparks(4, 16);
+	wait(60);
+	CreateFont2(dir ~ "schrift3.png", 60, 600);
+	wait(60);
+	ScreenFlash(0, 999, 0, 0, 0, 0, 96);
+	wait(120);
+	Fontspin;
+	wait(120);
+	CreateCircle(0, 96);
+	CreateCircle(6, 96);
 
-	task Flame(t1, t2, t3)
+	task Fontspin
 	{
-		let path1 = dir ~ "./flame1.png";
-		let path2 = dir ~ "./flame2.png";
+		let t1 = 30;
+		let endscale = 1;
+		let startscale = 3;
+		let scalediff = (endscale - startscale) / t1;
+		let scale = startscale;
 
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, dir ~ "logo1.png");
+		ObjRender_SetPosition(obj, 320, 550, 0);
+		Obj_SetRenderPriorityI(obj, 98);
+		ObjRender_SetAngleX(obj, 90);
+		ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+		let objs = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(objs, dir ~ "logo2.png");
+		ObjRender_SetPosition(objs, 320, 550, 0);
+		Obj_SetRenderPriorityI(objs, 98);
+		ObjRender_SetAngleX(objs, 90);
+		ObjRender_SetScaleXYZ(objs, scale, scale, 1);
+
+		Alpha(objs);
+
+		ascent(i in 1..t1 + 1)
+		{
+			scale += scalediff;
+			ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+			ObjRender_SetAngleX(obj, 90 - (90 / t1) * i);
+			ObjRender_SetScaleXYZ(objs, scale, scale, 1);
+			ObjRender_SetAngleX(objs, 90 - (90 / t1) * i);
+			yield;
+		}
+
+		task Alpha(obj)
+		{
+			let t = 6;
+			wait(t1 / t * (t - 1));
+			ascent(i in 0..(t1 / t))
+			{
+				ObjRender_SetAlpha(obj, 255 - (255 / (t1 / t)) * i);
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+
+	task CreateFont2(path, t1, t2)
+	{
+		//let t1 = 30 //Black
+		//let t1 = 150 //White
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		ObjRender_SetPosition(obj, 320, 240, 0);
+		Obj_SetRenderPriorityI(obj, 98);
+		ObjRender_SetAlpha(obj, 255);
+		ObjRender_SetColor(obj, 0, 0, 0);
+		wait(t1);
+		ObjRender_SetColor(obj, 255, 255, 255);
+		wait(t2);
+		Obj_Delete(obj);
+	}
+
+	task Sparks(t1, t2)
+	{
+		//let t1 = 3; //Frames per flash
+		//let t2 = 20; //Flashcount
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, dir ~ "skin.png");
+		Obj_SetRenderPriorityI(obj, 96);
+		ObjRender_SetAlpha(obj, 100);
+
+		let objs = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(objs, dir ~ "kreuz.png");
+		Obj_SetRenderPriorityI(objs, 96);
+
+		ascent(i in 1..t2 + 1)
+		{
+			ObjRender_SetPosition(obj, 320 + rand(-20, 20), 240 + rand(-20, 20), 0);
+			ObjRender_SetAngleZ(obj, rand(0, 10));
+
+			if(i % 3 == 0)
+			{
+				ObjRender_SetPosition(objs, 320 + rand(-320, 320), 240 + rand(-240, 240), 0);
+				ObjRender_SetAngleZ(objs, rand(0, 360));
+			}
+			else
+			{
+				ObjRender_SetPosition(objs, 999999, 999999, 0);
+			}
+			wait(t1);
+		}
+		Obj_Delete(obj);
+		Obj_Delete(objs);
+	}
+
+	task Cloud(t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestRect(obj, dir ~ "clouds.png", 0, 0, 640, 480);
+		Obj_SetRenderPriorityI(obj, 96);
+		//ObjRender_SetBlendType(objo, BLEND_ADD_ARGB);
+
+		ObjRender_SetAlphaAtFrame(obj, 0, 255, t1);
+
+		wait(t1 + t2);
+
+		ObjRender_SetAlphaAtFrame(obj, 255, 0, t3);
+		wait(t3);
+		Obj_Delete(obj);
+	}
+
+	task Explosion(t1, t2, t3)
+	{
 		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjRender_SetPosition(obj, 320, 240, 0);
 
-		let objo = ObjRender_SetIAnimation(obj, dir ~ "flame.png", 4, 256, 256, 1, 2, 1, 1, 0, 0);
+		let objo = ObjRender_SetIAnimation(obj, dir ~ "explo1.png", 20, 75, 75, 1, 6, 1, 1, 0, 0);
+		ObjRender_SetScaleXYZ(objo, 8, 8, 1);
+		Obj_SetRenderPriorityI(objo, 96);
+		ObjRender_SetBlendType(objo, BLEND_ADD_ARGB);
+
+		ObjRender_SetAlphaAtFrame(objo, 0, 255, t1);
+
+		wait(t1 + t2);
+
+		ObjRender_SetAlphaAtFrame(objo, 255, 0, t3);
+		wait(t3);
+		Obj_Delete(objo);
+		Obj_Delete(obj);
+	}
+
+	task Flame(t1, t2, t3)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjRender_SetPosition(obj, 320, 200, 0);
+
+		let objo = ObjRender_SetIAnimation(obj, dir ~ "flame.png", 6, 256, 256, 1, 2, 1, 1, 0, 0);
 		Obj_SetRenderPriorityI(objo, 96);
 		ObjRender_SetBlendType(objo, BLEND_ADD_ARGB);
 
@@ -188,7 +354,7 @@ task MainTask
 					let cosr = cos(dir);
 					let sinr = sin(dir);
 
-					if(globalalpha != 255){AlphaCheck;}
+					SpawnAlpha;
 
 					while(iradius < 750)
 					{
@@ -200,11 +366,21 @@ task MainTask
 					}
 					Obj_Delete(objs);
 
-					task AlphaCheck
+					task SpawnAlpha
 					{
-						while(!Obj_IsDeleted(objs) && globalalpha != 255)
+						let t = 60;
+						let alphapart = 255 / t;
+						let counter = 0;
+						while(!Obj_IsDeleted(objs))
 						{
-							ObjRender_SetAlpha(objs, globalalpha);
+							let alpha = min(globalalpha, alphapart * counter);
+							if(alpha >= 255)
+							{
+								ObjRender_SetAlpha(objs, 255);
+								return;
+							}
+							ObjRender_SetAlpha(objs, alpha);
+							counter++;
 							yield;
 						}
 					}
@@ -260,7 +436,7 @@ task MainTask
 		ObjMusic_CreateBGM(dir ~ "intro.ogg", 70);
 	}
 
-	task CreateCircle(t1)
+	task CreateCircle(t1, prio)
 	{
 		LoadTexture(circle);
 		let texturewidth = GetTextureWidth(circle);
@@ -278,7 +454,7 @@ task MainTask
 		ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLESTRIP);
 		ObjPrim_SetVertexCount(obj, lineparts * 2 + 2);
 		ObjPrim_SetTexture(obj, circle);
-		Obj_SetRenderPriorityI(obj, 95);
+		Obj_SetRenderPriorityI(obj, prio);
 		ObjRender_SetBlendType(obj, BLEND_ADD_RGB);
 
 		ascent(i in 0..lineparts + 1)
