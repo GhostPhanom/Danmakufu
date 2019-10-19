@@ -13,6 +13,8 @@ let dir = GetCurrentScriptDirectory();
 
 function LoadTextures
 {
+	LoadTexturesInPath(GetCurrentScriptDirectory());
+	/*
 	LoadTexture(dir ~ "bg.png");
 	LoadTexture(dir ~ "bild1.png");
 	LoadTexture(dir ~ "bild2.png");
@@ -27,6 +29,9 @@ function LoadTextures
 	LoadTexture(dir ~ "schrift3.png");
 	LoadTexture(dir ~ "skin.png");
 	LoadTexture(dir ~ "stgbg4.png");
+	LoadTexture(dir ~ "logo1.png");
+	LoadTexture(dir ~ "logo2.png");
+	*/
 }
 
 task MainTask
