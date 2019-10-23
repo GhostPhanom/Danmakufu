@@ -1,0 +1,191 @@
+@Initialize
+{
+	MainTask;
+}
+
+@MainLoop
+{
+	yield;
+}
+
+let tower_start = 10;
+let tower_winlevel = 150;
+let wall_start = 2;
+let ressource_start = 20;
+let ressource_winlevel = 300;
+let ressource_level_start = 1;
+
+let setpath = GetModuleDirectory ~ "gamestate";
+let getpath = GetModuleDirectory ~ "remote_gamestate";
+
+let instanceplayer = 1; //Instance controlls Player1 or Player2
+
+let player1 = CreatePlayer(1);
+let player2 = CreatePlayer(2);
+let instance_hand = [];
+//let deck = CreateDeck(1);
+let cardarray = [];
+
+
+
+CreateDataArea("GameState");
+CreateDataArea("Remote_GameState");
+
+task MainTask
+{
+	yield;
+	AcroMage;
+}
+
+function AcroMage
+{
+	Create_StartConfig;
+}
+
+function Create_StartConfig
+{
+	let filetest = ObjFile_Create(OBJ_FILE_BINARY);
+	ObjFile_Open(filetest, setpath);
+	if(ObjFile_GetSize(filetest) == 0)
+	{
+		WriteLog("Existing own ConfigFile found! Overriding for StartConfig!");
+	}
+	else
+	{
+		WriteLog("No own ConfigFile found! Creating StartConfig!");
+	}
+	CreateDataArea("Remote_GameState");
+	let saved = SaveCommonDataAreaA2("Remote_GameState", setpath);
+	if(saved == false){RaiseError("COULD NOT SAVE START GAMESTATE TO FILE!!! THAT SHOULD NOT BE THE CASE!");}
+	ClearAreaCommonData("Remote_GameState");
+	
+	return true;
+}
+function Update_Remote_GameState
+{
+	let resultc = FileTest(getpath);
+	while(resultc == 1)//Check if Remote_ConfigFile wrongfully does not exist
+	{
+		FileTest(getpath); // 0 File exist; 1 File does not exist
+		WriteLog("Remote ConfigFile not found! Retry!");
+		loop(30){yield;}
+	}
+	
+	resultc = FileTest(setpath);
+	while(resultc == 0)//Check if Own_ConfigFile does wrongfully exist
+	{
+		FileTest(setpath); // 0 File exist; 1 File does not exist
+		WriteLog("Own ConfigFile found! Retry! Maybe the Script is not running");
+		loop(30){yield;}
+	}
+	
+	ClearAreaCommonData("Remote_GameState");
+	CopyCommonDataArea("Remote_GameState", "GameState");
+	let saved = SaveCommonDataAreaA2("Remote_GameState", setpath);
+	if(saved == false){RaiseError("COULD NOT SAVE OWN GAMESTATE TO FILE!!! THAT SHOULD NOT BE THE CASE!");}
+	
+	return true;
+	
+	function FileTest(path)
+	{
+		let filetest = ObjFile_Create(OBJ_FILE_BINARY);
+		ObjFile_Open(filetest, path);
+		if(ObjFile_GetSize(filetest) == 0)
+		{
+			Obj_Delete(filetest);
+			return 0;
+		}
+		else
+		{
+			Obj_Delete(filetest);
+			return 1;
+		}
+	}
+}
+
+function Update_WaitforSync
+{
+	ClearAreaCommonData("Remote_GameState");
+	let tick = GetAreaCommonData("GameState", "gametick", -1);
+	while(tick <= GetAreaCommonData("Remote_GameState", "gametick", 0))
+	{
+		let resultc = LoadCommonDataAreaA2("Remote_GameState", getpath);
+		while(resultc == false)
+		{
+			resultc = LoadCommonDataAreaA2("Remote_GameState", getpath);
+			WriteLog("Could not Read Remote_GameState! Retry!");
+			loop(30){yield;}
+		}
+		loop(30){yield;}
+		WriteLog("Waiting for higher gametick... Tick: " ~ itoa(tick));
+	}
+	WriteLog("Higher gametick detected! Advancing! Tick: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", 0)));
+	return true;
+}
+
+function CreateDataArea(name)
+{
+	CreateCommonDataArea(name);
+	SetAreaCommonData(name, "gametick", 0); //Each synchronized action increases the gametick
+	SetAreaCommonData(name, "active_player", 1); //who is the current player 
+	SetAreaCommonData(name, "card_played", -1); //What was the last played Card
+	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
+	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
+	
+	//ONLY FOR DESYNC CHECK
+	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
+	SetAreaCommonData(name, "player1_wall", Obj_GetValue(player1, "wall"));
+	SetAreaCommonData(name, "player1_stone", Obj_GetValue(player1, "stone"));
+	SetAreaCommonData(name, "player1_gem", Obj_GetValue(player1, "gem"));
+	SetAreaCommonData(name, "player1_monster", Obj_GetValue(player1, "monster"));
+	SetAreaCommonData(name, "player1_stone_level", Obj_GetValue(player1, "stone_level"));
+	SetAreaCommonData(name, "player1_gem_level", Obj_GetValue(player1, "gem_level"));
+	SetAreaCommonData(name, "player1_monster_level", Obj_GetValue(player1, "monster_level"));
+	
+	SetAreaCommonData(name, "player2_tower", Obj_GetValue(player2, "tower"));
+	SetAreaCommonData(name, "player2_wall", Obj_GetValue(player2, "wall"));
+	SetAreaCommonData(name, "player2_stone", Obj_GetValue(player2, "stone"));
+	SetAreaCommonData(name, "player2_gem", Obj_GetValue(player2, "gem"));
+	SetAreaCommonData(name, "player2_monster", Obj_GetValue(player2, "monster"));
+	SetAreaCommonData(name, "player2_stone_level", Obj_GetValue(player2, "stone_level"));
+	SetAreaCommonData(name, "player2_gem_level", Obj_GetValue(player2, "gem_level"));
+	SetAreaCommonData(name, "player2_monster_level", Obj_GetValue(player2, "monster_level"));
+}
+
+function CreatePlayer(number)
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	
+	Obj_SetValue(obj, "player_number", number);
+	Obj_SetValue(obj, "tower", tower_start);
+	Obj_SetValue(obj, "wall", wall_start);
+	Obj_SetValue(obj, "stone", ressource_start);
+	Obj_SetValue(obj, "gem", ressource_start);
+	Obj_SetValue(obj, "monster", ressource_start);
+	Obj_SetValue(obj, "stone_level", ressource_level_start);
+	Obj_SetValue(obj, "gem_level", ressource_level_start);
+	Obj_SetValue(obj, "monster_level", ressource_level_start);
+	
+	return obj;
+}
+
+function EvaluateGameState
+{
+	let player1 = 0;
+	let player2 = 0;
+	
+	function CheckPlayer(player)
+	{
+		if(Obj_GetValue(player, "tower") <= 0){return -1;}
+		else if(Obj_GetValue(player, "tower") >= tower_winlevel){return 1;}
+		else if(Obj_GetValue(player, "stone") >= ressource_winlevel){return 1;}
+		else if(Obj_GetValue(player, "gem") >= ressource_winlevel){return 1;}
+		else if(Obj_GetValue(player, "monster") >= ressource_winlevel){return 1;}
+		else{return 0;}
+	}
+	
+	if(player1 == -1 && player2 == -1){RaiseError("DRAW! Both Towers down!");}
+	else if(player1 == 1 && player2 == 1){RaiseError("DRAW! Both Players win!");}
+	else if(player1 == 1){RaiseError("Player1 wins!");}
+	else if(player2 == 1){RaiseError("Player2 wins!");}
+}
