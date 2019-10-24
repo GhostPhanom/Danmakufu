@@ -1,0 +1,2 @@
+put remote_gamestate
+bye
