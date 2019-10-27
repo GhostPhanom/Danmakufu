@@ -1,3 +1,5 @@
+#include "../Generalfunction.dnh"
+
 @Initialize
 {
 	MainTask;
@@ -21,9 +23,14 @@ let resetpath = GetModuleDirectory ~ "reset_remote_gamestate";
 
 let player1 = CreatePlayer(1);
 let player2 = CreatePlayer(2);
+let old_cards = [];
 let instance_hand = [];
-//let deck = CreateDeck(1);
-let cardarray = [];
+let cardarray = [
+101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134
+//201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234
+//301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334 
+];
+let deck = CreateDeck(1);
 
 let own_player = -1;
 let enemy_player = -1;
@@ -55,14 +62,71 @@ function AcroMage
 {
 	Create_StartConfig;
 	Create_Graphics;
+	CreateCover;
+	CreatePlayedSlots;
 	UpdateUI;
-	loop
+	loop(10)
 	{
 		GainRessource(player1);
 		UpdateUI;
 		EvaluateGameState;
 		wait(30);
 	}
+	//RaiseError(deck);
+}
+
+let playedcardsx = 166;
+let playedcardsy = 76;
+let playedcardsgapx = 6;
+let playedcardsgapy = 20;
+
+let playercardsarray = [];
+
+function UpdatePlayerSlots
+{
+
+}
+
+function CreatePlayedSlots
+{
+	ascent(i in 1..4)
+	{
+		CreatePlayedSlot(playedcardsx + 96 * i + playedcardsgapx * i, playedcardsy);
+	}
+	ascent(i in 0..4)
+	{
+		CreatePlayedSlot(playedcardsx + 96 * i + playedcardsgapx * i, playedcardsy + 128 + playedcardsgapy);
+	}
+
+	function CreatePlayedSlot(x, y)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");
+		Obj_SetRenderPriorityI(obj, 90);
+		ObjRender_SetColor(obj, 200, 200, 200);
+		ObjRender_SetAlpha(obj, 180);
+		ObjRender_SetPosition(obj, x, y, 0);
+		Obj_SetValue(obj, "card", -1);
+		playercardsarray = playercardsarray ~ [obj];
+	}
+}
+
+function CreateCover
+{
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");
+	Obj_SetRenderPriorityI(obj, 90);
+	ObjRender_SetPosition(obj, playedcardsx, playedcardsy, 0);
+}
+
+function CreateDeck(number)
+{
+	let deck = [];
+	loop(number)
+	{
+		deck = deck ~ ShuffleArray(cardarray);
+	}
+	return deck;
 }
 
 function GainRessource(target)
@@ -104,8 +168,8 @@ function Create_Graphics
 	CreateUserUI(540, 96 + 96, "monster", 2);
 	CreateTowerUI(150, 260, "tower", 1);
 	CreateTowerUI(200, 260, "wall", 1);
-	CreateTowerUI(640 - 200, 260, "tower", 2);
-	CreateTowerUI(640 - 150, 260, "wall", 2);
+	CreateTowerUI(640 - 150, 260, "tower", 2);
+	CreateTowerUI(640 - 200, 260, "wall", 2);
 
 	task CreateTowerUI(x, y, type, player)
 	{
@@ -153,9 +217,9 @@ function Create_Graphics
 
 		obj = ObjText_Create;
 		ObjText_SetText(obj, type ~ itoa(player));
-		ObjText_SetFontSize(obj, 12);
+		ObjText_SetFontSize(obj, 20);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x + 12, y + 20, 0);
+		ObjRender_SetPosition(obj, x + 4, y + 20, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_level", obj);
 
 		obj = ObjText_Create;
@@ -386,10 +450,10 @@ function EvaluateGameState
 		else{return 0;}
 	}
 	
-	if(player1_state == -1 && player2_state == -1){RaiseError("DRAW! Both Towers down!");}
-	else if(player1_state == 1 && player2_state == 1){RaiseError("DRAW! Both Players win!");}
-	else if(player1_state == 1){RaiseError("Player1 wins!");}
-	else if(player2_state == 1){RaiseError("Player2 wins!");}
+	if(player1_state == -1 && player2_state == -1){yield; RaiseError("DRAW! Both Towers down!");}
+	else if(player1_state == 1 && player2_state == 1){yield; RaiseError("DRAW! Both Players win!");}
+	else if(player1_state == 1){yield; RaiseError("Player1 wins!");}
+	else if(player2_state == 1){yield; RaiseError("Player2 wins!");}
 }
 
 //function DoRessourceChange(target, stone, gem, monster, stone_level, gem_level, monster_level)
@@ -896,12 +960,4 @@ function Process_Card(number, user, target, reason)
 	}
 
 	RaiseError("PROCESS CARD DID NOT RETURN! CARDNUMBER: " ~ itoa(number) ~ " User: " ~ itoa(user) ~ " Target: " ~ itoa(target) ~ " Reason: " ~ itoa(reason));
-}
-
-function wait(t)
-{
-	loop(t)
-	{
-		yield;
-	}
 }
