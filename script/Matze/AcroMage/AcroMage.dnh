@@ -12,8 +12,8 @@
 
 let tower_start = 50;
 let tower_winlevel = 150;
-let wall_start = 20;
-let ressource_start = 40;
+let wall_start = 0;
+let ressource_start = 10;
 let ressource_winlevel = 300;
 let ressource_level_start = 3;
 
@@ -21,8 +21,6 @@ let setpath = GetModuleDirectory ~ "gamestate";
 let getpath = GetModuleDirectory ~ "remote_gamestate";
 let resetpath = GetModuleDirectory ~ "reset_remote_gamestate";
 
-let player1 = CreatePlayer(1);
-let player2 = CreatePlayer(2);
 let old_cards = [];
 let instance_hand = [];
 let cardarray = [
@@ -30,13 +28,17 @@ let cardarray = [
 //201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234
 //301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334 
 ];
-let deck = CreateDeck(1);
+//let deck = CreateDeck(1);
+
+let player1 = CreatePlayer(1);
+let player2 = CreatePlayer(2);
 
 let own_player = -1;
 let enemy_player = -1;
 
-let currentplayer = 1;
-let instanceplayer = 1; //Instance controlls Player1 or Player2
+let currentplayer = player1;
+let notcurrentplayer = player2;
+let instanceplayer = player1; //Instance controlls Player1 or Player2
 if(instanceplayer == 2)
 {
 	own_player = player2;
@@ -58,60 +60,211 @@ task MainTask
 	AcroMage;
 }
 
+//MoveDeckToHand(DrawCards(1)[0]);
+
+//MoveHandToCurrentPlayed(slot); //0 indexed
+
+//MoveCurrentPlayedToPlayed
+
+//MoveHandToPlayed(slot)
+
+//MovePlayedToDeck
+
+//return 0 it is allowed; return 1 it is NOT allowed; return 2 another turn; return 3 discard additional card
 function AcroMage
 {
+	TestDebug;
+	CreateGraphicElements;
+	while(true)
+	{
+		GainRessource(currentplayer);
+		UpdateUI;
+		EvaluateGameState;
+		MoveDeckToHand(DrawCards(1)[0]);
+		let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
+		MovePlayedToDeck;
+		if(selectresult[1] == 0)
+		{
+			MoveHandToPlayed(selectresult[0]);
+		}
+		else if(selectresult[1] == 1)
+		{
+			MoveHandToCurrentPlayed(selectresult[0]);
+			let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+			UpdateUI;
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+			if(specialcase != 0){AnotherTurn(specialcase);}
+		}
+		EvaluateGameState;
+	}
+}
+
+function AnotherTurn(specialcase)
+{
+	EvaluateGameState;
+	MoveDeckToHand(DrawCards(1)[0]);
+	let selectresult = [];
+	if(specialcase == 3){selectresult = CardSelector(1);}//DISCARD ONLY
+	else{selectresult = CardSelector(0);}//Another Turn
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		wait(45);
+		MoveCurrentPlayedToPlayed;
+		if(specialcase != 0){AnotherTurn(specialcase);}
+	}
+}
+
+function TestDebug
+{
 	Create_StartConfig;
+}
+
+function CreateGraphicElements
+{
 	Create_Graphics;
 	CreateCover;
 	CreatePlayedSlots;
-	CreateCurrentPlayedCard;
-	UpdateUI;
-	loop(10)
-	{
-		GainRessource(player1);
-		UpdateUI;
-		EvaluateGameState;
-		wait(30);
-	}
-	Obj_SetValue(playercardsarray[0], "card", 101);
-	Obj_SetValue(playercardsarray[1], "card", 201);
-	Obj_SetValue(playercardsarray[2], "card", 301);
-	Obj_SetValue(playercardsarray[3], "card", 122);
-	Obj_SetValue(playercardsarray[4], "card", 321);
-	Obj_SetValue(playercardsarray[5], "card", 201);
 	UpdatePlayedSlots;
-	wait(120);
-	Obj_SetValue(currentplayedcard, "card", 312);
+	CreateCurrentPlayedCard;
 	UpdateCurrentPlayedCard;
-	//RaiseError(deck);
+	CreateHandDisplay;
+	RearangeHandCards;
+	ChangeHandDisplayPlayer;
+	UpdateUI;
 }
 
-function RearangeHandCards //Moves Handcardpositions between 5 and 6 Cards
+function SwitchCurrentPlayer
 {
-	let playerobj = -1;
-	if(currentplayer == 2){playerobj = player2;}
-	else{playerobj = player1;}
-
-	if(length(Obj_GetValue(playerobj, "card") == 6))
+	if(currentplayer == player1)
 	{
-		//MoveCardslots
-		Obj_SetVisible(handcardsarray[5], true);
+		currentplayer = player2;
+		notcurrentplayer = player1;
 	}
 	else
 	{
-		//MoveCardslots
-		Obj_SetVisible(handcardsarray[5], false);
+		currentplayer = player1;
+		notcurrentplayer = player2;
 	}
 }
 
-function ChangeHandDisplayPlayer
-{
+function PlaySound_GetRessources{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "./sounds/bricks up.wav", 70);}
+function PlaySound_LoseRessources{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/bricks down.wav", 70);}
+function PlaySound_Damage{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/damage.wav", 70);}
+function PlaySound_GetLevel{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/quarry up.wav", 70);}
+function PlaySound_LoseLevel{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/quarry down.wav", 70);}
+function PlaySound_GetTower{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/tower up.wav", 70);}
+function PlaySound_GetWall{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/wall up.wav", 70);}
+function PlaySound_Card{ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "sounds/deal.wav", 70);}
 
+
+function CardSelector(mode) //returns [index, action] action 0 == discard; action 1 == usage
+{
+	//mode 0 default
+	//mode 1 only discard
+	let objarray = [];
+	let action = -1;
+	let choosenindex = -1;
+	ascent(i in 0..length(handcardsarray))
+	{
+		CreateSelector(i);
+	}
+
+	while(choosenindex == -1)
+	{
+		yield;
+	}
+	ascent(i in 0..length(objarray))
+	{
+		Obj_Delete(objarray[i]);
+	}
+
+	return [choosenindex, action];
+
+	task CreateSelector(indexx)
+	{
+		let targetobj = handcardsarray[indexx];
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		objarray = objarray ~ [obj];
+		ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "border.png");
+		ObjRender_SetPosition(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), 0);
+		Obj_SetRenderPriorityI(obj, 90);
+		Obj_SetVisible(obj, false);
+
+		let card = Obj_GetValue(currentplayer, "hand")[indexx];
+		let borderx1 = ObjRender_GetX(targetobj) - 96 / 2;
+		let borderx2 = ObjRender_GetX(targetobj) + 96 / 2;
+		let bordery1 = ObjRender_GetY(targetobj) - 128 / 2;
+		let bordery2 = ObjRender_GetY(targetobj) + 128 / 2;
+
+		while(!Obj_IsDeleted(obj))
+		{
+			let mousex = GetMouseX();
+			let mousey = GetMouseY();
+
+			if(mousex > borderx1 && mousex < borderx2 && mousey > bordery1 && mousey < bordery2)
+			{
+				Obj_SetVisible(obj, true);
+				if(GetMouseState(MOUSE_LEFT) == KEY_PUSH)
+				{
+					if(mode == 0)
+					{
+						if(Process_Card(card, currentplayer, notcurrentplayer, 0) == 0)
+						{
+							choosenindex = indexx;
+							action = 1;
+						}
+						else
+						{
+							WriteLog("CARD NOT PLAYABLE: " ~ itoa(card));
+						}
+					}
+					else
+					{
+						if(IsCardDiscardable(card))
+						{
+							choosenindex = indexx;
+							action = 0;
+						}
+						else
+						{
+							WriteLog("CARD NOT DISCARDABLE: " ~ itoa(card));
+						}
+					}
+				}
+				else if(GetMouseState(MOUSE_RIGHT) == KEY_PUSH)
+				{
+					if(IsCardDiscardable(card))
+					{
+						choosenindex = indexx;
+						action = 0;
+					}
+					else
+					{
+						WriteLog("CARD NOT DISCARDABLE: " ~ itoa(card));
+					}
+				}
+			}
+			else
+			{
+				Obj_SetVisible(obj, false);
+			}
+			yield;
+		}
+	}
 }
 
-let handcardsx = 20;
-let handcardsy = 350;
-let handcardsgapx = 6;
+
+let handcardsy = 380;
+let handcardsgapx = 10;
+let handcardsx = 320 - (96 + handcardsgapx) * 2;
 
 let handcardsarray = []; //OBJ ARRAY, DO NOT EDIT
 
@@ -121,21 +274,76 @@ function CreateHandDisplay
 	{
 		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");
+		Obj_SetRenderPriorityI(obj, 90);
+		handcardsarray = handcardsarray ~ [obj];
 	}
 }
 
-function AddCardToHand(card, player)
+function RearangeHandCards //Moves Handcardpositions between 5 and 6 Cards
 {
-	Obj_SetValue(player, "hand", Obj_GetValue(player, hand) ~ [card]);
+	let playerobj = -1;
+	if(currentplayer == 2){playerobj = player2;}
+	else{playerobj = player1;}
+
+	ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+	{
+		ObjPrim_SetTexture(handcardsarray[i], GetCardTextruePath(Obj_GetValue(currentplayer, "hand")[i]));
+	}
+
+	if(length(Obj_GetValue(playerobj, "hand")) == 6)
+	{
+		//MoveCardslots
+		ascent(i in 0..6)
+		{
+			ObjRender_SetPosition(handcardsarray[i], handcardsx + 96 * i + handcardsgapx * i - (96 + handcardsgapx) / 2, handcardsy, 0);
+		}
+		Obj_SetVisible(handcardsarray[5], true);
+	}
+	else
+	{
+		//MoveCardslots
+		ascent(i in 0..6)
+		{
+			ObjRender_SetPosition(handcardsarray[i], handcardsx + 96 * i + handcardsgapx * i, handcardsy, 0);
+		}
+		Obj_SetVisible(handcardsarray[5], false);
+	}
+}
+
+function ChangeHandDisplayPlayer //It decides with currentplayer and instanceplayer
+{
+	if(currentplayer == instanceplayer)
+	{
+		ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+		{
+			ObjPrim_SetTexture(handcardsarray[i], GetCardTextruePath(Obj_GetValue(currentplayer, "hand")[i]));
+		}
+	}
+	else
+	{
+		ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+		{
+			//ObjPrim_SetTexture(handcardsarray[i], GetCardTextruePath(Obj_GetValue(currentplayer, "hand")[i]));
+			ObjPrim_SetTexture(handcardsarray[i], GetCurrentScriptDirectory() ~ "card.png");
+		}
+	}
 }
 
 function DrawCards(number) //returns an array of cards that have been drawn from the deck
 {
+	let cards = [];
+
+	loop(number)
+	{
+		cards = cards ~ [cardarray[rand_int(0, length(cardarray) - 1)]];
+	}
+	/*
+	if(number >= length(deck)){RaiseError("NO CARDS TO DRAW FROM DECK! THIS SHOULD NOT BE POSSIBLE!!!")}
 	let cards = slice(deck, 0, number);
 	loop(number)
 	{
 		deck = erase(deck, 0);
-	}
+	}*/
 	return cards; //returns ARRAY
 }
 
@@ -179,21 +387,21 @@ let playedcardsy = 76;
 let playedcardsgapx = 6;
 let playedcardsgapy = 20;
 
-let playercardsarray = []; //OBJ ARRAY, DO NOT EDIT
+let playedcardsarray = []; //OBJ ARRAY, DO NOT EDIT
 
 function UpdatePlayedSlots
 {
-	ascent(i in 0..length(playercardsarray))
+	ascent(i in 0..length(playedcardsarray))
 	{
-		let card = Obj_GetValue(playercardsarray[i], "card");
+		let card = Obj_GetValue(playedcardsarray[i], "card");
 		if(card == -1)
 		{
-			Obj_SetVisible(playercardsarray[i], false);
+			Obj_SetVisible(playedcardsarray[i], false);
 		}
 		else
 		{
-			Obj_SetVisible(playercardsarray[i], true);
-			ObjPrim_SetTexture(playercardsarray[i], GetCardTextruePath(card));
+			Obj_SetVisible(playedcardsarray[i], true);
+			ObjPrim_SetTexture(playedcardsarray[i], GetCardTextruePath(card));
 		}
 	}
 }
@@ -218,8 +426,127 @@ function CreatePlayedSlots
 		ObjRender_SetAlpha(obj, 180);
 		ObjRender_SetPosition(obj, x, y, 0);
 		Obj_SetValue(obj, "card", -1);
-		playercardsarray = playercardsarray ~ [obj];
+		playedcardsarray = playedcardsarray ~ [obj];
 	}
+}
+
+task MovePlayedToDeck
+{
+	let t = 30;
+	let counter = 0;
+	let cardarray = [];
+	descent(i in 0..length(playedcardsarray))
+	{
+		if(Obj_GetValue(playedcardsarray[i], "card") != -1)
+		{
+			MoveToDeck(i);
+			counter++;
+		}
+	}
+	UpdatePlayedSlots;
+	if(counter != 0)
+	{
+		wait(t);
+		//cardarray = ShuffleArray(cardarray);
+		//deck = deck ~ cardarray;
+	}
+
+	task MoveToDeck(slot)
+	{
+		let card = Obj_GetValue(playedcardsarray[slot], "card");
+		Obj_SetValue(playedcardsarray[slot], "card", -1);
+		cardarray = cardarray ~ [card];
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
+		Obj_SetRenderPriorityI(obj, 89);
+		ObjRender_SetPosition(obj, ObjRender_GetX(playedcardsarray[slot]), ObjRender_GetY(playedcardsarray[slot]), 0);
+		ObjRender_SetDestAtFrame(obj, playedcardsx, playedcardsy, t);
+		ObjRender_SetAlpha(obj, 180);
+		wait(t);
+		Obj_Delete(obj);
+	}
+}
+
+function MoveDeckToHand(card)
+{
+	PlaySound_Card;
+	let t = 24;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	//if(currentplayer == instanceplayer){ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));}
+	//else{ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");}
+	ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");
+	Obj_SetRenderPriorityI(obj, 91);
+	ObjRender_SetPosition(obj, playedcardsx, playedcardsy, 0);
+	ObjRender_SetDestAtFrame(obj, handcardsx + 96 * 5 + handcardsgapx * 5 - (96 + handcardsgapx) / 2, handcardsy, t);
+	wait(t);
+	Obj_SetValue(currentplayer, "hand", Obj_GetValue(currentplayer, "hand") ~ [card]);
+	RearangeHandCards;
+	Obj_Delete(obj);
+}
+
+function MoveHandToCurrentPlayed(slot)
+{
+	PlaySound_Card;
+	let card = Obj_GetValue(currentplayer, "hand")[slot];
+	Obj_SetValue(currentplayer, "hand", erase(Obj_GetValue(currentplayer, "hand"), slot));
+	RearangeHandCards;
+	let t = 16;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
+	Obj_SetRenderPriorityI(obj, 91);
+	ObjRender_SetPosition(obj, handcardsx + 96 * slot + handcardsgapx * slot - (96 + handcardsgapx) / 2, handcardsy, 0);
+	ObjRender_SetDestAtFrame(obj, 320, 240, t);
+	wait(t);
+	Obj_SetValue(currentplayedcard, "card", card);
+	UpdateCurrentPlayedCard;
+	Obj_Delete(obj);
+}
+
+function MoveCurrentPlayedToPlayed
+{
+	let card = Obj_GetValue(currentplayedcard, "card");
+	Obj_SetValue(currentplayedcard, "card", -1);
+	UpdateCurrentPlayedCard;
+	let t = 24;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
+	Obj_SetRenderPriorityI(obj, 91);
+	ObjRender_SetPosition(obj, 320, 240, 0);
+	let targetobj = -1;
+	ascent(i in 0..length(playedcardsarray))
+	{
+		if(Obj_GetValue(playedcardsarray[i], "card") == -1){targetobj = playedcardsarray[i];break;}
+	}
+	if(targetobj == -1){RaiseError("NO FREE PLAYED CARD SLOT!!!");}
+	ObjRender_SetDestAtFrame(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), t);
+	wait(t);
+	Obj_SetValue(targetobj, "card", card);
+	UpdatePlayedSlots;
+	Obj_Delete(obj);
+}
+
+function MoveHandToPlayed(slot)
+{
+	PlaySound_Card;
+	let card = Obj_GetValue(currentplayer, "hand")[slot];
+	Obj_SetValue(currentplayer, "hand", erase(Obj_GetValue(currentplayer, "hand"), slot));
+	RearangeHandCards;
+	let t = 24;
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
+	Obj_SetRenderPriorityI(obj, 91);
+	ObjRender_SetPosition(obj, handcardsx + 96 * slot + handcardsgapx * slot - (96 + handcardsgapx) / 2, handcardsy, 0);
+	let targetobj = -1;
+	ascent(i in 0..length(playedcardsarray))
+	{
+		if(Obj_GetValue(playedcardsarray[i], "card") == -1){targetobj = playedcardsarray[i];break;}
+	}
+	if(targetobj == -1){RaiseError("NO FREE PLAYED CARD SLOT!!!");}
+	ObjRender_SetDestAtFrame(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), t);
+	wait(t);
+	Obj_SetValue(targetobj, "card", card);
+	UpdatePlayedSlots;
+	Obj_Delete(obj);
 }
 
 function CreateCover
@@ -355,7 +682,7 @@ function DoRessourceChange(target, stone, gem, monster, stone_level, gem_level, 
 function DoBuild(target, wall, tower)
 {
 	Obj_SetValue(target, "wall", Obj_GetValue(target, "wall") + wall);
-	Obj_SetValue(target, "tower", Obj_GetValue(target, "tower") + wall);
+	Obj_SetValue(target, "tower", Obj_GetValue(target, "tower") + tower);
 }
 
 
@@ -394,7 +721,7 @@ function WriteOwnGameState()
 	SetAreaCommonData(name, "cards_played", [-1]); //What was the last played Card
 	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
 	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
-	SetAreaCommonData(name, "deck", deck);
+	//SetAreaCommonData(name, "deck", deck);
 
 	//ONLY FOR DESYNC CHECK
 	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
@@ -508,7 +835,7 @@ function CreateDataArea(name)
 	SetAreaCommonData(name, "cards_played", [-1]); //What was the last played Card
 	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
 	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
-	SetAreaCommonData(name, "deck", deck);
+	//SetAreaCommonData(name, "deck", deck);
 
 	//ONLY FOR DESYNC CHECK
 	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
@@ -574,6 +901,16 @@ function EvaluateGameState
 	else if(player2_state == 1){yield; RaiseError("Player2 wins!");}
 }
 
+/*
+PlaySound_GetRessources;
+PlaySound_LoseRessources;
+PlaySound_Damage;
+PlaySound_GetLevel;
+PlaySound_LoseLevel;
+PlaySound_GetTower;
+PlaySound_GetWall;
+*/
+
 //function DoRessourceChange(target, stone, gem, monster, stone_level, gem_level, monster_level)
 //function DoBuild(target, wall, tower)
 //function DoDamage(target, generaldamage, walldamage, towerdamage)
@@ -587,7 +924,7 @@ function IsCardDiscardable(number)//bool
 function Process_Card(number, user, target, reason)
 {
 	//reason 0 check for playability; 1 Card is used.
-	//return 0 it is allowed; return 1 it is NOT allowed
+	//return 0 it is allowed; return 1 it is NOT allowed; return 2 another turn; return 3 discard additional card
 	//DoRessourceChange(user, 0, 0, 0, 0, 0, 0);
 	alternative(number)
 	/////////////STONE CARDS//////////////
@@ -595,141 +932,173 @@ function Process_Card(number, user, target, reason)
 		if(reason == 0){return 0;}
 		DoRessourceChange(user, -8, 0, 0, 0, 0, 0);
 		DoRessourceChange(target, -8, 0, 0, 0, 0, 0);
+		PlaySound_LoseRessources;
 	}
 	case(102){
 		if(reason == 0){return 0;}
 		DoRessourceChange(user, 2, 2, 0, 0, 0, 0);
+		PlaySound_GetRessources;
+		return 2;
 		//PLAY AGAIN
 	}
 	case(103){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 1){return 0;}else if(reason == 0){return 1;}
 		DoBuild(user, 1, 0);
 		DoRessourceChange(user, -1, 0, 0, 0, 0, 0);
+		PlaySound_GetWall;
+		return 2;
 		//PLAY AGAIN
 	}
 	case(104){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 3){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -3, 0, 0, 1, 0, 0);
+		PlaySound_GetLevel;
 	}
 	case(105){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 4){return 0;}else if(reason == 0){return 1;}
-		if(Obj_GetValue(user, "stone_level") < Obj_GetValue(target, "stone_level")){DoRessourceChange(user, 4, 0, 0, 2, 0, 0);}
+		if(Obj_GetValue(user, "stone_level") < Obj_GetValue(target, "stone_level")){DoRessourceChange(user, -4, 0, 0, 2, 0, 0);}
 		else{DoRessourceChange(user, -4, 0, 0, 1, 0, 0);}
+		PlaySound_GetLevel;
 	}
 	case(106){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 7){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -7, 0, 0, 1, 0, 0);
 		DoBuild(user, 4, 0);
+		PlaySound_GetLevel;
 	}
 	case(107){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 2){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -2, -6, 0, 0, 0, 0);
 		DoBuild(user, 5, 0);
+		PlaySound_GetWall;
 	}
 	case(108){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 5 && Obj_GetValue(user, "stone_level") < Obj_GetValue(target, "stone_level")){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -5, 0, 0, 0, 0, 0);
 		Obj_SetValue(user, "stone_level", Obj_GetValue(target, "stone_level"));
+		PlaySound_GetLevel;
 	}
 	case(109){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 2){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -2, 0, 0, 0, 0, 0);
 		DoBuild(user, 3, 0);
+		PlaySound_GetWall;
 	}
 	case(110){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 3){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -3, 0, 0, 0, 0, 0);
 		DoBuild(user, 4, 0);
+		PlaySound_GetWall;
 	}
 	case(111){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 2){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -2, 4, 0, 1, 0, 0);
-		DoRessourceChange(user, 0, 0, 0, 1, 0, 0);
+		DoRessourceChange(target, 0, 0, 0, 1, 0, 0);
+		PlaySound_GetLevel;
 	}
 	case(112){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 3){return 0;}else if(reason == 0){return 1;}
 		if(Obj_GetValue(user, "wall") == 0){DoBuild(user, 6, 0);}
 		else{DoBuild(user, 3, 0);}
 		DoRessourceChange(user, -3, 0, 0, 0, 0, 0);
+		PlaySound_GetWall;
 	}
 	case(113){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 7){if(Obj_GetValue(user, "wall") > 0 || Obj_GetValue(target, "wall") > 0){return 0;}else{return 1;}}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -7, 0, 0, 0, 0, 0);
 		DoDamage(user, 0, 5, 0);
 		DoDamage(target, 0, 5, 0);
+		PlaySound_Damage;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(114){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 8){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -8, 0, 0, 0, 1, 0);
+		PlaySound_GetLevel;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(115){
 		if(reason == 0){if(Obj_GetValue(user, "stone_level") > 1 || Obj_GetValue(target, "stone_level") > 1){return 0;}else{return 1;}}
 		DoRessourceChange(user, 0, 0, 0, -1, 0, 0);
 		DoRessourceChange(target, 0, 0, 0, -1, 0, 0);
+		PlaySound_LoseLevel;
 	}
 	case(116){
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 5){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -5, 0, 0, 0, 0, 0);
 		DoBuild(user, 6, 0);
+		PlaySound_GetWall;
 	}
 	case(117){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 4 && Obj_GetValue(target, "stone_level") > 1){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -4, 0, 0, 0, 0, 0);
 		DoRessourceChange(target, 0, 0, 0, -1, 0, 0);
+		PlaySound_LoseLevel;
 	}
 	case(118){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 6){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -6, 0, 0, 2, 0, 0);
+		PlaySound_GetLevel;
 	}
 	case(119){
 
 		if(reason == 0 && Obj_GetValue(user, "stone_level") > 1){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, 0, 5, 0, -1, 0, 0);
 		DoBuild(user, 10, 0);
+		PlaySound_GetWall;
 	}
 	case(120){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 8){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -8, 0, 0, 0, 0, 0);
 		DoBuild(user, 8, 0);
+		PlaySound_GetWall;
 	}
 	case(121){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 9){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -9, 0, 0, 0, 0, 1);
 		DoBuild(user, 5, 0);
+		PlaySound_GetLevel;
 	}
 	case(122){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 9){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -9, 7, 0, 0, 0, 0);
 		DoBuild(user, 7, 0);
+		PlaySound_GetWall;
 	}
 	case(123){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 11){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -11, 0, 0, 0, 0, 0);
 		DoBuild(user, 3, 0);
+		PlaySound_GetTower;
 	}
 	case(124){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 13){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -13, 0, 0, 0, 0, 0);
 		DoBuild(user, 12, 0);
+		PlaySound_GetWall;
 	}
 	case(125){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 15){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -15, 0, 0, 0, 0, 0);
 		DoBuild(user, 8, 5);
+		PlaySound_GetTower;
 	}
 	case(126){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 16){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -16, 0, 0, 0, 0, 0);
 		DoBuild(user, 15, 0);
+		PlaySound_GetWall;
 	}
 	case(127){
 
@@ -737,24 +1106,28 @@ function Process_Card(number, user, target, reason)
 		DoRessourceChange(user, -18, 0, 0, 0, 0, 0);
 		DoBuild(user, 6, 0);
 		DoDamage(target, 10, 0, 0);
+		PlaySound_Damage;
 	}
 	case(128){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 24){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -24, 0, 0, 0, 0, 0);
 		DoBuild(user, 20, 8);
+		PlaySound_GetTower;
 	}
 	case(129){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 7){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -7, 0, -5, 0, 0, 0);
 		DoBuild(user, 9, 0);
+		PlaySound_GetWall;
 	}
 	case(130){
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 1){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -1, 0, 2, 0, 0, 0);
 		DoBuild(user, 1, 1);
+		PlaySound_GetTower;
 	}
 	case(131){
 
@@ -770,6 +1143,7 @@ function Process_Card(number, user, target, reason)
 			DoRessourceChange(target, 0, 0, 0, 0, 0, -1);
 			DoDamage(target, 0, 0, 2);
 		}
+		PlaySound_Damage;
 	}
 	case(132){
 
@@ -777,6 +1151,7 @@ function Process_Card(number, user, target, reason)
 		DoRessourceChange(user, -10, 0, 6, 0, 0, 0);
 		if(Obj_GetValue(user, "monster_level") < Obj_GetValue(target, "monster_level")){DoRessourceChange(user, 0, 0, 0, 0, 0, 1);}
 		DoBuild(user, 6, 0);
+		PlaySound_GetLevel;
 	}
 	case(133){
 
@@ -784,6 +1159,7 @@ function Process_Card(number, user, target, reason)
 		DoRessourceChange(user, -14, 0, 0, 0, 0, 0);
 		DoBuild(user, 7, 0);
 		DoDamage(target, 6, 0, 0);
+		PlaySound_Damage;
 	}
 	case(134){
 
@@ -791,6 +1167,7 @@ function Process_Card(number, user, target, reason)
 		let userwall = Obj_GetValue(user, "wall");
 		Obj_SetValue(user, "wall", Obj_GetValue(target, "wall"));
 		Obj_SetValue(target, "wall", userwall);
+		PlaySound_GetWall;
 	}
 	//////////////GEM CARDS//////////////////
 	case(201){
@@ -1066,5 +1443,6 @@ function Process_Card(number, user, target, reason)
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 18){return 0;}else if(reason == 0){return 1;}
 	}
 
+	return 0;
 	RaiseError("PROCESS CARD DID NOT RETURN! CARDNUMBER: " ~ itoa(number) ~ " User: " ~ itoa(user) ~ " Target: " ~ itoa(target) ~ " Reason: " ~ itoa(reason));
 }
