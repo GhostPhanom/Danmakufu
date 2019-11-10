@@ -24,9 +24,10 @@ let resetpath = GetModuleDirectory ~ "reset_remote_gamestate";
 let old_cards = [];
 let instance_hand = [];
 let cardarray = [
-101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134
-//201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234
-//301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334 
+//101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,201,202,205,206,206,206,206,206,206,206,206,206,302,305,308
+101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,
+201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,
+301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334 
 ];
 //let deck = CreateDeck(1);
 
@@ -73,11 +74,17 @@ task MainTask
 //return 0 it is allowed; return 1 it is NOT allowed; return 2 another turn; return 3 discard additional card
 function AcroMage
 {
+	LoadCardGraphics;
 	TestDebug;
 	CreateGraphicElements;
+
+	PlayerTurn;
+
+	/*
 	while(true)
 	{
 		GainRessource(currentplayer);
+		RearangeHandCards;//TO ACCOUNT FOR CHANGES
 		UpdateUI;
 		EvaluateGameState;
 		MoveDeckToHand(DrawCards(1)[0]);
@@ -92,21 +99,74 @@ function AcroMage
 			MoveHandToCurrentPlayed(selectresult[0]);
 			let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
 			UpdateUI;
-			wait(45);
-			MoveCurrentPlayedToPlayed;
-			if(specialcase != 0){AnotherTurn(specialcase);}
+			if(specialcase == 3)//DROP CARD
+			{
+				RearangeHandCards;//TO ACCOUNT FOR CHANGES
+				EnableDiscardText(true);
+				MoveDeckToHand(DrawCards(1)[0]);
+				MoveCurrentPlayedToPlayed;
+				MoveHandToPlayed(CardSelector(1)[0]);
+				EnableDiscardText(false);
+			}
+			else//EVERY OTHER CARD
+			{
+				RearangeHandCards;//TO ACCOUNT FOR CHANGES
+				wait(45);
+				MoveCurrentPlayedToPlayed;
+			}
+			if(specialcase != 0){AnotherTurn;}
 		}
 		EvaluateGameState;
+		//WHEN CODE HERE THE PLAYER SWITCHES
 	}
+	*/
 }
 
-function AnotherTurn(specialcase)
+function LoadCardGraphics
 {
-	EvaluateGameState;
+	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "red/");
+	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "blue/");
+	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "green/");
+}
+
+function AISelector(mode) //returns [index, action] action 0 == discard; action 1 == usage
+{
+	//mode 0 default
+	//mode 1 only discard
+
+	let turnarray = [0, 1, 2, 3, 4, 5];
+	turnarray = ShuffleArray(turnarray);
+
+	if(mode == 0)
+	{
+		ascent(i in 0..6)
+		{
+			if(Process_Card(Obj_GetValue(currentplayer, "hand")[turnarray[i]], currentplayer, notcurrentplayer, 0) == 0)//card is playable
+			{
+				return [turnarray[i], 1];
+			}
+		}
+	}
+	
+	ascent(i in 0..6)
+	{
+		if(IsCardDiscardable(Obj_GetValue(currentplayer, "hand")[turnarray[i]]) == true)//card is trowable
+		{
+			return [turnarray[i], 0];
+		}
+	}
+
+	RaiseError("AI DID NOT FIND A PLAYABLE MOVE!");
+}
+
+function AITurn
+{
+	GainRessource(currentplayer);
+	RearangeHandCards;//TO ACCOUNT FOR CHANGES
+	UpdateUI;
 	MoveDeckToHand(DrawCards(1)[0]);
-	let selectresult = [];
-	if(specialcase == 3){selectresult = CardSelector(1);}//DISCARD ONLY
-	else{selectresult = CardSelector(0);}//Another Turn
+	let selectresult = AISelector(0);//returns [index, action] action 0 == discard; action 1 == usage
+	MovePlayedToDeck;
 	if(selectresult[1] == 0)
 	{
 		MoveHandToPlayed(selectresult[0]);
@@ -114,11 +174,138 @@ function AnotherTurn(specialcase)
 	else if(selectresult[1] == 1)
 	{
 		MoveHandToCurrentPlayed(selectresult[0]);
-		specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
 		UpdateUI;
-		wait(45);
-		MoveCurrentPlayedToPlayed;
-		if(specialcase != 0){AnotherTurn(specialcase);}
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			MoveDeckToHand(DrawCards(1)[0]);
+			MoveCurrentPlayedToPlayed;
+			MoveHandToPlayed(AISelector(1)[0]);
+			EnableDiscardText(false);
+			yield;
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+			yield;
+		}
+		if(specialcase != 0){AIAnotherTurn;}
+	}
+	EvaluateGameState;
+	//WHEN CODE HERE THE PLAYER SWITCHES
+	SwitchCurrentPlayer;
+	PlayerTurn;
+}
+
+function AIAnotherTurn
+{
+	MoveDeckToHand(DrawCards(1)[0]);
+	let selectresult = AISelector(0);
+	//MovePlayedToDeck;
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			MoveDeckToHand(DrawCards(1)[0]);
+			MoveCurrentPlayedToPlayed;
+			MoveHandToPlayed(AISelector(1)[0]);
+			EnableDiscardText(false);
+			yield;
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+			yield;
+		}
+		if(specialcase != 0){AnotherTurn;}
+	}
+}
+
+function PlayerTurn
+{
+	GainRessource(currentplayer);
+	RearangeHandCards;//TO ACCOUNT FOR CHANGES
+	UpdateUI;
+	MoveDeckToHand(DrawCards(1)[0]);
+	let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
+	MovePlayedToDeck;
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			MoveDeckToHand(DrawCards(1)[0]);
+			MoveCurrentPlayedToPlayed;
+			MoveHandToPlayed(CardSelector(1)[0]);
+			EnableDiscardText(false);
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+		}
+		if(specialcase != 0){AnotherTurn;}
+	}
+	EvaluateGameState;
+	//WHEN CODE HERE THE PLAYER SWITCHES
+	SwitchCurrentPlayer;
+	AITurn;
+}
+
+function AnotherTurn
+{
+	MoveDeckToHand(DrawCards(1)[0]);
+	let selectresult = CardSelector(0);
+	//MovePlayedToDeck;
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			MoveDeckToHand(DrawCards(1)[0]);
+			MoveCurrentPlayedToPlayed;
+			MoveHandToPlayed(CardSelector(1)[0]);
+			EnableDiscardText(false);
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+		}
+		if(specialcase != 0){AnotherTurn;}
 	}
 }
 
@@ -130,6 +317,7 @@ function TestDebug
 function CreateGraphicElements
 {
 	Create_Graphics;
+	CreateDiscardText(280, 290);
 	CreateCover;
 	CreatePlayedSlots;
 	UpdatePlayedSlots;
@@ -140,6 +328,8 @@ function CreateGraphicElements
 	ChangeHandDisplayPlayer;
 	UpdateUI;
 }
+
+
 
 function SwitchCurrentPlayer
 {
@@ -281,16 +471,32 @@ function CreateHandDisplay
 
 function RearangeHandCards //Moves Handcardpositions between 5 and 6 Cards
 {
-	let playerobj = -1;
-	if(currentplayer == 2){playerobj = player2;}
-	else{playerobj = player1;}
-
-	ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+	if(currentplayer == instanceplayer)
 	{
-		ObjPrim_SetTexture(handcardsarray[i], GetCardTextruePath(Obj_GetValue(currentplayer, "hand")[i]));
+		ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+		{
+			ObjPrim_SetTexture(handcardsarray[i], GetCardTextruePath(Obj_GetValue(currentplayer, "hand")[i]));
+			let playable = -1;
+			if(Process_Card(Obj_GetValue(currentplayer, "hand")[i], currentplayer, notcurrentplayer, 0) == 0)
+			{
+				ObjRender_SetAlpha(handcardsarray[i], 255);
+			}
+			else
+			{
+				ObjRender_SetAlpha(handcardsarray[i], 180);
+			}
+		}
+	}
+	else
+	{
+		ascent(i in 0..length(Obj_GetValue(currentplayer, "hand")))
+		{
+			ObjPrim_SetTexture(handcardsarray[i], GetCurrentScriptDirectory() ~ "card.png");
+			ObjRender_SetAlpha(handcardsarray[i], 255);
+		}
 	}
 
-	if(length(Obj_GetValue(playerobj, "hand")) == 6)
+	if(length(Obj_GetValue(currentplayer, "hand")) == 6)
 	{
 		//MoveCardslots
 		ascent(i in 0..6)
@@ -345,6 +551,26 @@ function DrawCards(number) //returns an array of cards that have been drawn from
 		deck = erase(deck, 0);
 	}*/
 	return cards; //returns ARRAY
+}
+
+let discardtext = -1;
+
+function CreateDiscardText(x, y)
+{
+	discardtext = ObjText_Create();
+	ObjText_SetFontSize(discardtext, 12);
+	ObjText_SetMaxWidth(discardtext, 200);
+	ObjText_SetText(discardtext, "DISCARD A CARD");
+	//ObjText_SetHorizontalAlignment(discardtext, ALIGNMENT_CENTER);
+	ObjText_SetAutoTransCenter(discardtext, true);
+	ObjRender_SetPosition(discardtext, x, y, 0);
+	Obj_SetRenderPriorityI(discardtext, 90); 
+	Obj_SetVisible(discardtext, false);
+}
+
+function EnableDiscardText(state)
+{
+	Obj_SetVisible(discardtext, state);
 }
 
 let currentplayedcard = -1;
@@ -416,6 +642,10 @@ function CreatePlayedSlots
 	{
 		CreatePlayedSlot(playedcardsx + 96 * i + playedcardsgapx * i, playedcardsy + 128 + playedcardsgapy);
 	}
+	ascent(i in 0..4)
+	{
+		CreatePlayedSlot(playedcardsx + 96 * i + playedcardsgapx * i, playedcardsy + 256 + playedcardsgapy * 2);
+	}
 
 	function CreatePlayedSlot(x, y)
 	{
@@ -470,7 +700,7 @@ task MovePlayedToDeck
 function MoveDeckToHand(card)
 {
 	PlaySound_Card;
-	let t = 24;
+	let t = 20;
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	//if(currentplayer == instanceplayer){ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));}
 	//else{ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "card.png");}
@@ -487,10 +717,12 @@ function MoveDeckToHand(card)
 function MoveHandToCurrentPlayed(slot)
 {
 	PlaySound_Card;
+	WriteLog(Obj_GetValue(currentplayer, "hand"));
+	WriteLog(slot);
 	let card = Obj_GetValue(currentplayer, "hand")[slot];
 	Obj_SetValue(currentplayer, "hand", erase(Obj_GetValue(currentplayer, "hand"), slot));
 	RearangeHandCards;
-	let t = 16;
+	let t = 12;
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
 	Obj_SetRenderPriorityI(obj, 91);
@@ -507,7 +739,7 @@ function MoveCurrentPlayedToPlayed
 	let card = Obj_GetValue(currentplayedcard, "card");
 	Obj_SetValue(currentplayedcard, "card", -1);
 	UpdateCurrentPlayedCard;
-	let t = 24;
+	let t = 16;
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
 	Obj_SetRenderPriorityI(obj, 91);
@@ -531,7 +763,7 @@ function MoveHandToPlayed(slot)
 	let card = Obj_GetValue(currentplayer, "hand")[slot];
 	Obj_SetValue(currentplayer, "hand", erase(Obj_GetValue(currentplayer, "hand"), slot));
 	RearangeHandCards;
-	let t = 24;
+	let t = 20;
 	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 	ObjSprite2D_SetSourceDestCenter(obj, GetCardTextruePath(card));
 	Obj_SetRenderPriorityI(obj, 91);
@@ -895,10 +1127,12 @@ function EvaluateGameState
 		else{return 0;}
 	}
 	
+	WriteLog("CHECK PLAYER1: " ~ itoa(player1_state) ~ " CHECK PLAYER2: " ~ itoa(player2_state));
+
 	if(player1_state == -1 && player2_state == -1){yield; RaiseError("DRAW! Both Towers down!");}
 	else if(player1_state == 1 && player2_state == 1){yield; RaiseError("DRAW! Both Players win!");}
-	else if(player1_state == 1){yield; RaiseError("Player1 wins!");}
-	else if(player2_state == 1){yield; RaiseError("Player2 wins!");}
+	else if(player1_state == 1 || player2_state == -1){yield; RaiseError("Player1 wins!");}
+	else if(player2_state == 1 || player1_state == -1){yield; RaiseError("Player2 wins!");}
 }
 
 /*
@@ -1173,274 +1407,513 @@ function Process_Card(number, user, target, reason)
 	case(201){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 1){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -1, 0, 0, 0, 0);
+		DoBuild(user, 0, 1);
+		PlaySound_GetTower;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(202){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -2, 0, 0, 0, 0);
+		DoDamage(target, 0, 0, 1);
+		PlaySound_Damage;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(203){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, 0, 0, 0, 0);
+		DoBuild(user, 0, 3);
+		PlaySound_GetTower;
 	}
 	case(204){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, 0, 0, 1, 0);
+		PlaySound_GetLevel;
 	}
 	case(205){
-
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -2, 0, 0, 0, 0);
+		return 3;
+		//PLAY AGAIN; DROP CARD
 	}
 	case(206){
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -5, 0, 0, 0, 0);
+		DoBuild(user, 0, 3);
+		PlaySound_GetTower;
+		//CANT BE DISCARDED
 	}
 	case(207){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 4){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -4, 0, 0, 0, 0);
+		DoBuild(user, 0, 2);
+		DoDamage(target, 0, 0, 2);
+		PlaySound_Damage;
 	}
 	case(208){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -6, 0, 0, 1, 0);
+		DoBuild(user, 0, 3);
+		DoBuild(target, 0, 1);
+		PlaySound_GetLevel;
 	}
 	case(209){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -2, 0, 0, 0, 0);
+		DoDamage(target, 0, 0, 3);
+		PlaySound_Damage;
 	}
 	case(210){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, 0, 0, 0, 0);
+		DoBuild(user, 0, 5);
+		PlaySound_GetTower;
 	}
 	case(211){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 4){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -4, 0, 0, 0, 0);
+		DoDamage(target, 0, 0, 5);
+		PlaySound_Damage;
 	}
 	case(212){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, 0, 0, 2, 0);
+		DoDamage(user, 5, 0, 0);
+		PlaySound_GetLevel;
 	}
 	case(213){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 7){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -7, 0, 0, 1, 0);
+		DoBuild(user, 3, 3);
+		PlaySound_GetLevel;
 	}
 	case(214){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 7 && Obj_GetValue(user, "gem_level") != Obj_GetValue(target, "gem_level")){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -7, 0, 0, 0, 0);
+		let level = max(Obj_GetValue(user, "gem_level"), Obj_GetValue(target, "gem_level"));
+		Obj_SetValue(user, "gem_level", level);
+		Obj_SetValue(target, "gem_level", level);
+		PlaySound_GetLevel;
 	}
 	case(215){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -6, 0, 0, 0, 0);
+		DoBuild(user, 0, 8);
+		PlaySound_GetTower;
 	}
 	case(216){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 9){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -9, 0, 0, 1, 0);
+		DoBuild(user, 0, 5);
+		PlaySound_GetTower;
 	}
 	case(217){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 8 && Obj_GetValue(user, "gem_level") > 1){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -8, 0, 0, -1, 0);
+		DoDamage(target, 0, 0, 9);
+		PlaySound_Damage;
 	}
 	case(218){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 7){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -7, 0, 0, 0, 0);
+		DoRessourceChange(target, -6, 0, 0, 0, 0, 0);
+		DoBuild(user, 0, 5);
+		PlaySound_GetTower;
 	}
 	case(219){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 10){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -10, 0, 0, 0, 0);
+		DoBuild(user, 0, 11);
+		PlaySound_GetTower;
 	}
 	case(220){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -5, 0, 0, -1, 0);
+		DoRessourceChange(user, 0, 0, 0, 0, -1, 0);
+		DoDamage(user, 0, 0, 7);
+		DoDamage(target, 0, 0, 7);
+		PlaySound_LoseLevel;
 	}
 	case(221){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 13){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -13, 0, 0, 0, 0);
+		DoBuild(user, 0, 6);
+		DoDamage(target, 0, 0, 4);
+		PlaySound_GetTower;
 	}
 	case(222){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 4){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, -10, -4, 0, 0, 0, 0);
+		DoBuild(user, 0, 7);
+		PlaySound_GetTower;
 	}
 	case(223){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 12){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -12, 0, 0, 0, 0);
+		DoBuild(user, 3, 8);
+		PlaySound_GetTower;
 	}
 	case(224){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 14){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -14, 0, 0, 0, 1);
+		DoBuild(user, 0, 8);
+		PlaySound_GetLevel;
 	}
 	case(225){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 16){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -16, 0, 0, 0, 0);
+		DoBuild(user, 0, 15);
+		PlaySound_GetTower;
 	}
 	case(226){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 15){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -15, 5, 0, 0, 0);
+		DoBuild(user, 5, 10);
+		PlaySound_GetTower;
 	}
 	case(227){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 17){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -17, 0, 0, 0, 0);
+		DoBuild(user, 0, 12);
+		DoDamage(target, 0, 6, 6);
+		PlaySound_Damage;
 	}
 	case(228){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 21){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -21, 0, 0, 0, 0);
+		DoBuild(user, 0, 20);
+		PlaySound_GetTower;
 	}
 	case(229){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 8){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -8, 0, 0, 0, 0);
+		DoBuild(user, 0, 11);
+		DoDamage(user, 0, 6, 0);
+		PlaySound_GetTower;
 	}
 	case(230){
 
 		if(reason == 0){return 0;}
+		if(Obj_GetValue(user, "tower") < Obj_GetValue(target, "tower")){DoBuild(user, 0, 2);}
+		else{DoBuild(user, 0, 1);}
+		PlaySound_GetTower;
 	}
 	case(231){
 
 		if(reason == 0){return 0;}
+		DoBuild(user, 0, 1);
+		DoBuild(target, 0, 1);
+		DoRessourceChange(user, 0, 3, 0, 0, 0, 0);
+		PlaySound_GetTower;
 	}
 	case(232){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -5, -3, 0, 0, 0);
+		DoDamage(target, 0, 0, 2);
+		PlaySound_GetTower;
 	}
 	case(233){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 11){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -11, 0, 0, 0, 0);
+		if(Obj_GetValue(user, "tower") > Obj_GetValue(target, "wall")){DoDamage(target, 0, 0, 8);}
+		else{DoDamage(target, 8, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(234){
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 18){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 6, -18, 6, 0, 0, 0);
+		DoBuild(user, 0, 13);
+		PlaySound_GetTower;
 	}
 	/////////////MONSTER CARDS/////////////
 	case(301){
 
 		if(reason == 0){if(Obj_GetValue(user, "monster") > 0 || Obj_GetValue(target, "monster") > 0){return 0;}else{return 1;}}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -6, 0, 0, 0);
+		DoRessourceChange(target, 0, 0, -6, 0, 0, 0);
+		PlaySound_LoseRessources;
 	}
 	case(302){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 1){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -1, 0, 0, 0);
+		DoDamage(target, 2, 0, 0);
+		PlaySound_Damage;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(303){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 1){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, -1, 0, 0, 0);
+		DoDamage(target, 4, 0, 0);
+		PlaySound_Damage;
 	}
 	case(304){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -3, 0, 0, 1);
+		PlaySound_GetLevel;
 	}
 	case(305){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -2, 0, 0, 0);
+		return 3;
+		//PLAY AGAIN; DROP CARD
 	}
 	case(306){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -3, 0, 0, 0);
+		DoDamage(user, 3, 0, 0);
+		DoDamage(target, 6, 0, 0);
+		PlaySound_Damage;
 	}
 	case(307){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 4){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -4, 0, 0, 0);
+		DoDamage(user, 1, 0, 0);
+		DoDamage(target, 0, 0, 3);
+		PlaySound_Damage;
 	}
 	case(308){
-
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -6, 0, 0, 0);
+		DoDamage(target, 2, 0, 0);
+		PlaySound_Damage;
+		return 2;
+		//PLAY AGAIN
 	}
 	case(309){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 3){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -3, 0, 0, 0);
+		DoDamage(target, 5, 0, 0);
+		PlaySound_Damage;
 	}
 	case(310){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -5, 0, 0, 0);
+		DoDamage(target, 4, 0, 0);
+		DoBuild(user, 3, 0);
+		PlaySound_Damage;
 	}
 	case(311){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -6, 0, 0, 0);
+		DoDamage(target, 0, 0, 4);
+		PlaySound_Damage;
 	}
 	case(312){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 7){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -7, 0, 0, 2);
+		PlaySound_GetLevel;
 	}
 	case(313){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 8){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -8, 0, 0, 0);
+		DoDamage(target, 2, 0, 0);
+		DoBuild(user, 4, 2);
+		PlaySound_GetTower;
 	}
 	case(314){
 
 		if(reason == 0){return 0;}
+		DoRessourceChange(user, 0, 0, 3, 0, 0, 1);
+		DoRessourceChange(target, 0, 0, 0, 0, 0, 1);
+		PlaySound_GetLevel;
 	}
 	case(315){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -5, 0, 0, 0);
+		DoDamage(target, 6, 0 ,0);
+		PlaySound_Damage;
 	}
 	case(316){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -6, 0, 0, 0);
+		DoDamage(target, 7, 0 ,0);
+		PlaySound_Damage;
 	}
 	case(317){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 6){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -6, 0, 0, 0);
+		DoRessourceChange(target, 0, 0, -3, 0, 0, 0);
+		DoDamage(target, 6, 0 ,0);
+		PlaySound_Damage;
 	}
 	case(318){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 5){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, -5, -5, -10, 0, 0, 0);
+		DoRessourceChange(user, -5, -5, -5, 0, 0, 0);
+		DoDamage(target, 6, 0 ,0);
+		PlaySound_LoseRessources;
 	}
 	case(319){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 8){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -8, 0, 0, 0);
+		if(Obj_GetValue(target, "wall") == 0){DoDamage(target, 10, 0, 0);}
+		else{DoDamage(target, 6, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(320){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 9){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -9, 0, 0, 0);
+		DoDamage(target, 9, 0, 0);
+		PlaySound_Damage;
 	}
 	case(321){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 11){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -11, 0, 0, 0);
+		if(Obj_GetValue(target, "wall") > 0){DoDamage(target, 10, 0, 0);}
+		else{DoDamage(target, 7, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(322){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 9){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -9, 0, 0, 0);
+		if(Obj_GetValue(user, "gem_level") > Obj_GetValue(target, "gem_level")){DoDamage(target, 12, 0,0);}
+		else{DoDamage(target, 8, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(323){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 10){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -10, 0, 0, 0);
+		if(Obj_GetValue(user, "wall") > Obj_GetValue(target, "wall")){DoDamage(target, 0, 0, 6);}
+		else{DoDamage(target, 6, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(324){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 14){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -14, 0, 0, 0);
+		DoRessourceChange(target, 0, 0, -8, 0, 0, 0);
+		DoDamage(target, 0, 0, 5);
+		PlaySound_Damage;
 	}
 	case(325){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 11){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -11, 0, 0, 0);
+		DoRessourceChange(user, 0, 0, 0, -1, 0, 0);
+		DoDamage(target, 8, 0, 0);
+		PlaySound_Damage;
 	}
 	case(326){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 7){if(Obj_GetValue(target, "gem") > 0 || Obj_GetValue(target, "stone") > 0){return 0;}else{return 1;}}else if(reason == 0){return 1;}
+		let gems = ceil(min(10, Obj_GetValue(target, "gem")) / 2);
+		let stones = ceil(min(5, Obj_GetValue(target, "stone")) / 2);
+		DoRessourceChange(user, stones, gems, -12, 0, 0, 0);
+		DoRessourceChange(target, -5, -10, 0, 0, 0, 0);
+		PlaySound_GetRessources;
 	}
 	case(327){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 15){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -15, 0, 0, 0);
+		DoDamage(target, 10, 0, 0);
+		DoBuild(user, 4, 0);
+		PlaySound_Damage;
 	}
 	case(328){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 17){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -17, 0, 0, 0);
+		DoRessourceChange(target, 0, 0, -5, 0, 0, -1);
+		DoDamage(target, 10, 0, 0);
+		PlaySound_Damage;
 	}
 	case(329){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 25){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -25, 0, 0, 0);
+		DoRessourceChange(target, 0, -10, 0, 0, 0, -1);
+		DoDamage(target, 20, 0, 0);
+		PlaySound_Damage;
 	}
 	case(330){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -2, 0, 0, 0);
+		if(Obj_GetValue(user, "wall") > Obj_GetValue(target, "wall")){DoDamage(target, 3, 0, 0)}
+		else{DoDamage(target, 2, 0, 0);}
+		PlaySound_Damage;
 	}
 	case(331){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 2){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 1, -2, 0, 0, 0);
+		DoDamage(target, 3, 0, 0);
+		PlaySound_Damage;
 	}
 	case(332){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 4){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -4, 0, 0, 0);
+		DoDamage(user, 0, 0, 3);
+		DoDamage(target, 8, 0, 0);
+		PlaySound_Damage;
 	}
 	case(333){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 13){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, -3, -13, 0, 0, 0);
+		DoDamage(target, 13, 0, 0);
+		PlaySound_Damage;
 	}
 	case(334){
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 18){return 0;}else if(reason == 0){return 1;}
+		DoRessourceChange(user, 0, 0, -18, 0, 0, 0);
+		DoDamage(target, 0, 0, 12);
+		PlaySound_Damage;
 	}
 
 	return 0;
