@@ -127,6 +127,7 @@ function LoadCardGraphics
 	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "red/");
 	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "blue/");
 	LoadTexturesInPath(GetCurrentScriptDirectory() ~ "green/");
+	LoadTexturesInPath(GetCurrentScriptDirectory());
 }
 
 function AISelector(mode) //returns [index, action] action 0 == discard; action 1 == usage
@@ -232,7 +233,7 @@ function AIAnotherTurn
 			MoveCurrentPlayedToPlayed;
 			yield;
 		}
-		if(specialcase != 0){AnotherTurn;}
+		if(specialcase != 0){AIAnotherTurn;}
 	}
 }
 
@@ -452,7 +453,7 @@ function CardSelector(mode) //returns [index, action] action 0 == discard; actio
 }
 
 
-let handcardsy = 380;
+let handcardsy = 390;
 let handcardsgapx = 10;
 let handcardsx = 320 - (96 + handcardsgapx) * 2;
 
@@ -691,6 +692,7 @@ task MovePlayedToDeck
 		Obj_SetRenderPriorityI(obj, 89);
 		ObjRender_SetPosition(obj, ObjRender_GetX(playedcardsarray[slot]), ObjRender_GetY(playedcardsarray[slot]), 0);
 		ObjRender_SetDestAtFrame(obj, playedcardsx, playedcardsy, t);
+		ObjRender_SetColor(obj, 200, 200, 200);
 		ObjRender_SetAlpha(obj, 180);
 		wait(t);
 		Obj_Delete(obj);
@@ -827,19 +829,50 @@ function UpdateUI
 }
 
 //Cards 100+ for stone, 200+ for gems, 300+ for monster
+
+function UpdateTowerHeight
+{
+	let obj = GetAreaCommonData("AcroMage", "player1_wall_obj", -1);
+	ObjSprite2D_SetDestRect(GetAreaCommonData("AcroMage", "player1_wall_obj", -1), x - GetTextureWidth(path) / 2 + towerxmissplace, , , ) 
+
+	ObjSprite2D_SetDestRect(obj, x - GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak, x + GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak + GetTextureHeight(path));
+}
+
+let baseUIy = 305;
+let baseUIxmissplace = 10;
+let baseUIymissplace = 10;
+let towerpeak = 83;
+let towerbottom = GetTextureHeight(GetCurrentScriptDirectory() ~ "testturm22.png") - towerpeak;
+let towerxmissplace = 4;
+
 function Create_Graphics
 {
+	let basey = baseUIy;
+
 	CreateCommonDataArea("AcroMage");
+	CreateBG;
 	CreateUserUI(0, 0, "stone", 1);
 	CreateUserUI(0, 96, "gem", 1);
 	CreateUserUI(0, 96 + 96, "monster", 1);
-	CreateUserUI(540, 0, "stone", 2);
-	CreateUserUI(540, 96, "gem", 2);
-	CreateUserUI(540, 96 + 96, "monster", 2);
-	CreateTowerUI(150, 290, "tower", 1);
-	CreateTowerUI(200, 290, "wall", 1);
-	CreateTowerUI(640 - 150, 290, "tower", 2);
-	CreateTowerUI(640 - 200, 290, "wall", 2);
+	CreateUserUI(544, 0, "stone", 2);
+	CreateUserUI(544, 96, "gem", 2);
+	CreateUserUI(544, 96 + 96, "monster", 2);
+	CreateTowerUI(150, basey, "tower", 1);
+	CreateTowerUI(210, basey, "wall", 1);
+	CreateTowerUI(640 - 150, basey, "tower", 2);
+	CreateTowerUI(640 - 210, basey, "wall", 2);
+
+	task CreateBG
+	{
+
+
+		let bottombgy = basey + 5;
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "bottombg.png");
+		ObjSprite2D_SetSourceRect(obj, 0, 0, 640, GetTextureHeight(GetCurrentScriptDirectory() ~ "bottombg.png"));
+		ObjSprite2D_SetDestRect(obj, 0, bottombgy, 640, bottombgy + GetTextureHeight(GetCurrentScriptDirectory() ~ "bottombg.png"));
+		Obj_SetRenderPriorityI(obj, 86);
+	}
 
 	task CreateTowerUI(x, y, type, player)
 	{
@@ -856,20 +889,48 @@ function Create_Graphics
 		Obj_SetRenderPriorityI(obj, 86);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_graphic", obj);
 		*/
-		let obj = ObjText_Create;
+
+		let bgobj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(bgobj, GetCurrentScriptDirectory() ~ "valuebg.png");
+		Obj_SetRenderPriorityI(bgobj, 86);
+		ObjRender_SetPosition(bgobj, x + 4, y + 5, 0);
+
+		let path = GetCurrentScriptDirectory();
+		if(type == "tower" && player == 1){path = path ~ "testturm22.png";}
+		else if(type == "tower" && player == 2){path = path ~ "testturm22.png";}
+		else{path = path ~ "wall22.png";}
+		let objx1 = x - GetTextureWidth(path) / 2 + towerxmissplace;
+		let objx2 = x - x + GetTextureWidth(path) / 2 + towerxmissplace;
+		let objy1 = y - towerpeak;
+		let objy2 = y - towerpeak + GetTextureHeight(path);
+
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestRect(obj, objx1, objy1, objx2, objy2);
+		Obj_SetRenderPriorityI(obj, 85);
+		Obj_SetValue(obj, "x1", objx1);
+		Obj_SetValue(obj, "x2", objx2);
+		Obj_SetValue(obj, "y1", objy1);
+		Obj_SetValue(obj, "y2", objy2);
+		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "obj", obj);
+
+		obj = ObjText_Create;
 		ObjText_SetText(obj, type);
 		ObjText_SetFontSize(obj, 12);
+		ObjText_SetHorizontalAlignment(obj, ALIGNMENT_CENTER);
+		ObjText_SetMaxWidth(obj, 30);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x, y, 0);
+		ObjRender_SetPosition(obj, x - baseUIxmissplace, y, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type, obj);
 	}
 
 	task CreateUserUI(x, y, type, player)
 	{
 		let path = "";
-		if(type == "stone"){path = GetCurrentScriptDirectory() ~ "stone.png";}
-		if(type == "gem"){path = GetCurrentScriptDirectory() ~ "gem.png";}
-		if(type == "monster"){path = GetCurrentScriptDirectory() ~ "monster.png";}
+		if(type == "stone"){path = GetCurrentScriptDirectory() ~ "Acromage_Bricks.png";}
+		if(type == "gem"){path = GetCurrentScriptDirectory() ~ "Acromage_Gems.png";}
+		if(type == "monster"){path = GetCurrentScriptDirectory() ~ "Acromage_Recruits.png";}
 
 		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjPrim_SetTexture(obj, path);
@@ -881,22 +942,31 @@ function Create_Graphics
 		obj = ObjText_Create;
 		ObjText_SetText(obj, type ~ itoa(player));
 		ObjText_SetFontSize(obj, 12);
+		ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderWidth(obj, 1);
+		ObjText_SetFontBorderColor(obj, 0, 0, 0);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x + 4, y + 70, 0);
+		ObjRender_SetPosition(obj, x + 6, y + 81, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_counter", obj);
 
 		obj = ObjText_Create;
 		ObjText_SetText(obj, type ~ itoa(player));
-		ObjText_SetFontSize(obj, 20);
+		ObjText_SetFontSize(obj, 24);
+		ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderWidth(obj, 1);
+		ObjText_SetFontBorderColor(obj, 0, 0, 0);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x + 4, y + 20, 0);
+		ObjRender_SetPosition(obj, x + 6, y + 30, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_level", obj);
 
 		obj = ObjText_Create;
 		ObjText_SetText(obj, type);
 		ObjText_SetFontSize(obj, 12);
+		ObjText_SetFontBorderType(obj, BORDER_FULL);
+		ObjText_SetFontBorderWidth(obj, 1);
+		ObjText_SetFontBorderColor(obj, 0, 0, 0);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x + 50, y + 70, 0);
+		ObjRender_SetPosition(obj, x + 44, y + 81, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_type", obj);
 	}
 }
@@ -1127,7 +1197,7 @@ function EvaluateGameState
 		else{return 0;}
 	}
 	
-	WriteLog("CHECK PLAYER1: " ~ itoa(player1_state) ~ " CHECK PLAYER2: " ~ itoa(player2_state));
+	//WriteLog("CHECK PLAYER1: " ~ itoa(player1_state) ~ " CHECK PLAYER2: " ~ itoa(player2_state));
 
 	if(player1_state == -1 && player2_state == -1){yield; RaiseError("DRAW! Both Towers down!");}
 	else if(player1_state == 1 && player2_state == 1){yield; RaiseError("DRAW! Both Players win!");}
@@ -1548,7 +1618,7 @@ function Process_Card(number, user, target, reason)
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 5){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, 0, -5, 0, 0, -1, 0);
-		DoRessourceChange(user, 0, 0, 0, 0, -1, 0);
+		DoRessourceChange(target, 0, 0, 0, 0, -1, 0);
 		DoDamage(user, 0, 0, 7);
 		DoDamage(target, 0, 0, 7);
 		PlaySound_LoseLevel;
@@ -1639,6 +1709,7 @@ function Process_Card(number, user, target, reason)
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 5){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, 0, -5, -3, 0, 0, 0);
 		DoDamage(target, 0, 0, 2);
+		DoBuild(user, 0, 4);
 		PlaySound_GetTower;
 	}
 	case(233){
@@ -1786,7 +1857,7 @@ function Process_Card(number, user, target, reason)
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 5){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -5, -5, -10, 0, 0, 0);
-		DoRessourceChange(user, -5, -5, -5, 0, 0, 0);
+		DoRessourceChange(target, -5, -5, -5, 0, 0, 0);
 		DoDamage(target, 6, 0 ,0);
 		PlaySound_LoseRessources;
 	}
@@ -1841,7 +1912,7 @@ function Process_Card(number, user, target, reason)
 
 		if(reason == 0 && Obj_GetValue(user, "monster") >= 11){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, 0, 0, -11, 0, 0, 0);
-		DoRessourceChange(user, 0, 0, 0, -1, 0, 0);
+		DoRessourceChange(target, 0, 0, 0, -1, 0, 0);
 		DoDamage(target, 8, 0, 0);
 		PlaySound_Damage;
 	}
