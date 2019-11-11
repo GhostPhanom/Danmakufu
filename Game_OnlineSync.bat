@@ -2,7 +2,7 @@
 
 :a
 echo "Zum Beenden druecke STRG + C"
-timeout 6
+timeout 1
 
 REM Updates remote_gamestate
 .\PSFTP.EXE thomasgordon@battleship-eclipse.de -P 61111 -pw "WieEsWohlSchmeckt" -b Game_Download.txt
@@ -24,6 +24,6 @@ echo "GAMESTATE RESET UPLOADED!!!"
 
 
 goto :a
-timeout 6
+timeout 1
 
 15:54

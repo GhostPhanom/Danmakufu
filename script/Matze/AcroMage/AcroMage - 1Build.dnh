@@ -19,7 +19,7 @@ let ressource_level_start = 3;
 
 let setpath = GetModuleDirectory ~ "gamestate";
 let getpath = GetModuleDirectory ~ "remote_gamestate";
-let resetpath = GetModuleDirectory ~ "reset_gamestate";
+let resetpath = GetModuleDirectory ~ "reset_remote_gamestate";
 
 let old_cards = [];
 let instance_hand = [];
@@ -40,7 +40,7 @@ let enemy_player = -1;
 let currentplayer = player1;
 let notcurrentplayer = player2;
 
-let instanceplayer = GetCommonData("AcroMage_Instance_Player", 1);
+let instanceplayer = GetCommonData("AcroMage_Instance_Player" , 1);
 if(instanceplayer == 2)
 {
 	own_player = player2;
@@ -53,11 +53,8 @@ else
 }
 
 
-//CreateDataArea("GameState");
+CreateDataArea("GameState");
 CreateDataArea("Remote_GameState");
-
-let CardsDrawn = [];
-let CardsSlots = [];
 
 task MainTask
 {
@@ -79,41 +76,51 @@ task MainTask
 function AcroMage
 {
 	LoadCardGraphics;
+	//TestDebug;
 	CreateGraphicElements;
 
-	if(GetCommonData("AcroMage_VS_AI", true))
+	PlayerTurn;
+
+	/*
+	while(true)
 	{
-		PlayerTurn;
+		GainRessource(currentplayer);
+		RearangeHandCards;//TO ACCOUNT FOR CHANGES
+		UpdateUI;
+		EvaluateGameState;
+		MoveDeckToHand(DrawCards(1)[0]);
+		let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
+		MovePlayedToDeck;
+		if(selectresult[1] == 0)
+		{
+			MoveHandToPlayed(selectresult[0]);
+		}
+		else if(selectresult[1] == 1)
+		{
+			MoveHandToCurrentPlayed(selectresult[0]);
+			let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+			UpdateUI;
+			if(specialcase == 3)//DROP CARD
+			{
+				RearangeHandCards;//TO ACCOUNT FOR CHANGES
+				EnableDiscardText(true);
+				MoveDeckToHand(DrawCards(1)[0]);
+				MoveCurrentPlayedToPlayed;
+				MoveHandToPlayed(CardSelector(1)[0]);
+				EnableDiscardText(false);
+			}
+			else//EVERY OTHER CARD
+			{
+				RearangeHandCards;//TO ACCOUNT FOR CHANGES
+				wait(45);
+				MoveCurrentPlayedToPlayed;
+			}
+			if(specialcase != 0){AnotherTurn;}
+		}
+		EvaluateGameState;
+		//WHEN CODE HERE THE PLAYER SWITCHES
 	}
-	else
-	{
-		RecreateGameFromGameState;
-	}
-	//PlayerTurn;
-}
-
-function RecordCardDrawn(card)
-{
-	CardsDrawn = CardsDrawn ~ [card];
-}
-
-function GetRecordCardDrawn
-{
-	let card = CardsDrawn[0];
-	CardsDrawn = erase(CardsDrawn, 0);
-	return card;
-}
-
-function RecordCardSlot(slot)
-{
-	CardsSlots = CardsSlots ~ [slot];
-}
-
-function GetRecordCardSlots
-{
-	let slot = CardsSlots[0];
-	CardsSlots = erase(CardsSlots, 0);
-	return slot;
+	*/
 }
 
 function LoadCardGraphics
@@ -233,16 +240,11 @@ function AIAnotherTurn
 
 function PlayerTurn
 {
-	CardsDrawn = [];
-	CardsSlots = [];
 	GainRessource(currentplayer);
 	RearangeHandCards;//TO ACCOUNT FOR CHANGES
 	UpdateUI;
-	let card = DrawCards(1)[0];
-	RecordCardDrawn(card);
-	MoveDeckToHand(card);
+	MoveDeckToHand(DrawCards(1)[0]);
 	let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
-	RecordCardSlot(selectresult);
 	MovePlayedToDeck;
 	if(selectresult[1] == 0)
 	{
@@ -257,13 +259,9 @@ function PlayerTurn
 		{
 			RearangeHandCards;//TO ACCOUNT FOR CHANGES
 			EnableDiscardText(true);
-			card = DrawCards(1)[0];
-			RecordCardDrawn(card);
-			MoveDeckToHand(card);
+			MoveDeckToHand(DrawCards(1)[0]);
 			MoveCurrentPlayedToPlayed;
-			selectresult = CardSelector(1);
-			RecordCardSlot(selectresult);
-			MoveHandToPlayed(selectresult[0]);
+			MoveHandToPlayed(CardSelector(1)[0]);
 			EnableDiscardText(false);
 		}
 		else//EVERY OTHER CARD
@@ -282,12 +280,8 @@ function PlayerTurn
 
 function AnotherTurn
 {
-	let card = DrawCards(1)[0];
-	RecordCardDrawn(card);
-	MoveDeckToHand(card);
-	let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
-	RecordCardSlot(selectresult);
-	MovePlayedToDeck;
+	MoveDeckToHand(DrawCards(1)[0]);
+	let selectresult = CardSelector(0);
 	//MovePlayedToDeck;
 	if(selectresult[1] == 0)
 	{
@@ -302,13 +296,9 @@ function AnotherTurn
 		{
 			RearangeHandCards;//TO ACCOUNT FOR CHANGES
 			EnableDiscardText(true);
-			card = DrawCards(1)[0];
-			RecordCardDrawn(card);
-			MoveDeckToHand(card);
+			MoveDeckToHand(DrawCards(1)[0]);
 			MoveCurrentPlayedToPlayed;
-			selectresult = CardSelector(1);
-			RecordCardSlot(selectresult);
-			MoveHandToPlayed(selectresult[0]);
+			MoveHandToPlayed(CardSelector(1)[0]);
 			EnableDiscardText(false);
 		}
 		else//EVERY OTHER CARD
@@ -323,7 +313,7 @@ function AnotherTurn
 
 function TestDebug
 {
-	//Create_StartConfig;
+	Create_StartConfig;
 }
 
 function CreateGraphicElements
@@ -1051,16 +1041,16 @@ function DoDamage(target, generaldamage, walldamage, towerdamage)
 	Obj_SetValue(target, "wall", wall_hp);
 }
 
-function UpdateGameState()
+function WriteOwnGameState()
 {
-	let name = "Remote_GameState";
-	SetAreaCommonData(name, "gametick", GetAreaCommonData(name, "gametick", 1) + 1); //GameState is always updates 
-	SetAreaCommonData(name, "active_player", currentplayer); //who is the current player 
-	SetAreaCommonData(name, "cards_drawn", CardsDrawn); 
-	SetAreaCommonData(name, "cards_slots", CardsSlots); 
+	let name = "GameState";
+	//SetAreaCommonData(name, "gametick", 0); //GameState is always updates 
+	SetAreaCommonData(name, "active_player", 1); //who is the current player 
+	SetAreaCommonData(name, "old_cards_played", [-1]); //What was the last played Card
+	SetAreaCommonData(name, "cards_played", [-1]); //What was the last played Card
+	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
+	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
 	//SetAreaCommonData(name, "deck", deck);
-
-	SetAreaCommonData(name, "cards_played_endstate", []); 
 
 	//ONLY FOR DESYNC CHECK
 	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
@@ -1082,73 +1072,87 @@ function UpdateGameState()
 	SetAreaCommonData(name, "player2_gem_level", Obj_GetValue(player2, "gem_level"));
 	SetAreaCommonData(name, "player2_monster_level", Obj_GetValue(player2, "monster_level"));
 	SetAreaCommonData(name, "player2_hand", Obj_GetValue(player2, "hand"));
-	SaveCommonDataAreaA2(name, setpath);
 }
 
-function WaitForUpdate
+function Create_StartConfig
 {
-	let gametick = GetAreaCommonData("Remote_GameState", "gametick", -1);
-	ClearAreaCommonData("Remote_GameState");
-	if(gametick == -1){RaiseError("NO GAMETICK FOUND");}
-	while(true)
+	let filetest = ObjFile_Create(OBJ_FILE_BINARY);
+	ObjFile_Open(filetest, resetpath);
+	if(ObjFile_GetSize(filetest) == 0)
 	{
-		if(DoesFileExist(getpath))
-		{
-			LoadCommonDataAreaA2("Remote_GameState", getpath);
-			if(GetAreaCommonData("Remote_GameState", "gametick", -1) == 1 && gametick != 1)
-			{
-				WriteLog("GAMESTATE WAS RESET!!! EXITING ACROMAGE!!!");
-				CloseScript(GetOwnScriptID());
-			}
-			else
-			{
-				break;
-			}
-		}
-		wait(30);
-	}
-}
-
-function RecreateGameFromGameState
-{
-	LoadCommonDataAreaA2("Remote_GameState", getpath);
-	//Obj_SetValue(player1, "player_number", number);
-	Obj_SetValue(player1, "tower", GetAreaCommonData("Remote_GameState", "player1_tower", 0));
-	Obj_SetValue(player1, "wall", GetAreaCommonData("Remote_GameState", "player1_wall", 0));
-	Obj_SetValue(player1, "stone", GetAreaCommonData("Remote_GameState", "player1_stone_counter", 0));
-	Obj_SetValue(player1, "gem", GetAreaCommonData("Remote_GameState", "player1_gem_counter", 0));
-	Obj_SetValue(player1, "monster", GetAreaCommonData("Remote_GameState", "player1_monster_counter", 0));
-	Obj_SetValue(player1, "stone_level", GetAreaCommonData("Remote_GameState", "player1_stone_level", 0));
-	Obj_SetValue(player1, "gem_level", GetAreaCommonData("Remote_GameState", "player1_gem_level", 0));
-	Obj_SetValue(player1, "monster_level", GetAreaCommonData("Remote_GameState", "player1_monster_level", 0));
-	Obj_SetValue(player1, "hand", GetAreaCommonData("Remote_GameState", "player1_hand", [101,101,101,101,101]));
-
-	Obj_SetValue(player2, "tower", GetAreaCommonData("Remote_GameState", "player2_tower", 0));
-	Obj_SetValue(player2, "wall", GetAreaCommonData("Remote_GameState", "player2_wall", 0));
-	Obj_SetValue(player2, "stone", GetAreaCommonData("Remote_GameState", "player2_stone_counter", 0));
-	Obj_SetValue(player2, "gem", GetAreaCommonData("Remote_GameState", "player2_gem_counter", 0));
-	Obj_SetValue(player2, "monster", GetAreaCommonData("Remote_GameState", "player2_monster_counter", 0));
-	Obj_SetValue(player2, "stone_level", GetAreaCommonData("Remote_GameState", "player2_stone_level", 0));
-	Obj_SetValue(player2, "gem_level", GetAreaCommonData("Remote_GameState", "player2_gem_level", 0));
-	Obj_SetValue(player2, "monster_level", GetAreaCommonData("Remote_GameState", "player2_monster_level", 0));
-	Obj_SetValue(player2, "hand", GetAreaCommonData("Remote_GameState", "player2_hand", [101,101,101,101,101]));
-
-	ascent(i in 0..length(GetAreaCommonData("Remote_GameState", "cards_played_endstate", [101,101,101,101,101])))
-	{
-		Obj_SetValue(playedcardsarray[i], "card", GetAreaCommonData("Remote_GameState", "cards_played_endstate", [101,101,101,101,101])[i]);
-	}
-
-	UpdateUI;
-	RearangeHandCards;
-	if(GetAreaCommonData("Remote_GameState", "active_player", 1) == instanceplayer)
-	{
-		//OwnTurn;
-		PlayerTurn;
+		WriteLog("Existing Reset ConfigFile found (What?)! Overriding!");
 	}
 	else
 	{
-		WaitForUpdate;
+		WriteLog("No Reset ConfigFile found! Creating Reset StartConfig!");
 	}
+	CreateDataArea("Reset_Remote_GameState");
+	let saved = SaveCommonDataAreaA2("Reset_Remote_GameState", setpath);
+	if(saved == false){RaiseError("COULD NOT SAVE RESET START GAMESTATE TO FILE!!! THAT SHOULD NOT BE THE CASE!");}
+	ClearAreaCommonData("Remote_GameState");
+	
+	return true;
+}
+function Update_Remote_GameState
+{
+	let resultc = FileTest(getpath);
+	while(resultc == 1)//Check if Remote_ConfigFile wrongfully does not exist
+	{
+		FileTest(getpath); // 0 File exist; 1 File does not exist
+		WriteLog("Remote ConfigFile not found! Retry!");
+		loop(30){yield;}
+	}
+	
+	resultc = FileTest(setpath);
+	while(resultc == 0)//Check if Own_ConfigFile does wrongfully exist
+	{
+		FileTest(setpath); // 0 File exist; 1 File does not exist
+		WriteLog("Own ConfigFile found! Retry! Maybe the Script is not running");
+		loop(30){yield;}
+	}
+	
+	ClearAreaCommonData("Remote_GameState");
+	CopyCommonDataArea("Remote_GameState", "GameState");
+	let saved = SaveCommonDataAreaA2("Remote_GameState", setpath);
+	if(saved == false){RaiseError("COULD NOT SAVE OWN GAMESTATE TO FILE!!! THAT SHOULD NOT BE THE CASE!");}
+	
+	return true;
+	
+	function FileTest(path)
+	{
+		let filetest = ObjFile_Create(OBJ_FILE_BINARY);
+		ObjFile_Open(filetest, path);
+		if(ObjFile_GetSize(filetest) == 0)
+		{
+			Obj_Delete(filetest);
+			return 0;
+		}
+		else
+		{
+			Obj_Delete(filetest);
+			return 1;
+		}
+	}
+}
+
+function Update_WaitforSync
+{
+	ClearAreaCommonData("Remote_GameState");
+	let tick = GetAreaCommonData("GameState", "gametick", -1);
+	while(tick <= GetAreaCommonData("Remote_GameState", "gametick", 0))
+	{
+		let resultc = LoadCommonDataAreaA2("Remote_GameState", getpath);
+		while(resultc == false)
+		{
+			resultc = LoadCommonDataAreaA2("Remote_GameState", getpath);
+			WriteLog("Could not Read Remote_GameState! Retry!");
+			loop(30){yield;}
+		}
+		loop(30){yield;}
+		WriteLog("Waiting for higher gametick... Tick: " ~ itoa(tick));
+	}
+	WriteLog("Higher gametick detected! Advancing! Tick: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", 0)));
+	return true;
 }
 
 function CreateDataArea(name)
@@ -1161,7 +1165,6 @@ function CreateDataArea(name)
 	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
 	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
 	//SetAreaCommonData(name, "deck", deck);
-	SetAreaCommonData(name, "cards_played_endstate", []); 
 
 	//ONLY FOR DESYNC CHECK
 	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
