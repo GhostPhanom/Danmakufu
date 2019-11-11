@@ -810,6 +810,7 @@ function GainRessource(target)
 
 function UpdateUI
 {
+	UpdateTowerHeight;
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_stone_counter", -1), itoa(Obj_GetValue(player1, "stone")));
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_gem_counter", -1), itoa(Obj_GetValue(player1, "gem")));
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_monster_counter", -1), itoa(Obj_GetValue(player1, "monster")));
@@ -832,10 +833,19 @@ function UpdateUI
 
 function UpdateTowerHeight
 {
-	let obj = GetAreaCommonData("AcroMage", "player1_wall_obj", -1);
-	ObjSprite2D_SetDestRect(GetAreaCommonData("AcroMage", "player1_wall_obj", -1), x - GetTextureWidth(path) / 2 + towerxmissplace, , , ) 
+	//let obj = GetAreaCommonData("AcroMage", "player1_wallobj", -1);
+	//ObjSprite2D_SetDestRect(obj, Obj_GetValue(obj, "x1"), Obj_GetValue(obj, "y1") + min(Obj_GetValue(player1, "wall") / 150, 1) * Obj_GetValue(obj, "textureheight"), Obj_GetValue(obj, "x2"), Obj_GetValue(obj, "y2") + min(Obj_GetValue(player1, "wall") / 150, 1) * Obj_GetValue(obj, "textureheight"));
 
-	ObjSprite2D_SetDestRect(obj, x - GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak, x + GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak + GetTextureHeight(path));
+	//obj = GetAreaCommonData("AcroMage", "player1_towerobj", -1);
+	//ObjSprite2D_SetDestRect(obj, Obj_GetValue(obj, "x1"), Obj_GetValue(obj, "y1") + Obj_GetValue(player1, "tower") / tower_winlevel * towerbottom, Obj_GetValue(obj, "x2"), Obj_GetValue(obj, "y2") + Obj_GetValue(player1, "tower") / tower_winlevel * towerbottom);
+	
+	//obj = GetAreaCommonData("AcroMage", "player2_wallobj", -1);
+	//ObjSprite2D_SetDestRect(obj, Obj_GetValue(obj, "x1"), Obj_GetValue(obj, "y1") + min(Obj_GetValue(player2, "wall") / 150, 1) * Obj_GetValue(obj, "textureheight"), Obj_GetValue(obj, "x2"), Obj_GetValue(obj, "y2") + min(Obj_GetValue(player2, "wall") / 150, 1) * Obj_GetValue(obj, "textureheight"));
+	
+	//obj = GetAreaCommonData("AcroMage", "player2_towerobj", -1);
+	//ObjSprite2D_SetDestRect(obj, Obj_GetValue(obj, "x1"), Obj_GetValue(obj, "y1") + Obj_GetValue(player2, "tower") / tower_winlevel * towerbottom, Obj_GetValue(obj, "x2"), Obj_GetValue(obj, "y2") + Obj_GetValue(player2, "tower") / tower_winlevel * towerbottom);
+	
+	//ObjSprite2D_SetDestRect(obj, x - GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak, x + GetTextureWidth(path) / 2 + towerxmissplace, y - towerpeak + GetTextureHeight(path));
 }
 
 let baseUIy = 305;
@@ -913,6 +923,7 @@ function Create_Graphics
 		Obj_SetValue(obj, "x2", objx2);
 		Obj_SetValue(obj, "y1", objy1);
 		Obj_SetValue(obj, "y2", objy2);
+		Obj_SetValue(obj, "textureheight", GetTextureHeight(path));
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "obj", obj);
 
 		obj = ObjText_Create;
