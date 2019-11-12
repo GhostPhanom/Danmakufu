@@ -231,6 +231,102 @@ function AIAnotherTurn
 	}
 }
 
+let slotcounter = 0;
+let drawncounter = 0;
+
+function NotPlayerTurn
+{
+	slotcounter = 0;
+	drawncounter = 0;
+	CardsDrawn = GetAreaCommonData("Remote_GameState", "cards_drawn", [101]);
+	CardsSlots = GetAreaCommonData("Remote_GameState", "cards_slots", [[5, 1]]);
+	GainRessource(currentplayer);
+	RearangeHandCards;//TO ACCOUNT FOR CHANGES
+	UpdateUI;
+	let card = CardsDrawn[drawncounter];
+	drawncounter++;
+	MoveDeckToHand(card);
+	let selectresult = CardsSlots[slotcounter];//returns [index, action] action 0 == discard; action 1 == usage
+	slotcounter++;
+	MovePlayedToDeck;
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			card = CardsDrawn[drawncounter];
+			drawncounter++;
+			MoveDeckToHand(card);
+			MoveCurrentPlayedToPlayed;
+			selectresult = CardsSlots[slotcounter];//returns [index, action] action 0 == discard; action 1 == usage
+			slotcounter++;
+			MoveHandToPlayed(selectresult[0]);
+			EnableDiscardText(false);
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+		}
+		if(specialcase != 0){NotPlayerAnotherTurn;}
+	}
+	WriteLog("NotPlayerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+	EvaluateGameState;
+	//WHEN CODE HERE THE PLAYER SWITCHES
+	SwitchCurrentPlayer;
+	PlayerTurn;
+}
+
+function NotPlayerAnotherTurn
+{
+	let card = CardsDrawn[drawncounter];
+	drawncounter++;
+	MoveDeckToHand(card);
+	let selectresult = CardsSlots[slotcounter];//returns [index, action] action 0 == discard; action 1 == usage
+	slotcounter++;
+	//MovePlayedToDeck;
+	if(selectresult[1] == 0)
+	{
+		MoveHandToPlayed(selectresult[0]);
+	}
+	else if(selectresult[1] == 1)
+	{
+		MoveHandToCurrentPlayed(selectresult[0]);
+		let specialcase = Process_Card(Obj_GetValue(currentplayedcard, "card"), currentplayer, notcurrentplayer, 1);
+		UpdateUI;
+		if(specialcase == 3)//DROP CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			EnableDiscardText(true);
+			card = CardsDrawn[drawncounter];
+			drawncounter++;
+			MoveDeckToHand(card);
+			MoveCurrentPlayedToPlayed;
+			selectresult = CardsSlots[slotcounter];//returns [index, action] action 0 == discard; action 1 == usage
+			slotcounter++;
+			MoveHandToPlayed(selectresult[0]);
+			EnableDiscardText(false);
+		}
+		else//EVERY OTHER CARD
+		{
+			RearangeHandCards;//TO ACCOUNT FOR CHANGES
+			wait(45);
+			MoveCurrentPlayedToPlayed;
+			yield;
+		}
+		if(specialcase != 0){NotPlayerAnotherTurn;}
+	}
+}
+
 function PlayerTurn
 {
 	CardsDrawn = [];
@@ -274,10 +370,23 @@ function PlayerTurn
 		}
 		if(specialcase != 0){AnotherTurn;}
 	}
-	EvaluateGameState;
 	//WHEN CODE HERE THE PLAYER SWITCHES
-	SwitchCurrentPlayer;
-	AITurn;
+	if(GetCommonData("AcroMage_VS_AI", true))
+	{
+		EvaluateGameState;
+		SwitchCurrentPlayer;
+		AITurn;
+	}
+	else
+	{
+		SwitchCurrentPlayer;
+		UpdateGameState;
+		WriteLog("Playerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+		EvaluateGameState;
+		RearangeHandCards;
+		WaitForUpdate;
+		NotPlayerTurn;
+	}
 }
 
 function AnotherTurn
@@ -287,7 +396,6 @@ function AnotherTurn
 	MoveDeckToHand(card);
 	let selectresult = CardSelector(0);//returns [index, action] action 0 == discard; action 1 == usage
 	RecordCardSlot(selectresult);
-	MovePlayedToDeck;
 	//MovePlayedToDeck;
 	if(selectresult[1] == 0)
 	{
@@ -340,7 +448,6 @@ function CreateGraphicElements
 	ChangeHandDisplayPlayer;
 	UpdateUI;
 }
-
 
 
 function SwitchCurrentPlayer
@@ -1054,20 +1161,34 @@ function DoDamage(target, generaldamage, walldamage, towerdamage)
 function UpdateGameState()
 {
 	let name = "Remote_GameState";
+	if(GetAreaCommonData(name, "gametick", -1) == -1){RaiseError("lel");}
 	SetAreaCommonData(name, "gametick", GetAreaCommonData(name, "gametick", 1) + 1); //GameState is always updates 
 	SetAreaCommonData(name, "active_player", currentplayer); //who is the current player 
 	SetAreaCommonData(name, "cards_drawn", CardsDrawn); 
 	SetAreaCommonData(name, "cards_slots", CardsSlots); 
 	//SetAreaCommonData(name, "deck", deck);
 
-	SetAreaCommonData(name, "cards_played_endstate", []); 
+	let savearray = [];
+	ascent(i in 0..length(playedcardsarray))
+	{
+		if(Obj_GetValue(playedcardsarray[i], "card") == -1)
+		{
+			break;
+		}
+		else
+		{
+			savearray = savearray ~ [Obj_GetValue(playedcardsarray[i], "card")];
+		}
+	}
+
+	SetAreaCommonData(name, "cards_played_endstate", savearray); 
 
 	//ONLY FOR DESYNC CHECK
 	SetAreaCommonData(name, "player1_tower", Obj_GetValue(player1, "tower"));
 	SetAreaCommonData(name, "player1_wall", Obj_GetValue(player1, "wall"));
-	SetAreaCommonData(name, "player1_stone", Obj_GetValue(player1, "stone"));
-	SetAreaCommonData(name, "player1_gem", Obj_GetValue(player1, "gem"));
-	SetAreaCommonData(name, "player1_monster", Obj_GetValue(player1, "monster"));
+	SetAreaCommonData(name, "player1_stone_counter", Obj_GetValue(player1, "stone"));
+	SetAreaCommonData(name, "player1_gem_counter", Obj_GetValue(player1, "gem"));
+	SetAreaCommonData(name, "player1_monster_counter", Obj_GetValue(player1, "monster"));
 	SetAreaCommonData(name, "player1_stone_level", Obj_GetValue(player1, "stone_level"));
 	SetAreaCommonData(name, "player1_gem_level", Obj_GetValue(player1, "gem_level"));
 	SetAreaCommonData(name, "player1_monster_level", Obj_GetValue(player1, "monster_level"));
@@ -1075,9 +1196,9 @@ function UpdateGameState()
 	
 	SetAreaCommonData(name, "player2_tower", Obj_GetValue(player2, "tower"));
 	SetAreaCommonData(name, "player2_wall", Obj_GetValue(player2, "wall"));
-	SetAreaCommonData(name, "player2_stone", Obj_GetValue(player2, "stone"));
-	SetAreaCommonData(name, "player2_gem", Obj_GetValue(player2, "gem"));
-	SetAreaCommonData(name, "player2_monster", Obj_GetValue(player2, "monster"));
+	SetAreaCommonData(name, "player2_stone_counter", Obj_GetValue(player2, "stone"));
+	SetAreaCommonData(name, "player2_gem_counter", Obj_GetValue(player2, "gem"));
+	SetAreaCommonData(name, "player2_monster_counter", Obj_GetValue(player2, "monster"));
 	SetAreaCommonData(name, "player2_stone_level", Obj_GetValue(player2, "stone_level"));
 	SetAreaCommonData(name, "player2_gem_level", Obj_GetValue(player2, "gem_level"));
 	SetAreaCommonData(name, "player2_monster_level", Obj_GetValue(player2, "monster_level"));
@@ -1094,14 +1215,21 @@ function WaitForUpdate
 	{
 		if(DoesFileExist(getpath))
 		{
+			WriteLog("WAIT!");
+			WriteLog("Saved Gametick: " ~ itoa(gametick));
+			WriteLog("Found Gametick: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 			LoadCommonDataAreaA2("Remote_GameState", getpath);
+			/*
 			if(GetAreaCommonData("Remote_GameState", "gametick", -1) == 1 && gametick != 1)
 			{
+				if(GetAreaCommonData("Remote_GameState", "gametick", -1) == 1)
 				WriteLog("GAMESTATE WAS RESET!!! EXITING ACROMAGE!!!");
 				CloseScript(GetOwnScriptID());
-			}
-			else
+			}*/
+			if(GetAreaCommonData("Remote_GameState", "gametick", -1) > gametick && GetAreaCommonData("Remote_GameState", "gametick", -1) != -1)
 			{
+				if(GetAreaCommonData("Remote_GameState", "gametick", -1) != -1){WriteLog("True");}
+				WriteLog(itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 				break;
 			}
 		}
@@ -1148,6 +1276,7 @@ function RecreateGameFromGameState
 	else
 	{
 		WaitForUpdate;
+		NotPlayerTurn;
 	}
 }
 
