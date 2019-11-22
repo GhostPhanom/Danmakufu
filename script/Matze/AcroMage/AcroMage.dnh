@@ -31,12 +31,14 @@ let cardarray = [
 ];
 //let deck = CreateDeck(1);
 
+let game_id = -1;
 let player1 = CreatePlayer(1);
 let player2 = CreatePlayer(2);
 
 let own_player = -1;
 let enemy_player = -1;
 
+//let active_player = 1;
 let currentplayer = player1;
 let notcurrentplayer = player2;
 
@@ -1163,9 +1165,10 @@ function UpdateGameState()
 	let name = "Remote_GameState";
 	if(GetAreaCommonData(name, "gametick", -1) == -1){RaiseError("lel");}
 	SetAreaCommonData(name, "gametick", GetAreaCommonData(name, "gametick", 1) + 1); //GameState is always updates 
-	SetAreaCommonData(name, "active_player", currentplayer); //who is the current player 
 	SetAreaCommonData(name, "cards_drawn", CardsDrawn); 
 	SetAreaCommonData(name, "cards_slots", CardsSlots); 
+	SetAreaCommonData(name, "game_id", GetAreaCommonData(name, "game_id", -1)); 
+	SetAreaCommonData(name, "game_ended", GetAreaCommonData(name, "game_ended", false));
 	//SetAreaCommonData(name, "deck", deck);
 
 	let savearray = [];
@@ -1215,9 +1218,9 @@ function WaitForUpdate
 	{
 		if(DoesFileExist(getpath))
 		{
-			WriteLog("WAIT!");
-			WriteLog("Saved Gametick: " ~ itoa(gametick));
-			WriteLog("Found Gametick: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+			//WriteLog("WAIT!");
+			//WriteLog("Saved Gametick: " ~ itoa(gametick));
+			//WriteLog("Found Gametick: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 			LoadCommonDataAreaA2("Remote_GameState", getpath);
 			/*
 			if(GetAreaCommonData("Remote_GameState", "gametick", -1) == 1 && gametick != 1)
@@ -1226,14 +1229,26 @@ function WaitForUpdate
 				WriteLog("GAMESTATE WAS RESET!!! EXITING ACROMAGE!!!");
 				CloseScript(GetOwnScriptID());
 			}*/
+			if(GetAreaCommonData("Remote_GameState", "game_id", -1) != game_id)
+			{
+				if(GetAreaCommonData("Remote_GameState", "game_id", -1) == -1)
+				{
+					//Unable to recieve game_id from file. Retring
+				}
+				else
+				{
+					RaiseError("Wrong Game ID Recieved! New Game was created! Aborting! " ~ "Recieved ID: " ~ itoa(GetAreaCommonData("Remote_GameState", "game_id", -1)) ~ " Expected ID: " ~ itoa(game_id));
+				}
+			}
+			
 			if(GetAreaCommonData("Remote_GameState", "gametick", -1) > gametick && GetAreaCommonData("Remote_GameState", "gametick", -1) != -1)
 			{
-				if(GetAreaCommonData("Remote_GameState", "gametick", -1) != -1){WriteLog("True");}
-				WriteLog(itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+				//if(GetAreaCommonData("Remote_GameState", "gametick", -1) != -1){WriteLog("True");}
+				//WriteLog(itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 				break;
 			}
 		}
-		wait(30);
+		wait(20);
 	}
 }
 
@@ -1268,9 +1283,25 @@ function RecreateGameFromGameState
 
 	UpdateUI;
 	RearangeHandCards;
-	if(GetAreaCommonData("Remote_GameState", "active_player", 1) == instanceplayer)
+	WriteLog("INSTANCEPLAYER: " ~ itoa(instanceplayer));
+	//WriteLog("ActivePlayer: " ~ itoa(GetAreaCommonData("Remote_GameState", "active_player", -1)));
+	game_id = GetAreaCommonData("Remote_GameState", "game_id", -1);
+	let activeplayer = -1;
+	if(GetAreaCommonData("Remote_GameState", "gametick", 1) % 2 == 0)
 	{
-		//OwnTurn;
+		activeplayer = 2;
+		currentplayer = player2;
+	}
+	else
+	{
+		activeplayer = 1;
+		currentplayer = player1;
+	}
+
+	UpdatePlayedSlots;
+	if(activeplayer == instanceplayer)
+	{
+		RearangeHandCards;
 		PlayerTurn;
 	}
 	else
@@ -1278,14 +1309,24 @@ function RecreateGameFromGameState
 		WaitForUpdate;
 		NotPlayerTurn;
 	}
+	/*if(GetAreaCommonData("Remote_GameState", "active_player", 1) == instanceplayer)
+	{
+		//OwnTurn;
+		PlayerTurn;
+		WriteLog("LOL");
+	}
+	else
+	{
+		WaitForUpdate;
+		NotPlayerTurn;
+	}*/
 }
 
 function CreateDataArea(name)
 {
 	CreateCommonDataArea(name);
 	SetAreaCommonData(name, "gametick", 0); //Each synchronized action increases the gametick
-	SetAreaCommonData(name, "active_player", 1); //who is the current player 
-	SetAreaCommonData(name, "old_cards_played", [-1]); //What was the last played Card
+	//SetAreaCommonData(name, "active_player", 1); //who is the current player 
 	SetAreaCommonData(name, "cards_played", [-1]); //What was the last played Card
 	SetAreaCommonData(name, "player1_confirm", 0); //Is a confirmation needed?
 	SetAreaCommonData(name, "player2_confirm", 0); //Is a confirmation needed?
@@ -1352,11 +1393,51 @@ function EvaluateGameState
 	
 	//WriteLog("CHECK PLAYER1: " ~ itoa(player1_state) ~ " CHECK PLAYER2: " ~ itoa(player2_state));
 
-	if(player1_state == -1 && player2_state == -1){yield; RaiseError("DRAW! Both Towers down!");}
-	else if(player1_state == 1 && player2_state == 1){yield; RaiseError("DRAW! Both Players win!");}
-	else if(player1_state == 1 || player2_state == -1){yield; RaiseError("Player1 wins!");}
-	else if(player2_state == 1 || player1_state == -1){yield; RaiseError("Player2 wins!");}
+	if(player1_state == -1 && player2_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("DRAW! Both Towers down!");}
+	else if(player1_state == 1 && player2_state == 1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("DRAW! Both Players win!");}
+	else if(player1_state == 1 || player2_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("Player1 wins!");}
+	else if(player2_state == 1 || player1_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("Player2 wins!");}
 }
+
+task CreateBattleEffect(target, stone, gem, monster)//-1 red; 1 green; tower/wall effects are managed by DoDamage
+{
+	let xoffset = 0;
+	let yoffset = 0;
+
+	let n = 20;
+
+	if(stone != 0)
+	{
+		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_stone_counter", -1), stone);
+	}
+	if(gem != 0)
+	{
+		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_gem_counter", -1), gem);
+	}
+	if(monster != 0)
+	{
+		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_monster_counter", -1), monster);
+	}
+
+	task DoEffect(obj, color)
+	{
+		let x = ObjRender_GetX(obj);
+		let y = ObjRender_GetY(obj);
+	}
+}
+
+/*
+ObjText_SetText(GetAreaCommonData("AcroMage", "player1_stone_counter", -1), itoa(Obj_GetValue(player1, "stone")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_gem_counter", -1), itoa(Obj_GetValue(player1, "gem")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_monster_counter", -1), itoa(Obj_GetValue(player1, "monster")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_stone_level", -1), itoa(Obj_GetValue(player1, "stone_level")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_gem_level", -1), itoa(Obj_GetValue(player1, "gem_level")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_monster_level", -1), itoa(Obj_GetValue(player1, "monster_level")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_tower", -1), itoa(Obj_GetValue(player1, "tower")));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_wall", -1), itoa(Obj_GetValue(player1, "wall")));
+
+	Obj_SetValue(obj, "player_number", number);
+*/
 
 /*
 PlaySound_GetRessources;
@@ -1533,7 +1614,7 @@ function Process_Card(number, user, target, reason)
 
 		if(reason == 0 && Obj_GetValue(user, "stone") >= 11){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, -11, 0, 0, 0, 0, 0);
-		DoBuild(user, 3, 0);
+		DoBuild(user, 6, 3);
 		PlaySound_GetTower;
 	}
 	case(124){
@@ -1712,7 +1793,7 @@ function Process_Card(number, user, target, reason)
 
 		if(reason == 0 && Obj_GetValue(user, "gem") >= 3){return 0;}else if(reason == 0){return 1;}
 		DoRessourceChange(user, 0, -3, 0, 0, 2, 0);
-		DoDamage(user, 5, 0, 0);
+		DoDamage(user, 0, 0, 5);
 		PlaySound_GetLevel;
 	}
 	case(213){

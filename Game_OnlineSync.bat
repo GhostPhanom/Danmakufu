@@ -7,6 +7,8 @@ timeout 1
 REM Updates remote_gamestate
 .\PSFTP.EXE thomasgordon@battleship-eclipse.de -P 61111 -pw "WieEsWohlSchmeckt" -b Game_Download.txt
 echo "Gamestate Downloaded"
+del script_test
+
 
 if exist "reset_gamestate" (
 del remote_gamestate
