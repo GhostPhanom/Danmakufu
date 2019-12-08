@@ -86,6 +86,13 @@ task MainTask
 	CreateCircle(0, 96);
 	CreateCircle(6, 96);
 
+	wait(60);
+	ScreenFlash(30, 60, 0, 0, 0, 0, 99);
+	wait(60);
+
+	SetAutoDeleteObject(true);
+	CloseScript(GetOwnScriptID());
+
 	task Fontspin
 	{
 		let t1 = 30;

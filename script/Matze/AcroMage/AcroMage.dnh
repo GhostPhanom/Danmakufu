@@ -12,7 +12,7 @@
 
 let tower_start = 50;
 let tower_winlevel = 150;
-let wall_start = 5;
+let wall_start = 10;
 let ressource_start = 10;
 let ressource_winlevel = 300;
 let ressource_level_start = 3;
@@ -25,6 +25,7 @@ let old_cards = [];
 let instance_hand = [];
 let cardarray = [
 //101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,201,202,205,206,206,206,206,206,206,206,206,206,302,305,308
+//101,102,103,104,105,106,107,108,109,110,111,112,113,114
 101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,
 201,202,203,204,205,206,207,208,209,210,211,212,213,214,215,216,217,218,219,220,221,222,223,224,225,226,227,228,229,230,231,232,233,234,
 301,302,303,304,305,306,307,308,309,310,311,312,313,314,315,316,317,318,319,320,321,322,323,324,325,326,327,328,329,330,331,332,333,334 
@@ -64,6 +65,7 @@ let CardsSlots = [];
 task MainTask
 {
 	yield;
+	//KillScriptButton;
 	AcroMage;
 }
 
@@ -76,6 +78,20 @@ task MainTask
 //MoveHandToPlayed(slot)
 
 //MovePlayedToDeck
+
+task KillScriptButton
+{
+	//SetAutoDeleteObject(true);
+	loop
+	{
+		if(GetKeyState(KEY_L) == KEY_PUSH)
+		{
+			EndGame("Aborted Game with Kill Button");
+			//CloseScript(GetOwnScriptID());
+		}
+		yield;
+	}
+}
 
 //return 0 it is allowed; return 1 it is NOT allowed; return 2 another turn; return 3 discard additional card
 function AcroMage
@@ -281,7 +297,7 @@ function NotPlayerTurn
 		}
 		if(specialcase != 0){NotPlayerAnotherTurn;}
 	}
-	WriteLog("NotPlayerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+	//WriteLog("NotPlayerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 	EvaluateGameState;
 	//WHEN CODE HERE THE PLAYER SWITCHES
 	SwitchCurrentPlayer;
@@ -383,9 +399,10 @@ function PlayerTurn
 	{
 		SwitchCurrentPlayer;
 		UpdateGameState;
-		WriteLog("Playerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+		//WriteLog("Playerturn ended! Gametick:" ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
 		EvaluateGameState;
 		RearangeHandCards;
+		UpdateUI;
 		WaitForUpdate;
 		NotPlayerTurn;
 	}
@@ -449,8 +466,30 @@ function CreateGraphicElements
 	RearangeHandCards;
 	ChangeHandDisplayPlayer;
 	UpdateUI;
+	CreateMultiplayerStats;
 }
 
+task CreateMultiplayerStats
+{
+	let obj1 = ObjText_Create();
+	SetAreaCommonData("AcroMage", "gametick_obj", obj1);
+	ObjText_SetText(obj1, "Turn: -1");
+	ObjText_SetFontSize(obj1, 10);
+	ObjRender_SetPosition(obj1, 640 - 200, 1, 0);
+	Obj_SetRenderPriorityI(obj1, 91);
+
+	let obj = ObjText_Create();
+	SetAreaCommonData("AcroMage", "gameid_obj", obj);
+	ObjText_SetText(obj, "GameID: -1");
+	ObjText_SetFontSize(obj, 10);
+	ObjRender_SetPosition(obj, 200, 1, 0);
+	Obj_SetRenderPriorityI(obj, 91);
+	if(GetCommonData("AcroMage_VS_AI", true))
+	{
+		Obj_SetVisible(obj, false);
+		Obj_SetVisible(obj1, false);
+	}
+}
 
 function SwitchCurrentPlayer
 {
@@ -839,8 +878,8 @@ function MoveDeckToHand(card)
 function MoveHandToCurrentPlayed(slot)
 {
 	PlaySound_Card;
-	WriteLog(Obj_GetValue(currentplayer, "hand"));
-	WriteLog(slot);
+	//WriteLog(Obj_GetValue(currentplayer, "hand"));
+	//WriteLog(slot);
 	let card = Obj_GetValue(currentplayer, "hand")[slot];
 	Obj_SetValue(currentplayer, "hand", erase(Obj_GetValue(currentplayer, "hand"), slot));
 	RearangeHandCards;
@@ -931,6 +970,8 @@ function GainRessource(target)
 function UpdateUI
 {
 	UpdateTowerHeight;
+	ObjText_SetText(GetAreaCommonData("AcroMage", "gametick_obj", -1), "Turn: " ~ itoa(GetAreaCommonData("Remote_GameState", "gametick", -1)));
+	ObjText_SetText(GetAreaCommonData("AcroMage", "gameid_obj", -1), "GameID: " ~ itoa(GetAreaCommonData("Remote_GameState", "game_id", -1)));
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_stone_counter", -1), itoa(Obj_GetValue(player1, "stone")));
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_gem_counter", -1), itoa(Obj_GetValue(player1, "gem")));
 	ObjText_SetText(GetAreaCommonData("AcroMage", "player1_monster_counter", -1), itoa(Obj_GetValue(player1, "monster")));
@@ -971,7 +1012,7 @@ function UpdateTowerHeight
 let baseUIy = 305;
 let baseUIxmissplace = 10;
 let baseUIymissplace = 10;
-let towerpeak = 83;
+let towerpeak = 93;
 let towerbottom = -1;
 let towerxmissplace = 4;
 
@@ -979,7 +1020,7 @@ function Create_Graphics
 {
 	let basey = baseUIy;
 
-	towerbottom = GetTextureHeight(GetCurrentScriptDirectory() ~ "testturm22.png") - towerpeak;
+	towerbottom = GetTextureHeight(GetCurrentScriptDirectory() ~ "tower1.png") - towerpeak;
 
 	CreateCommonDataArea("AcroMage");
 	CreateBG;
@@ -1030,9 +1071,9 @@ function Create_Graphics
 		ObjRender_SetPosition(bgobj, x + 4, y + 5, 0);
 
 		let path = GetCurrentScriptDirectory();
-		if(type == "tower" && player == 1){path = path ~ "testturm22.png";}
-		else if(type == "tower" && player == 2){path = path ~ "testturm22.png";}
-		else{path = path ~ "wall22.png";}
+		if(type == "tower" && player == 1){path = path ~ "tower1.png";}
+		else if(type == "tower" && player == 2){path = path ~ "tower2.png";}
+		else{path = path ~ "wall.png";}
 		let objx1 = x - GetTextureWidth(path) / 2 + towerxmissplace;
 		let objx2 = x + GetTextureWidth(path) / 2 + towerxmissplace;
 		let objy1 = -1;
@@ -1074,9 +1115,10 @@ function Create_Graphics
 	task CreateUserUI(x, y, type, player)
 	{
 		let path = "";
-		if(type == "stone"){path = GetCurrentScriptDirectory() ~ "Acromage_Bricks.png";}
-		if(type == "gem"){path = GetCurrentScriptDirectory() ~ "Acromage_Gems.png";}
-		if(type == "monster"){path = GetCurrentScriptDirectory() ~ "Acromage_Recruits.png";}
+		let text = "";
+		if(type == "stone"){path = GetCurrentScriptDirectory() ~ "Acromage_Bricks.png"; text = "bricks";}
+		if(type == "gem"){path = GetCurrentScriptDirectory() ~ "Acromage_Gems.png"; text = "gems";}
+		if(type == "monster"){path = GetCurrentScriptDirectory() ~ "Acromage_Recruits.png"; text = "recruits";}
 
 		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjPrim_SetTexture(obj, path);
@@ -1106,13 +1148,13 @@ function Create_Graphics
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_level", obj);
 
 		obj = ObjText_Create;
-		ObjText_SetText(obj, type);
+		ObjText_SetText(obj, text);
 		ObjText_SetFontSize(obj, 12);
 		ObjText_SetFontBorderType(obj, BORDER_FULL);
 		ObjText_SetFontBorderWidth(obj, 1);
 		ObjText_SetFontBorderColor(obj, 0, 0, 0);
 		Obj_SetRenderPriorityI(obj, 86);
-		ObjRender_SetPosition(obj, x + 44, y + 81, 0);
+		ObjRender_SetPosition(obj, x + 38, y + 81, 0);
 		SetAreaCommonData("AcroMage", "player" ~ itoa(player) ~ "_" ~ type ~ "_type", obj);
 	}
 }
@@ -1125,12 +1167,26 @@ function DoRessourceChange(target, stone, gem, monster, stone_level, gem_level, 
 	Obj_SetValue(target, "stone_level", max(1, Obj_GetValue(target, "stone_level") + stone_level));
 	Obj_SetValue(target, "gem_level", max(1, Obj_GetValue(target, "gem_level") + gem_level));
 	Obj_SetValue(target, "monster_level", max(1, Obj_GetValue(target, "monster_level") + monster_level));
+	if(stone_level > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_stone_level", -1), 1, 4, 4);}
+	if(stone_level < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_stone_level", -1), -1, 4, 4);}
+	if(stone > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_stone_counter", -1), 1, 4, 4);}
+	if(stone < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_stone_counter", -1), -1, 4, 4);}
+	if(gem_level > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_gem_level", -1), 1, 4, 4);}
+	if(gem_level < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_gem_level", -1), -1, 4, 4);}
+	if(gem > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_gem_counter", -1), 1, 4, 4);}
+	if(gem < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_gem_counter", -1), -1, 4, 4);}
+	if(monster_level > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_monster_level", -1), 1, 4, 4);}
+	if(monster_level < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_monster_level", -1), -1, 4, 4);}
+	if(monster > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_monster_counter", -1), 1, 4, 4);}
+	if(monster < 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_monster_counter", -1), -1, 4, 4);}
 }
 
 function DoBuild(target, wall, tower)
 {
 	Obj_SetValue(target, "wall", Obj_GetValue(target, "wall") + wall);
 	Obj_SetValue(target, "tower", Obj_GetValue(target, "tower") + tower);
+	if(wall > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), 1, 12, 8);}
+	if(tower > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_tower", -1), 1, 12, 8);}
 }
 
 
@@ -1138,21 +1194,36 @@ function DoDamage(target, generaldamage, walldamage, towerdamage)
 {
 	let tower_hp = Obj_GetValue(target, "tower");
 	let wall_hp = Obj_GetValue(target, "wall");
+	let wall = -1;
+	let tower = -1;
 	if(generaldamage != 0)
 	{
 		if(generaldamage > wall_hp)
 		{
+			if(wall_hp > 0)
+			{
+				//DoBattleEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1);
+				DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1, 12, 8);
+			}
 			generaldamage -= wall_hp;
 			wall_hp = 0;
 			tower_hp = max(0, tower_hp - generaldamage);
+			//DoBattleEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_tower", -1), -1);
+			DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_tower", -1), -1, 12, 8);
 		}
 		else
 		{
+			//DoBattleEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1);
+			DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1, 12, 8);
 			wall_hp -= generaldamage;
 		}
 	}
 	else
 	{
+		//if(walldamage > 0){DoBattleEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1);}
+		if(walldamage > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_wall", -1), -1, 12, 8);}
+		//if(towerdamage > 0){DoBattleEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_tower", -1), -1);}
+		if(towerdamage > 0){DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number")) ~ "_tower", -1), -1, 12, 8);}
 		wall_hp = max(0, wall_hp - walldamage);
 		tower_hp = max(0, tower_hp - towerdamage);
 	}
@@ -1254,6 +1325,7 @@ function WaitForUpdate
 
 function RecreateGameFromGameState
 {
+	ClearAreaCommonData("Remote_GameState");
 	LoadCommonDataAreaA2("Remote_GameState", getpath);
 	//Obj_SetValue(player1, "player_number", number);
 	Obj_SetValue(player1, "tower", GetAreaCommonData("Remote_GameState", "player1_tower", 0));
@@ -1283,7 +1355,7 @@ function RecreateGameFromGameState
 
 	UpdateUI;
 	RearangeHandCards;
-	WriteLog("INSTANCEPLAYER: " ~ itoa(instanceplayer));
+	//WriteLog("INSTANCEPLAYER: " ~ itoa(instanceplayer));
 	//WriteLog("ActivePlayer: " ~ itoa(GetAreaCommonData("Remote_GameState", "active_player", -1)));
 	game_id = GetAreaCommonData("Remote_GameState", "game_id", -1);
 	let activeplayer = -1;
@@ -1392,37 +1464,144 @@ function EvaluateGameState
 	}
 	
 	//WriteLog("CHECK PLAYER1: " ~ itoa(player1_state) ~ " CHECK PLAYER2: " ~ itoa(player2_state));
-
-	if(player1_state == -1 && player2_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("DRAW! Both Towers down!");}
-	else if(player1_state == 1 && player2_state == 1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("DRAW! Both Players win!");}
-	else if(player1_state == 1 || player2_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("Player1 wins!");}
-	else if(player2_state == 1 || player1_state == -1){yield; SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState; RaiseError("Player2 wins!");}
+	if(player1_state == -1 && player2_state == -1)
+	{
+		yield; 
+		if(!GetCommonData("AcroMage_VS_AI", false)){SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState;}
+		EndGame("Unentschieden! Beide Türme sind kaputt");
+		wait(120);
+		//RaiseError("DRAW! Both Towers down!");
+	}
+	else if(player1_state == 1 && player2_state == 1)
+	{
+		yield; 
+		if(!GetCommonData("AcroMage_VS_AI", false)){SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState;}
+		EndGame("Unentschieden! Beide Spieler haben gewonnen");
+		wait(120);
+		//RaiseError("DRAW! Both Players win!");
+	}
+	else if(player1_state == 1 || player2_state == -1)
+	{
+		yield; 
+		if(!GetCommonData("AcroMage_VS_AI", false)){SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState;}
+		EndGame("Spieler 1 gewinnt!");
+		wait(120);
+		//RaiseError("Player1 wins!");
+	}
+	else if(player2_state == 1 || player1_state == -1)
+	{
+		yield; 
+		if(!GetCommonData("AcroMage_VS_AI", false)){SetAreaCommonData("Remote_GameState", "game_ended", true); UpdateGameState;}
+		EndGame("Spieler 2 gewinnt!");
+		wait(120);
+		//RaiseError("Player2 wins!");
+	}
 }
 
-task CreateBattleEffect(target, stone, gem, monster)//-1 red; 1 green; tower/wall effects are managed by DoDamage
+task EndGame(text)
+{	
+	SetAutoDeleteObject(true);
+	SetCommonData("AcroMage_EndingText", text);
+	wait(121);//Game would crash if a Sound would run while it deletes itself
+	CloseScript(GetOwnScriptID());
+}
+
+task DoEffect(obj, color, xoffset, yoffset)
 {
-	let xoffset = 0;
-	let yoffset = 0;
+	let colors = [];
+	if(color == -1){colors = [255, 0, 0];}
+	else{colors = [0, 255, 0];}
 
-	let n = 20;
+	let path = GetCurrentScriptDirectory() ~ "effect.png";
 
-	if(stone != 0)
+	let x = ObjRender_GetX(obj);
+	let y = ObjRender_GetY(obj);
+
+	let n = 30;
+
+	let time = 45;
+
+	let startalpha1 = 220;
+	let startalpha2 = 190;
+	let alphapart = startalpha1 / time;
+
+	loop(n)
 	{
-		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_stone_counter", -1), stone);
-	}
-	if(gem != 0)
-	{
-		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_gem_counter", -1), gem);
-	}
-	if(monster != 0)
-	{
-		DoEffect(GetAreaCommonData("AcroMage", "player" ~ itoa(Obj_GetValue(target, "player_number", 1)) ~ "_monster_counter", -1), monster);
+		//Movement(CreateShotA1(x, y, rand(0.5, 2), rand(0, 360), 0, 0));
+		//Movement(CreateShotB1(x + rand(-5, 5) + 30, y + rand(-5, 5) - 30, rand(-3, 3), rand(-3, 3), 0, 0));
+		Movement(CreateShotB1(x + rand(-5, 5) + xoffset, y + rand(-5, 5) + yoffset, rand(-3, 3), rand(-3, 3), 0, 0));
 	}
 
-	task DoEffect(obj, color)
+	task Movement(obj)
 	{
-		let x = ObjRender_GetX(obj);
-		let y = ObjRender_GetY(obj);
+		ObjShot_Regist(obj);
+		let scale = rand(0.2, 0.05);
+		let objr = ObjRender_SetIAnimation(obj, path, 0, 32, 32, 2, 2, scale, scale, 0, 0);
+		ObjRender_SetColor(objr, colors[0], colors[1], colors[2]);
+		ObjShot_SetAutoDelete(obj, false);
+		ObjShot_SetIntersectionEnable(obj, false);
+		Obj_SetRenderPriorityI(objr, 95);
+		Obj_SetRenderPriorityI(obj, 95);
+
+		let alpha = rand(startalpha1, startalpha2);
+
+		ascent(i in 0..time)
+		{
+			//WriteLog(ObjRender_GetX(objr));
+			ObjRender_SetAlpha(objr, alpha - alphapart * i);
+			yield;
+		}
+		Obj_Delete(obj);
+		Obj_Delete(objr);
+	}
+}
+
+task DoBattleEffect(obj, color)
+{
+	let colors = [];
+	if(color == -1){colors = [255, 0, 0];}
+	else{colors = [0, 255, 0];}
+
+	let path = GetCurrentScriptDirectory() ~ "effect.png";
+
+	let x = ObjRender_GetX(obj);
+	let y = ObjRender_GetY(obj);
+
+	let n = 30;
+
+	let time = 45;
+
+	let startalpha1 = 220;
+	let startalpha2 = 190;
+	let alphapart = startalpha1 / time;
+
+	loop(n)
+	{
+		//Movement(CreateShotA1(x, y, rand(0.5, 2), rand(0, 360), 0, 0));
+		Movement(CreateShotB1(x + rand(-5, 5) + 2, y + rand(-5, 5) + 2, rand(-3, 3), rand(-3, 3), 0, 0));
+	}
+
+	task Movement(obj)
+	{
+		ObjShot_Regist(obj);
+		let scale = rand(0.2, 0.05);
+		let objr = ObjRender_SetIAnimation(obj, path, 0, 32, 32, 2, 2, scale, scale, 0, 0);
+		ObjRender_SetColor(objr, colors[0], colors[1], colors[2]);
+		ObjShot_SetAutoDelete(obj, false);
+		ObjShot_SetIntersectionEnable(obj, false);
+		Obj_SetRenderPriorityI(objr, 95);
+		Obj_SetRenderPriorityI(obj, 95);
+
+		let alpha = rand(startalpha1, startalpha2);
+
+		ascent(i in 0..time)
+		{
+			//WriteLog(ObjRender_GetX(objr));
+			ObjRender_SetAlpha(objr, alpha - alphapart * i);
+			yield;
+		}
+		Obj_Delete(obj);
+		Obj_Delete(objr);
 	}
 }
 
