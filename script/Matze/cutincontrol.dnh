@@ -30,6 +30,7 @@
 		if(casefile[0]=="Spellcardover")
 		{
 			Spellcardactive=false;
+			Screenshatter;
 		}
 	}
 }
@@ -41,7 +42,11 @@
 
 
 
-//Use NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Cutin", "SPELLCARDNAME", "PATH TO CUTIN IMAGE", "PATH TO SPELLSIGN IMAGE", "SPRITESCALE"]);
+//Use NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Cutin", "SPELLCARDNAME", "PATH TO CUTIN IMAGE", CSD ~ "Cutin/Spelltext.png", "SPRITESCALE"]);
+//NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["CutinFontColor", "RED1", "GREEN1", "BLUE1", "RED2", "GREEN2", "BLUE2"]);
+//NotifyEvent(GetCommonData("Cutincontrol Script ID",0),EV_USER,["Spellcardover"]);
+
+//The Cutin Control Script should already be started in Default System
 //In the @Finilize of the Script which runs before the one, that uses the Cutin (if the Cutin should happen right at the Scipt Start)
 
 let Spellcardactive=false;
@@ -96,6 +101,182 @@ task cutintest(text, path, spellsignpath, spritescale)
 	CreateSprite(path,pathsilhouette,x,y,Spritescale,SpriteRGB);
 	CreateSpellSign(Xpartcount, Ypartcount , signx2, signy2, signxpos, signypos, spellsignpath); //(Xpartcount, Ypartcount, x2, y2, xpos, ypos)
 	CreateSpellText(text,FontColor1,FontColor2,FontBorderColor);
+}
+
+task Screenshatter
+{
+	let spalten = 20;
+	let zeilen = 20;
+
+	let vertcount = (spalten * 2 - 1) * zeilen * 3;
+	let vertcounter = 0;
+
+	let width = 640;
+	let height = 480;
+
+	let pwidth = 640;
+	let pheight = 480;
+
+	let startx = 0;
+	let starty = 0;
+
+	let hitposx = 300;
+	let hitposy = 300;
+
+	let spaltenweite = width / (spalten -1);
+	let halbspaltenweite = spaltenweite / 2;
+	let zeilenweite = height / zeilen;
+
+	let pspaltenweite = pwidth / (spalten -1);
+	let phalbspaltenweite = pspaltenweite / 2;
+	let pzeilenweite = pheight / zeilen;
+
+	let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+	ObjPrim_SetPrimitiveType(obj, PRIMITIVE_TRIANGLELIST);
+	CreateRenderTarget("SCREENSHATTER");
+	RenderToTextureA1("SCREENSHATTER", 0, 99, true);
+	ObjPrim_SetTexture(obj, "SCREENSHATTER");
+	ObjPrim_SetVertexCount(obj, vertcount);
+	Obj_SetRenderPriorityI(obj, 99);
+
+	ascent(i in 0..zeilen)
+	{
+		ascent(j in 0..spalten - 1)
+		{
+			ObjPrim_SetVertexUVT(obj, vertcounter, j * pspaltenweite, i * pzeilenweite);
+			ObjPrim_SetVertexUVT(obj, vertcounter + 1, j * pspaltenweite + phalbspaltenweite, i * pzeilenweite + pzeilenweite);
+			ObjPrim_SetVertexUVT(obj, vertcounter + 2, j * pspaltenweite + pspaltenweite, i * pzeilenweite);
+			ObjPrim_SetVertexPosition(obj, vertcounter, startx + j * spaltenweite, starty + i * zeilenweite, 0);
+			ObjPrim_SetVertexPosition(obj, vertcounter + 1, startx + j * spaltenweite + halbspaltenweite, starty +  i * zeilenweite + zeilenweite, 0);
+			ObjPrim_SetVertexPosition(obj, vertcounter + 2, startx + j * spaltenweite + spaltenweite, starty +  i * zeilenweite, 0);
+			vertcounter += 3;
+		}
+		ObjPrim_SetVertexUVT(obj, vertcounter, 0, i * pzeilenweite + pzeilenweite);
+		ObjPrim_SetVertexUVT(obj, vertcounter + 1, 0, i * pzeilenweite);
+		ObjPrim_SetVertexUVT(obj, vertcounter + 2, phalbspaltenweite, i * pzeilenweite + pzeilenweite);
+		ObjPrim_SetVertexPosition(obj, vertcounter, startx, starty + i * zeilenweite + zeilenweite, 0);
+		ObjPrim_SetVertexPosition(obj, vertcounter + 1, startx, starty + i * zeilenweite, 0);
+		ObjPrim_SetVertexPosition(obj, vertcounter + 2, startx + halbspaltenweite, starty + i * zeilenweite + zeilenweite, 0);
+		vertcounter += 3;
+		ascent(j in 1..spalten - 1)
+		{
+			ObjPrim_SetVertexUVT(obj, vertcounter, j * pspaltenweite - phalbspaltenweite, i * pzeilenweite + pzeilenweite);
+			ObjPrim_SetVertexUVT(obj, vertcounter + 1, j * pspaltenweite, i * pzeilenweite);
+			ObjPrim_SetVertexUVT(obj, vertcounter + 2, j * pspaltenweite + phalbspaltenweite, i * pzeilenweite + pzeilenweite);
+			ObjPrim_SetVertexPosition(obj, vertcounter, startx + j * spaltenweite - halbspaltenweite, starty + i * zeilenweite + zeilenweite, 0);
+			ObjPrim_SetVertexPosition(obj, vertcounter + 1, startx + j * spaltenweite, starty + i * zeilenweite, 0);
+			ObjPrim_SetVertexPosition(obj, vertcounter + 2, startx + j * spaltenweite + halbspaltenweite, starty + i * zeilenweite + zeilenweite, 0);
+			vertcounter += 3;
+		}
+		ObjPrim_SetVertexUVT(obj, vertcounter, pwidth - phalbspaltenweite, i * pzeilenweite + pzeilenweite);
+		ObjPrim_SetVertexUVT(obj, vertcounter + 1, pwidth, i * pzeilenweite);
+		ObjPrim_SetVertexUVT(obj, vertcounter + 2, pwidth, i * pzeilenweite + pzeilenweite);
+		ObjPrim_SetVertexPosition(obj, vertcounter, startx + width - halbspaltenweite, starty + i * zeilenweite + zeilenweite, 0);
+		ObjPrim_SetVertexPosition(obj, vertcounter + 1, startx + width, starty + i * zeilenweite, 0);
+		ObjPrim_SetVertexPosition(obj, vertcounter + 2, startx + width, starty + i * zeilenweite + zeilenweite, 0);
+		vertcounter += 3;
+	}
+
+	//wait(180);
+
+	let boundx1 = -64;
+	let boundy1 = -64;
+	let boundx2 = 640 + 64;
+	let boundy2 = 480 + 64;
+
+	let growth = 12;
+	let checksize = growth;
+	
+	let speed = 6; 
+
+	let checkarray = [];
+	let counter = 0;
+	ascent(i in 0..vertcount / 3)
+	{
+		checkarray = checkarray ~ [i * 3];
+	}
+	while(length(checkarray) > 0)
+	{
+		let markarray = [];
+		ascent(i in 0..length(checkarray))
+		{
+			let vertpos = ObjPrim_GetVertexPosition(obj, checkarray[i]);
+			if(GetDistance(hitposx,hitposy,vertpos[0],vertpos[1]) <= checksize)
+			{
+				MoveVertex2(checkarray[i], GetPointAngle(hitposx,hitposy,vertpos[0],vertpos[1]) + 180);
+				//WriteLog("Chosen:" ~ itoa(checkarray[i]) ~ " Angle:" ~ rtoa(GetPointAngle(hitposx,hitposy,vertpos[0],vertpos[1])));
+				markarray = markarray ~ [i];
+			}
+		}
+		descent(i in 0..length(markarray))
+		{
+			checkarray = erase(checkarray, markarray[i]);
+		}
+		//if(length(checkarray) == 0){RaiseError(counter);}
+		checksize += growth;
+		counter++;
+		yield;
+	}
+
+	wait(1000);
+	Obj_Delete(obj);
+
+	task MoveVertex2(vindex, angle)
+	{
+		let xspeed = speed * cos(angle);
+		let yspeed = speed * sin(angle);
+
+		let vert1x = ObjPrim_GetVertexPosition(obj, vindex)[0];
+		let vert1y = ObjPrim_GetVertexPosition(obj, vindex)[1];
+		let vert2x = ObjPrim_GetVertexPosition(obj, vindex + 1)[0];
+		let vert2y = ObjPrim_GetVertexPosition(obj, vindex + 1)[1];
+		let vert3x = ObjPrim_GetVertexPosition(obj, vindex + 2)[0];
+		let vert3y = ObjPrim_GetVertexPosition(obj, vindex + 2)[1];
+
+		let counter = 0;
+
+		let startalpha = 255;
+		let n = 10;
+		let partalpha = startalpha / n;
+		ascent(i in 1..n + 1)
+		{
+			let alpha = startalpha - partalpha * i;
+			ObjPrim_SetVertexAlpha(obj, vindex, alpha);
+			ObjPrim_SetVertexAlpha(obj, vindex + 1, alpha);
+			ObjPrim_SetVertexAlpha(obj, vindex + 2, alpha);
+			yield;
+		}
+	}
+
+	task MoveVertex(vindex, angle)
+	{
+		let xspeed = speed * cos(angle);
+		let yspeed = speed * sin(angle);
+
+		let vert1x = ObjPrim_GetVertexPosition(obj, vindex)[0];
+		let vert1y = ObjPrim_GetVertexPosition(obj, vindex)[1];
+		let vert2x = ObjPrim_GetVertexPosition(obj, vindex + 1)[0];
+		let vert2y = ObjPrim_GetVertexPosition(obj, vindex + 1)[1];
+		let vert3x = ObjPrim_GetVertexPosition(obj, vindex + 2)[0];
+		let vert3y = ObjPrim_GetVertexPosition(obj, vindex + 2)[1];
+
+		let counter = 0;
+		while(vert1x > boundx1 && vert1x < boundx2 && vert1y > boundy1 && vert1y < boundy2)
+		{
+			vert1x += xspeed;
+			vert2x += xspeed;
+			vert3x += xspeed;
+			vert1y += yspeed;
+			vert2y += yspeed;
+			vert3y += yspeed;
+
+			ObjPrim_SetVertexPosition(obj, vindex, vert1x, vert1y, 0);
+			ObjPrim_SetVertexPosition(obj, vindex + 1, vert2x, vert2y, 0);
+			ObjPrim_SetVertexPosition(obj, vindex + 2, vert3x, vert3y, 0);
+			counter++;
+			yield;
+		}
+	}
 }
 
 task Createcut

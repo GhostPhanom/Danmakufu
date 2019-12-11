@@ -1,5 +1,5 @@
 #include "./chargeeffect.dnh"
-#incluse "./explosioneffect.dnh"
+#include "./explosioneffect.dnh"
 /*
 if (GetCommonData("Cutincontrol Script ID", 999999) == 999999)
 {

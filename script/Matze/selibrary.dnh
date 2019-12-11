@@ -206,6 +206,135 @@ task PlaySound(str,v,w){
 	}
 }
 
+task PlaySound2(str,v,w){
+	if(str == "capture"){ObjSound_Load(s,MainSTG~"sound/capture.wav");}
+	if(str == "Shot1"){ObjSound_Load(s,MainSTG~"sound/Shot1.wav");}
+	if(str == "Shot2"){ObjSound_Load(s,MainSTG~"sound/Shot2.wav");}
+	if(str == "Shot3"){ObjSound_Load(s,MainSTG~"sound/Shot3.wav");}
+	if(str == "Shot4"){ObjSound_Load(s,MainSTG~"sound/Shot4.wav");}
+	if(str == "Shot5"){ObjSound_Load(s,MainSTG~"sound/Shot5.wav");}
+	if(str == "Shot6"){ObjSound_Load(s,MainSTG~"sound/Shot6.wav");}
+	if(str == "Shot7"){ObjSound_Load(s,MainSTG~"sound/Shot7.wav");}
+	if(str == "Shot8"){ObjSound_Load(s,MainSTG~"sound/Shot8.wav");}
+	if(str == "Shot9"){ObjSound_Load(s,MainSTG~"sound/Shot9.wav");}
+	if(str == "Laser1"){ObjSound_Load(s,MainSTG~"sound/Laser1.wav");}
+	if(str == "Laser2"){ObjSound_Load(s,MainSTG~"sound/Laser2.wav");}
+	if(str == "Laser3"){ObjSound_Load(s,MainSTG~"sound/Laser3.wav");}
+	if(str == "Laser4"){ObjSound_Load(s,MainSTG~"sound/Laser4.wav");}
+	if(str == "Laser5"){ObjSound_Load(s,MainSTG~"sound/Laser5.wav");}
+	if(str == "Laser6"){ObjSound_Load(s,MainSTG~"sound/Laser6.wav");}
+	if(str == "Laser7"){ObjSound_Load(s,MainSTG~"sound/Laser7.wav");}
+	if(str == "Charge1"){ObjSound_Load(s,MainSTG~"sound/Charge1.wav");}
+	if(str == "Charge2"){ObjSound_Load(s,MainSTG~"sound/Charge2.wav");}
+	if(str == "Charge3"){ObjSound_Load(s,MainSTG~"sound/Charge3.wav");}
+	if(str == "Charge4"){ObjSound_Load(s,MainSTG~"sound/Charge4.wav");}
+	if(str == "Charge5"){ObjSound_Load(s,MainSTG~"sound/Charge5.wav");}
+	if(str == "Weird1"){ObjSound_Load(s,MainSTG~"sound/Weird1.wav");}
+	if(str == "Weird2"){ObjSound_Load(s,MainSTG~"sound/Weird2.wav");}
+	if(str == "Weird3"){ObjSound_Load(s,MainSTG~"sound/Weird3.wav");}
+	if(str == "BulletWave"){ObjSound_Load(s,MainSTG~"sound/BulletWave.wav");}
+	if(str == "BulletWave2"){ObjSound_Load(s,MainSTG~"sound/BulletWave2.wav");}
+	if(str == "bright"){ObjSound_Load(s,MainSTG~"sound/bright.wav");}
+	if(str == "Eff1"){ObjSound_Load(s,MainSTG~"sound/Eff1.wav");}
+	if(str == "Eff2"){ObjSound_Load(s,MainSTG~"sound/Eff2.wav");}
+	if(str == "Eff3"){ObjSound_Load(s,MainSTG~"sound/Eff3.wav");}
+	if(str == "Eff4"){ObjSound_Load(s,MainSTG~"sound/Eff4.wav");}
+	if(str == "Eff5"){ObjSound_Load(s,MainSTG~"sound/Eff5.wav");}
+	if(str == "Eff6"){ObjSound_Load(s,MainSTG~"sound/Eff6.wav");}
+	if(str == "Eff7"){ObjSound_Load(s,MainSTG~"sound/Eff7.wav");}
+	if(str == "fam"){ObjSound_Load(s,MainSTG~"sound/fam.wav");}
+	if(str == "stars"){ObjSound_Load(s,MainSTG~"sound/stars.wav");}
+	if(str == "Enep1"){ObjSound_Load(s,MainSTG~"sound/Enep1.wav");}
+	if(str == "Enep2"){ObjSound_Load(s,MainSTG~"sound/Enep2.wav");}
+	if(str == "Hidden"){ObjSound_Load(s,MainSTG~"sound/Sudden.wav");}
+	if(str == "famdie"){ObjSound_Load(s,MainSTG~"sound/famdie.wav");}
+	if(str == "nonfinish"){ObjSound_Load(s,MainSTG~"sound/nonfinish.wav");}
+	if(str == "cardcall"){ObjSound_Load(s,MainSTG~"sound/cardcall.wav");}
+	if(str == "piss"){ObjSound_Load(s,MainSTG~"sound/piss.wav");}
+	if(str == "Heal"){ObjSound_Load(s,MainSTG~"sound/Heal.wav");}
+	if(str == "enemoff"){ObjSound_Load(s,MainSTG~"sound/enemoff.wav");}
+	if(str == "enemoff1"){ObjSound_Load(s,MainSTG~"sound/enemoff1.wav");}
+	if(str == "byoro07"){ObjSound_Load(s,MainSTG~"sound/byoro07.wav");}
+	if(str == "time"){ObjSound_Load(s,MainSTG~"sound/time.wav");}
+	if(str == "Slash"){ObjSound_Load(s,MainSTG~"sound/Slash.wav");}
+	if(str == "Boon1"){ObjSound_Load(s,MainSTG~"sound/Boon1.wav");}
+	if(str == "Boon2"){ObjSound_Load(s,MainSTG~"sound/Boon2.wav");}
+	if(str == "fail"){ObjSound_Load(s,MainSTG~"sound/fail.wav");}
+	if(str == "extend"){ObjSound_Load(s,MainSTG~"sound/extend.wav");}
+	if(str == "soul"){ObjSound_Load(s,MainSTG~"sound/soul.wav");}
+	if(str == "water"){ObjSound_Load(s,MainSTG~"sound/water.wav");}
+	if(str == "don"){ObjSound_Load(s,MainSTG~"sound/don.wav");}
+	if(str == "select"){ObjSound_Load(s,MainSTG~"sound/select.wav");}
+	if(str == "item"){ObjSound_Load(s,MainSTG~"sound/item.wav");}
+	if(str == "ok"){ObjSound_Load(s,MainSTG~"sound/ok.wav");}
+	if(str == "Note1"){ObjSound_Load(s,MainSTG~"sound/Note1.wav");}
+	if(str == "Note2"){ObjSound_Load(s,MainSTG~"sound/Note2.wav");}
+	if(str == "Note3"){ObjSound_Load(s,MainSTG~"sound/Note3.wav");}
+	if(str == "Note4"){ObjSound_Load(s,MainSTG~"sound/Note4.wav");}
+	if(str == "Percuss"){ObjSound_Load(s,MainSTG~"sound/Percuss.wav");}
+	if(str == "LenenBulletWave"){ObjSound_Load(s,MainSTG~"sound/LenenBulletWave.wav");}
+	if(str == "LenenLaserShort"){ObjSound_Load(s,MainSTG~"sound/LenenLaserShort.wav");}
+	if(str == "LenenLaserLong"){ObjSound_Load(s,MainSTG~"sound/LenenLaserLong.wav");}
+	if(str == "LenenLaserDelayShort"){ObjSound_Load(s,MainSTG~"sound/LenenLaserDelayShort.wav");}
+	if(str == "LenenLaserDelayLong"){ObjSound_Load(s,MainSTG~"sound/LenenLaserDelayLong.wav");}
+	if(str == "LenenShot1"){ObjSound_Load(s,MainSTG~"sound/LenenShot1.wav");}
+	if(str == "LenenShot2"){ObjSound_Load(s,MainSTG~"sound/LenenShot2.wav");}
+	if(str == "LenenShot3"){ObjSound_Load(s,MainSTG~"sound/LenenShot3.wav");}
+	if(str == "LenenShot4"){ObjSound_Load(s,MainSTG~"sound/LenenShot4.wav");}
+	if(str == "Tock"){ObjSound_Load(s,MainSTG~"sound/Tock.wav");}
+	if(str == "Laser8"){ObjSound_Load(s,MainSTG~"sound/Laser8.wav");}
+	if(str == "WarpLeft"){ObjSound_Load(s,MainSTG~"sound/WarpLeft.wav");}
+	if(str == "WarpRight"){ObjSound_Load(s,MainSTG~"sound/WarpRight.wav");}
+	if(str == "WarpNormal"){ObjSound_Load(s,MainSTG~"sound/WarpNormal.wav");}
+	if(str == "sans"){ObjSound_Load(s,MainSTG~"sound/sans.wav");}
+	if(str == "GasterBlaster"){ObjSound_Load(s,MainSTG~"sound/GasterBlaster.wav");}
+	if(str == "undyne"){ObjSound_Load(s,MainSTG~"sound/undyne.wav");}
+	if(str == "mono"){ObjSound_Load(s,MainSTG~"sound/mono.wav");}
+	if(str == "monostart"){ObjSound_Load(s,MainSTG~"sound/monostart.wav");}
+	if(str == "monodeclare"){ObjSound_Load(s,MainSTG~"sound/monodeclare.wav");}
+	if(str == "monocharge"){ObjSound_Load(s,MainSTG~"sound/monocharge.wav");}
+	if(str == "SpellStart"){ObjSound_Load(s,MainSTG~"sound/SpellStart.wav");}
+	if(str == "Pause"){ObjSound_Load(s,MainSTG~"sound/Pause.wav");}
+	if(str == "talk"){ObjSound_Load(s,MainSTG~"sound/talk.wav");}
+	if(str == "trap"){ObjSound_Load(s,MainSTG~"sound/trap.wav");}
+	if(str == "preblast"){ObjSound_Load(s,MainSTG~"sound/preblast.wav");}
+	if(str == "stop_02"){ObjSound_Load(s,MainSTG~"sound/stop_02.wav");}
+	if(str == "cursor_00"){ObjSound_Load(s,MainSTG~"sound/cursor_00.wav");}
+	if(str == "cursor_01"){ObjSound_Load(s,MainSTG~"sound/cursor_01.wav");}
+	if(str == "cursor_03"){ObjSound_Load(s,MainSTG~"sound/cursor_03.wav");}
+	if(str == "SquareGap"){ObjSound_Load(s,MainSTG~"sound/SquareGap.wav");}
+	if(str == "hitlesslife"){ObjSound_Load(s,MainSTG~"sound/hitlesslife.ogg");}
+	if(str == "hitlife"){ObjSound_Load(s,MainSTG~"sound/hitlife.ogg");}
+	if(str == "Nest"){ObjSound_Load(s,MainSTG~"sound/Nest.wav");}
+	if(str == "NestSub"){ObjSound_Load(s,MainSTG~"sound/NestSub.wav");}
+	if(str == "Photon"){ObjSound_Load(s,MainSTG~"sound/Photon.wav");}
+	if(str == "Gap"){ObjSound_Load(s,MainSTG~"sound/Gap.wav");}
+	if(str == "enemy_death"){ObjSound_Load(s,MainSTG~"sound/enemy_death.wav");}
+	if(str == "fam2"){ObjSound_Load(s,MainSTG~"sound/fam2.wav");}
+	loop(w){yield;}
+	ObjSound_SetSoundDivision(s,SOUND_SE);
+	ObjSound_SetVolumeRate(s,v);
+	ObjSound_Play(s);
+	Selfdelete;
+
+	soundarr = soundarr ~ [s];
+	if(str=="item")
+	{
+		yield;
+		Obj_Delete(s);
+	}
+	
+	task Selfdelete
+	{
+		yield;
+		yield;
+		while(ObjSound_IsPlaying(s))
+		{
+			yield;
+		}
+		Obj_Delete(s);
+	}
+}
 
 task LoadSE{
 	LoadSound("./../../sound/capture.wav");
