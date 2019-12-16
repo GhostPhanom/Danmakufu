@@ -114,7 +114,7 @@ task BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxr
 
 
 
-
+/*
 
 
 task BulletEffectA(obj1, x, y, obj2, way, rMax, scale, time, grap, alpha, color){ //FROM EXTRA BOSSRUSH
@@ -295,3 +295,5 @@ task BulletEffectA_Img(obj1, x, y, obj2, way, rMax, scale, time, grap, alpha, co
 		}
 	}
 }
+
+*/

@@ -1,3 +1,11 @@
+//PerfectPosession(obj)
+//LenenSpellcardring(obj1,number,active,dis,t)
+//Chargeeffect1 (obj) //Dont use it
+//Chargeeffect2 (obj, n, scale, color)
+//Chargeeffect3 (obj, n, scale, color)
+//Chargeeffect4 (obj)
+
+
 task PerfectPosession(obj)
 {
 	let scale = 0.3;
@@ -187,11 +195,11 @@ task LenenSpellcardring(obj1,number,active,dis,t)
 		let spintime2=0;
 		let spintime3=spincount*spintime*spintime1;
 		let roundtime2=90;
-		ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+		ObjRender_SetPosition(obj,ObjRender_GetX(obj1)+dis*cos(roundtime2),ObjRender_GetY(obj1)+dis*sin(roundtime2),0);
 		
 		loop(t)
 		{
-			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			ObjRender_SetPosition(obj,ObjRender_GetX(obj1)+dis*cos(roundtime2),ObjRender_GetY(obj1)+dis*sin(roundtime2),0);
 			yield;
 		}
 		
@@ -201,7 +209,7 @@ task LenenSpellcardring(obj1,number,active,dis,t)
 			roundtime2+=roundtime1;
 			
 			ObjRender_SetAngleZ(obj,spintime2);
-			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			ObjRender_SetPosition(obj,ObjRender_GetX(obj1)+dis*cos(roundtime2),ObjRender_GetY(obj1)+dis*sin(roundtime2),0);
 			yield;
 		}
 		
@@ -214,7 +222,7 @@ task LenenSpellcardring(obj1,number,active,dis,t)
 			angle+=angle1;
 			
 			ObjRender_SetAngleZ(obj,angle);
-			ObjRender_SetPosition(obj,ObjMove_GetX(obj1)+dis*cos(roundtime2),ObjMove_GetY(obj1)+dis*sin(roundtime2),0);
+			ObjRender_SetPosition(obj,ObjRender_GetX(obj1)+dis*cos(roundtime2),ObjRender_GetY(obj1)+dis*sin(roundtime2),0);
 			yield;
 		}
 	}
@@ -300,7 +308,7 @@ wait(30);
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -339,7 +347,7 @@ wait(30);
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -419,7 +427,7 @@ task Chargeeffect2 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -461,7 +469,7 @@ task Chargeeffect2 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -502,7 +510,7 @@ task Chargeeffect2 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -582,7 +590,7 @@ task Chargeeffect3 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -624,7 +632,7 @@ task Chargeeffect3 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -665,7 +673,7 @@ task Chargeeffect3 (obj, n, scale, color)
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -745,7 +753,7 @@ wait(10);
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -787,7 +795,7 @@ wait(10);
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -828,7 +836,7 @@ wait(10);
 		{
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}
@@ -879,7 +887,7 @@ wait(10);
 		ObjRender_SetAngleZ(obj,rand(0,360));
 			while(!Obj_IsDeleted(obj)&&!Obj_IsDeleted(obje))
 			{
-				ObjMove_SetPosition(obj,ObjMove_GetX(obje),ObjMove_GetY(obje));
+				ObjMove_SetPosition(obj,ObjRender_GetX(obje),ObjRender_GetY(obje));
 				ObjRender_SetAngleZ(obj,ObjRender_GetAngleZ(obj)+spinspeed);
 				yield;
 			}

@@ -1,8 +1,24 @@
 #include "./chargeeffect.dnh"
 #include "./explosioneffect.dnh"
+#include "./effect/Effect.dnh"
 /*
 if (GetCommonData("Cutincontrol Script ID", 999999) == 999999)
 {
 	LoadScript("./cutincontrol.dnh");
 	StartScript("./cutincontrol.dnh");
 }*/
+
+
+//PerfectPosession(obj)
+//LenenSpellcardring(obj1,number,active,dis,t)
+//Chargeeffect1 (obj) //Dont use it
+//Chargeeffect2 (obj, n, scale, color)
+//Chargeeffect3 (obj, n, scale, color)
+//Chargeeffect4 (obj)
+//Explosioneffect(obj1,n,scale,prio)
+//BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxradius, scale, spinspeed, ttogrow, ttomove, ttoshrink, bulletgraphicid, alpha);
+/*
+ascent(i in 0 .. 10){
+	BulletExplosionEffectO(objBoss, 0, 0, GetPlayerObjectID, 9, 200, 1, 5, 100, 50, 60, 201+i%8, 63);
+}
+*/
