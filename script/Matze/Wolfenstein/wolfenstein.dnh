@@ -1,0 +1,341 @@
+#include"../Generalfunction.dnh"
+
+
+@Initialize
+{
+	MainTask;
+}
+
+@MainLoop
+{
+	yield;
+}
+
+let cubesize = 64;
+
+
+task MainTask
+{
+	Free3DMovement;
+	RenderMap;
+}
+
+task RenderMap
+{
+	let path = GetCurrentScriptDirectory ~ "./map.bmp";
+
+	LoadTexture(path);
+	let height = GetTextureHeight(path) - 1;
+	let heightcounter = height;
+	let width = GetTextureWidth(path);
+
+	let enemysarray = [];
+	let doorarray = [];
+	let treasurearray = [];
+	let startarray = [];
+	let endarray = [];
+	let wallendsarray = [];
+	let wallpartsarray = [];
+	let playerarray = [];
+
+	let wallends = [0, 0, 0];
+	let wallparts = [100, 100, 100];
+	let door = [0, 255, 255];
+	let enemys = [255, 0, 0];
+	let treasure = [0, 0, 255];
+	let player = [0, 128, 0];
+	let end = [0, 255, 0];
+
+	ParseBMP;
+	RecreateMap;
+
+	function RecreateMap
+	{
+		let name = "Wolfenstein";
+		CreateCommonDataArea(name);
+		ascent(i in 0..height + 1)
+		{
+			let array = [];
+			ascent(j in 0..width)
+			{
+				array = array ~ [0];
+			}
+			SetAreaCommonData(name, itoa(i), array);
+		}
+
+
+		//wallends 1; wallparts 2; door 3; enemys 4; treasure 5; player 6; end 7
+		ascent(i in 0..length(wallendsarray))
+		{
+			let value = wallendsarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 1;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(wallpartsarray))
+		{
+			let value = wallpartsarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 2;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(doorarray))
+		{
+			let value = doorarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 3;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(enemysarray))
+		{
+			let value = enemysarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 4;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(treasurearray))
+		{
+			let value = treasurearray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 5;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(playerarray))
+		{
+			let value = playerarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 6;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+		ascent(i in 0..length(endarray))
+		{
+			let value = endarray[i];
+			let array = GetAreaCommonData(name, itoa(value[1]), []);
+			array[value[0]] = 7;
+			SetAreaCommonData(name, itoa(value[1]), array);
+		}
+
+		ascent(i in 0..height + 1)
+		{
+			WriteLog(GetAreaCommonData(name, itoa(i), []));
+		}
+	}
+
+	function ParseBMP
+	{
+		let obj = ObjFile_Create(OBJ_FILE_BINARY);
+		ObjFile_Open(obj, path);
+		if(ObjFile_GetSize(obj) == 0){RaiseError("Invalid Path or Empty File Selected");}
+		ObjFileB_SetByteOrder(obj, ENDIAN_LITTLE);
+		if(ObjFileB_ReadShort(obj) != 19778){RaiseError("File is no Windows BMP File! No 424Dx0(LittleE:19778) at Header start");}//Reads the first 2 Bytes
+		ObjFileB_Seek(obj, 10);
+		let headeroffset = ObjFileB_ReadInteger(obj);//start of picture data
+		ObjFileB_Seek(obj, 18);
+		let picturewidth = ObjFileB_ReadInteger(obj);
+		//let rowwithpadding = (picturewidth * 3) % 4;
+		let skippedbytes = (picturewidth * 3) % 4;
+		//let skippedbytes = rowwithpadding - 3 * picturewidth;
+		
+		let pictureheight = absolute(ObjFileB_ReadInteger(obj));
+		ObjFileB_Seek(obj, 28);
+		if(ObjFileB_ReadShort(obj) != 24){RaiseError("BMP File is not 24bit encoded!");}
+		ObjFileB_Seek(obj, headeroffset);
+		
+		//Do stuff with the BMP
+		ascent(j in 0..pictureheight)//height
+		{
+			heightcounter = height - j;
+			ascent(i in 0..picturewidth)//width
+			{
+				/*
+				let bytes = [ObjFileB_ReadByte(obj), ObjFileB_ReadByte(obj), ObjFileB_ReadByte(obj)];
+				let colors = [ConvertToUByte(bytes[0]), ConvertToUByte(bytes[1]), ConvertToUByte(bytes[2])];//blue green red
+				*/
+				
+				let colors = [ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj)];//blue green red
+				
+				colors = [colors[2], colors[1], colors[0]];
+
+				if(colors[0] == 255 && colors[1] == 255 && colors[2] == 255)//Nothing
+				{
+					//Nothing
+				}
+				else if(colors[0] == wallends[0] && colors[1] == wallends[1] && colors[2] == wallends[2])//wallends
+				{
+					wallendsarray = wallendsarray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == wallparts[0] && colors[1] == wallparts[1] && colors[2] == wallparts[2])//wallparts
+				{
+					wallpartsarray = wallpartsarray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == door[0] && colors[1] == door[1] && colors[2] == door[2])//door
+				{
+					doorarray = doorarray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == enemys[0] && colors[1] == enemys[1] && colors[2] == enemys[2])//enemys
+				{
+					enemysarray = enemysarray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == treasure[0] && colors[1] == treasure[1] && colors[2] == treasure[2])//treasure
+				{
+					treasurearray = treasurearray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == player[0] && colors[1] == player[1] && colors[2] == player[2])//player
+				{
+					playerarray = playerarray ~ [[i, heightcounter]];
+				}
+				else if(colors[0] == end[0] && colors[1] == end[1] && colors[2] == end[2])//end
+				{
+					endarray = endarray ~ [[i, heightcounter]];
+				}
+
+				/*
+				WriteLog("i: " ~ itoa(i) ~ "j: " ~ itoa(j));
+				WriteLog("REDBYTE:" ~ itoa(bytes[0]) ~ " GREENBYTE:" ~ itoa(bytes[1]) ~ " BLUEBYTE:" ~ itoa(bytes[2]));
+				WriteLog("RED:" ~ itoa(colors[0]) ~ " GREEN:" ~ itoa(colors[1]) ~ " BLUE:" ~ itoa(colors[2]));
+				WriteLog("wallends");
+				WriteLog(wallendsarray);
+				WriteLog("wallpart");
+				WriteLog(wallpartsarray);
+				WriteLog("door");
+				WriteLog(doorarray);
+				WriteLog("enemys");
+				WriteLog(enemysarray);
+				WriteLog("treasure");
+				WriteLog(treasurearray);
+				WriteLog("player");
+				WriteLog(playerarray);
+				WriteLog("end");
+				WriteLog(endarray);
+
+				wait(180);
+				*/
+				/*
+				//WriteLog("R:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " G:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " B:" ~ itoa(ObjFileB_ReadByte(obj)));
+				let objs = CreateShotA1(0 + 6 * i, 480 - 6 * j, 0, 0, 61, 0);
+				
+				ObjRender_SetColor(objs, colors[2], colors[1], colors[0]);//blue green red
+				//WriteLog("Colom: " ~ itoa(j) ~ " Blue: " ~ itoa(colors[0]) ~ " Green: " ~ itoa(colors[1]) ~ " Red: " ~ itoa(colors[2]));
+				*/
+			}
+			ObjFileB_Seek(obj, ObjFileB_GetPointer(obj) + skippedbytes); 
+		}
+		WriteLog("wallends");
+		WriteLog(wallendsarray);
+		WriteLog("wallpart");
+		WriteLog(wallpartsarray);
+		WriteLog("door");
+		WriteLog(doorarray);
+		WriteLog("enemys");
+		WriteLog(enemysarray);
+		WriteLog("treasure");
+		WriteLog(treasurearray);
+		WriteLog("player");
+		WriteLog(playerarray);
+		WriteLog("end");
+		WriteLog(endarray);
+	}
+
+	function ObjFileB_ReadUByte(obj)
+	{
+		let bytevalue = ObjFileB_ReadByte(obj);
+		if(bytevalue >= 0)
+		{
+			return bytevalue;
+		}
+		else
+		{
+			return bytevalue + 256;
+		}
+	}
+
+	function ConvertToUByte(value)
+	{
+		if(value >= 0)
+		{
+			return value;
+		}
+		else
+		{
+			return value + 256;
+		}
+	}
+}
+
+task Free3DMovement
+{
+	//Activate 3DCamera Value List
+	Create3DTestCube(0, 0, 0);
+	
+	CameraTestValues;
+	
+	
+	let movespeed = 2;
+	let cameraspeed = 0.5;
+	
+	Movement;
+	Camera;
+	
+	task Movement
+	{
+		loop
+		{
+			if(GetKeyState(KEY_W) == KEY_HOLD)
+			{
+				SetCameraFocusZ(GetCameraFocusZ + movespeed);
+			}
+			if(GetKeyState(KEY_S) == KEY_HOLD)
+			{
+				SetCameraFocusZ(GetCameraFocusZ - movespeed);
+			}
+			if(GetKeyState(KEY_A) == KEY_HOLD)
+			{
+				SetCameraFocusX(GetCameraFocusX - movespeed);
+			}
+			if(GetKeyState(KEY_D) == KEY_HOLD)
+			{
+				SetCameraFocusX(GetCameraFocusX + movespeed);
+			}
+			if(GetKeyState(KEY_Q) == KEY_HOLD)
+			{
+				SetCameraFocusY(GetCameraFocusY + movespeed);
+			}
+			if(GetKeyState(KEY_E) == KEY_HOLD)
+			{
+				SetCameraFocusY(GetCameraFocusY - movespeed);
+			}
+			if(GetKeyState(KEY_R) == KEY_PUSH)
+			{
+				Reset3DCamera;
+			}
+			yield;
+		}
+	}
+	
+	task Camera
+	{
+		let savedX = 0;
+		let savedY = 0;
+		let azimuth = 0;
+		let elevation = 0;
+		let multi = cameraspeed;
+		
+		loop
+		{
+			if(GetMouseState(MOUSE_RIGHT) == KEY_PUSH)
+			{
+				savedX = GetMouseX;
+				savedY = GetMouseY;
+				azimuth = GetCameraAzimuthAngle;
+				elevation = GetCameraElevationAngle;
+			}
+			if(GetMouseState(MOUSE_RIGHT) == KEY_HOLD)
+			{
+				SetCameraAzimuthAngle(azimuth + multi * (GetMouseX - savedX));
+				SetCameraElevationAngle(elevation + multi * (GetMouseY - savedY));
+			}
+			yield;
+		}
+	}
+}
+
