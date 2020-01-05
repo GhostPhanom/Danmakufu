@@ -11,23 +11,35 @@
 	yield;
 }
 
-let cubesize = 64;
-
+let cellsize = 32;
+let cellheight = 32;
 
 task MainTask
 {
+	CreateMap;
+	Set2DCameraRatio(0.3);
+	Set2DCameraFocusY(800);
+	Set2DCameraFocusX(800);
+	SetCameraPerspectiveClip(0, 300);
 	Free3DMovement;
-	RenderMap;
 }
 
-task RenderMap
+task CreateMap
 {
+	let obj3D = -1;
+	//scanned wallends -1; wallends 1; wallparts 2; door 3; enemys 4; treasure 5; player 6; end 7
+
 	let path = GetCurrentScriptDirectory ~ "./map.bmp";
+	
+	let name = "Wolfenstein";
 
 	LoadTexture(path);
 	let height = GetTextureHeight(path) - 1;
 	let heightcounter = height;
 	let width = GetTextureWidth(path);
+	
+	let renderpriority = 50;
+	let Render2D = false;
 
 	let enemysarray = [];
 	let doorarray = [];
@@ -48,10 +60,564 @@ task RenderMap
 
 	ParseBMP;
 	RecreateMap;
+	RenderMap;
 
+
+	function RenderMap
+	{
+		obj3D = ObjPrim_Create(OBJ_PRIMITIVE_3D);
+		ObjPrim_SetPrimitiveType(obj3D, PRIMITIVE_TRIANGLELIST);
+		ObjPrim_SetTexture(obj3D, GetCurrentScriptDirectory() ~ "3DTexture.png"); 
+		ObjPrim_SetVertexCount(obj3D, 0); 
+
+		Create3DGround(0, 0, 50, 50);
+
+		function Create3DWall2(x1, y1, x2, y2)//Cell coordinates, not real coordinates
+		{
+			ascent(i in 0..ObjPrim_GetVertexCount(obj3D))
+			{
+				WriteLog("Vertex: " ~ itoa(i) ~ " X: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[0]) ~ " Y: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[1]) ~ " Z: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[2]));
+			}
+			let startindex = ObjPrim_GetVertexCount(obj3D);
+			WriteLog("Startindex: " ~ itoa(startindex));
+			ObjPrim_SetVertexCount(obj3D, ObjPrim_GetVertexCount(obj3D) + 6);
+			ascent(i in 0..ObjPrim_GetVertexCount(obj3D))
+			{
+				WriteLog("Vertex: " ~ itoa(i) ~ " X: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[0]) ~ " Y: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[1]) ~ " Z: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[2]));
+			}
+			//startindex--;//index starts at 0; count starts at 1; conversion from count to index
+			let textureY = 512;
+
+			let celldis = absolute(y2 - y1);
+			ObjPrim_SetVertexUVT(obj3D, startindex, 0, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 2, 0, textureY + cellheight);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 3, 0, textureY + cellheight);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5, celldis * cellsize + cellsize, textureY + cellheight);
+
+			//Links
+			ObjPrim_SetVertexPosition(obj3D, startindex, x1 * cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1, x1 * cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4, x1 * cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5, x1 * cellsize, 0, y2 * cellsize + cellsize);
+
+			ascent(i in 0..ObjPrim_GetVertexCount(obj3D))
+			{
+				WriteLog("Vertex: " ~ itoa(i) ~ " X: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[0]) ~ " Y: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[1]) ~ " Z: " ~ itoa(ObjPrim_GetVertexPosition(obj3D, i)[2]));
+			}
+		}
+
+		task Create3DWall(x1, y1, x2, y2)//Cell coordinates, not real coordinates
+		{
+			let startindex = ObjPrim_GetVertexCount(obj3D);
+			WriteLog("Startindex: " ~ itoa(startindex));
+			ObjPrim_SetVertexCount(obj3D, ObjPrim_GetVertexCount(obj3D) + 6 * 4);
+			//startindex--;//index starts at 0; count starts at 1; conversion from count to index
+			//if(startindex != 6){return;}
+
+			let textureY = 512;
+
+			yield;
+
+			ascent(i in 0..3)
+			{
+				ObjPrim_SetVertexUVT(obj3D, startindex + 6 * i, 0, textureY);
+				ObjPrim_SetVertexUVT(obj3D, startindex + 2 + 6 * i, 0, textureY + cellheight);
+				ObjPrim_SetVertexUVT(obj3D, startindex + 3 + 6 * i, 0, textureY + cellheight);
+			}
+			//Links
+			let celldis = absolute(y2 - y1);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1 + 6 * 0, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4 + 6 * 0, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5 + 6 * 0, celldis * cellsize + cellsize, textureY + cellheight);
+
+			//Rechts
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1 + 6 * 1, x2 * cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4 + 6 * 1, x2 * cellsize + cellsize, 0);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5 + 6 * 1, x2 * cellsize + cellsize, y2 * cellsize + cellsize);
+
+			//Oben
+			celldis = absolute(x2 - x1);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1 + 6 * 2, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4 + 6 * 2, celldis * cellsize + cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5 + 6 * 2, celldis * cellsize + cellsize, textureY + cellheight);
+
+			//Unten
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1 + 6 * 3, x2 * cellsize, textureY);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4 + 6 * 3, x2 * cellsize + cellsize, 0);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5 + 6 * 3, x2 * cellsize + cellsize, y2 * cellsize + cellsize);
+
+
+			//Links
+			ObjPrim_SetVertexPosition(obj3D, startindex + 0 + 6 * 0, x1 * cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1 + 6 * 0, x1 * cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2 + 6 * 0, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3 + 6 * 0, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4 + 6 * 0, x1 * cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5 + 6 * 0, x1 * cellsize, 0, y2 * cellsize + cellsize);
+
+			//Rechts
+			ObjPrim_SetVertexPosition(obj3D, startindex + 0 + 6 * 1, x2 * cellsize + cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1 + 6 * 1, x2 * cellsize + cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2 + 6 * 1, x2 * cellsize + cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3 + 6 * 1, x2 * cellsize + cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4 + 6 * 1, x2 * cellsize + cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5 + 6 * 1, x2 * cellsize + cellsize, 0, y2 * cellsize + cellsize);
+
+			//Oben
+			ObjPrim_SetVertexPosition(obj3D, startindex + 0 + 6 * 2, x1 * cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1 + 6 * 2, x2 * cellsize + cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2 + 6 * 2, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3 + 6 * 2, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4 + 6 * 2, x2 * cellsize + cellsize, cellheight, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5 + 6 * 2, x2 * cellsize + cellsize, 0, y1 * cellsize);
+
+			//Unten
+			ObjPrim_SetVertexPosition(obj3D, startindex + 0 + 6 * 3, x1 * cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1 + 6 * 3, x2 * cellsize + cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2 + 6 * 3, x1 * cellsize, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3 + 6 * 3, x1 * cellsize, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4 + 6 * 3, x2 * cellsize + cellsize, cellheight, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5 + 6 * 3, x2 * cellsize + cellsize, 0, y2 * cellsize + cellsize);
+		} 
+
+		task Create3DGround(x1, y1, x2, y2)//Cell coordinates, not real coordinates
+		{
+			let startindex = ObjPrim_GetVertexCount(obj3D);
+			ObjPrim_SetVertexCount(obj3D, ObjPrim_GetVertexCount(obj3D) + 6);
+			yield;
+			
+			ObjPrim_SetVertexUVT(obj3D, startindex, 0, 0);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 1, x2 * cellsize, 0);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 2, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 3, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 4, x2 * cellsize + cellsize, 0);
+			ObjPrim_SetVertexUVT(obj3D, startindex + 5, x2 * cellsize + cellsize, y2 * cellsize + cellsize);
+
+			ObjPrim_SetVertexPosition(obj3D, startindex, x1 * cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 1, x2 * cellsize + cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 2, x1 * cellsize, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 3, x1 * cellsize, 0, y2 * cellsize + cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 4, x2 * cellsize + cellsize, 0, y1 * cellsize);
+			ObjPrim_SetVertexPosition(obj3D, startindex + 5, x2 * cellsize + cellsize, 0, y2 * cellsize + cellsize);
+		}
+
+		let objPlayer = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(objPlayer);
+	
+		ascent(i in 0..length(wallendsarray))
+		{
+			if(GetCellType(wallendsarray[i][0], wallendsarray[i][1]) == 1)
+			{
+				ScanWallPart(wallendsarray[i][0], wallendsarray[i][1]);
+			}
+		}
+		
+		ascent(i in 0..length(enemysarray))
+		{
+			CreateEnemy(i);
+		}
+		
+		CreatePlayer;
+		
+		function CreateEnemy(index)
+		{
+			SetCellType(enemysarray[index][0], enemysarray[index][1], 0);
+
+			let obj = ObjEnemy_Create(OBJ_ENEMY);
+			ObjEnemy_Regist(obj);
+
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "enemy.png");
+			Obj_SetRenderPriorityI(obj, renderpriority);
+			Obj_SetVisible(obj, Render2D);
+			
+			ObjRender_SetPosition(obj, enemysarray[index][0] * cellsize + cellsize / 2, enemysarray[index][1] * cellsize + cellsize / 2, 0);
+			
+			Movement;
+
+			ObjEnemy_CreateHitbox(obj, 0, 0);
+			ObjEnemy_SetLife(obj, 100);
+			ObjEnemy_ZeroLifeDelete(obj);
+			Hitbox;
+			
+			let playerspeed = 3;
+			let turnspeed = 2;
+			let x = 0;
+			let y = 0;
+			let curx = 0;
+			let cury = 0;
+			let curz = 0;
+
+			task Hitbox
+			{
+				let radius = 6;
+				while(!Obj_IsDeleted(obj))
+				{
+					let array = GetShotIdInCircleA2(ObjRender_GetX(obj), ObjRender_GetY(obj), radius, TARGET_ENEMY);
+					ascent(i in 0..length(array))
+					{
+						if(Obj_GetValueD(array[i], "Type", "None") == "Player")
+						{
+							Obj_Delete(array[i]);
+							ObjEnemy_SetLife(obj, ObjEnemy_GetLife(obj) - 10);
+						}
+					}
+					yield;
+				}
+			}
+
+			task Movement
+			{
+				while(!Obj_IsDeleted(obj))
+				{
+					yield;
+				}
+			}
+
+			function CheckMovement(x, y)
+			{
+				let type = GetRealCellType(x, cury);
+				if(type == -1 || type == 2)//scanned wallend -1; wallpart 2
+				{
+					x = curx;
+				}
+				type = GetRealCellType(curx, y);
+				if(type == -1 || type == 2)//scanned wallend -1; wallpart 2
+				{
+					y = cury;
+				}
+
+				ObjRender_SetPosition(obj, x, y, 0);
+			}
+			
+		}
+
+		function CreatePlayer
+		{
+			ObjSprite2D_SetSourceDestCenter(objPlayer, GetCurrentScriptDirectory() ~ "player.png");
+			Obj_SetRenderPriorityI(objPlayer, renderpriority + 1);
+			Obj_SetVisible(objPlayer, Render2D);
+			
+			ObjRender_SetPosition(objPlayer, playerarray[0][0] * cellsize + cellsize / 2, playerarray[0][1] * cellsize + cellsize / 2, 0);
+			
+			//Laser;
+			Movement;
+			ObjEnemy_CreateHitbox(objPlayer, 0, 0);
+			ShotControl;
+			
+			task ShotControl
+			{
+				let cooldown = 8;
+				let activecooldown = 0;
+				loop
+				{
+					if(GetKeyState(KEY_SPACE) == KEY_PUSH || GetKeyState(KEY_SPACE) == KEY_HOLD)
+					{
+						if(activecooldown <= 0)
+						{
+							CreateShot(ObjRender_GetX(objPlayer), ObjRender_GetY(objPlayer), 10, ObjRender_GetAngleZ(objPlayer), "Player");
+							activecooldown = cooldown;
+						}
+					}
+
+					activecooldown--;
+					yield;
+				}
+			}
+
+			let playerspeed = 3;
+			let turnspeed = 2;
+			let x = 0;
+			let y = 0;
+			let curx = 0;
+			let cury = 0;
+			let curz = 0;
+
+			task Movement
+			{
+				loop
+				{
+					curx = ObjRender_GetX(objPlayer);
+					cury = ObjRender_GetY(objPlayer);
+					curz = ObjRender_GetAngleZ(objPlayer);
+					if(GetKeyState(KEY_A) == KEY_PUSH || GetKeyState(KEY_A) == KEY_HOLD || GetKeyState(KEY_LEFT) == KEY_PUSH || GetKeyState(KEY_LEFT) == KEY_HOLD)
+					{
+						ObjRender_SetAngleZ(objPlayer, NormalizeAngle(curz - turnspeed));
+					}
+					else if(GetKeyState(KEY_D) == KEY_PUSH || GetKeyState(KEY_D) == KEY_HOLD || GetKeyState(KEY_RIGHT) == KEY_PUSH || GetKeyState(KEY_RIGHT) == KEY_HOLD)
+					{
+						ObjRender_SetAngleZ(objPlayer, NormalizeAngle(curz + turnspeed));
+					}
+					
+					if(GetKeyState(KEY_W) == KEY_PUSH || GetKeyState(KEY_W) == KEY_HOLD || GetKeyState(KEY_UP) == KEY_PUSH || GetKeyState(KEY_UP) == KEY_HOLD)
+					{
+						x = curx + playerspeed * cos(ObjRender_GetAngleZ(objPlayer));
+						y = cury + playerspeed * sin(ObjRender_GetAngleZ(objPlayer));
+						CheckMovement(x, y);
+					}
+					else if(GetKeyState(KEY_S) == KEY_PUSH || GetKeyState(KEY_S) == KEY_HOLD || GetKeyState(KEY_DOWN) == KEY_PUSH || GetKeyState(KEY_DOWN) == KEY_HOLD)
+					{
+						x = curx - playerspeed * cos(ObjRender_GetAngleZ(objPlayer));
+						y = cury - playerspeed * sin(ObjRender_GetAngleZ(objPlayer));
+						CheckMovement(x, y);
+					}
+					//WriteLog("X: " ~ rtoa(ObjRender_GetX(objPlayer)));
+					//WriteLog("Y: " ~ rtoa(ObjRender_GetY(objPlayer)));
+					yield;
+				}
+			}
+
+			function CheckMovement(x, y)
+			{
+				let type = GetRealCellType(x, cury);
+				if(type == -1 || type == 2)//scanned wallend -1; wallpart 2
+				{
+					x = curx;
+				}
+				else if(type == 3)//door 3
+				{
+					//OPEN DOOR
+				}
+				type = GetRealCellType(curx, y);
+				if(type == -1 || type == 2)//scanned wallend -1; wallpart 2
+				{
+					y = cury;
+				}
+				else if(type == 3)//door 3
+				{
+					//OPEN DOOR
+				}
+
+				ObjRender_SetPosition(objPlayer, x, y, 0);
+			}
+			
+		}
+		
+		function ScanWallPart(x, y)
+		{
+			let currentx = x;
+			let currenty = y;
+		
+			SetCellType(x, y, -1); //Wallend that has already been used
+			loop//left
+			{
+				currentx--;
+				let type = GetCellType(currentx, currenty);
+				
+				if(type != 2)
+				{
+					if(type == 1)
+					{
+						ScanWallPart(currentx, currenty);
+						break;
+					}
+					else if(type == -1)
+					{
+						CreateWall(x, y, currentx, currenty);
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+
+				}
+			}
+			currentx = x;
+			currenty = y;
+			loop//right
+			{
+				currentx++;
+				let type = GetCellType(currentx, currenty);
+				
+				if(type != 2)
+				{
+
+					if(type == 1)
+					{
+						ScanWallPart(currentx, currenty);
+						break;
+					}
+					else if(type == -1)
+					{
+						CreateWall(x, y, currentx, currenty);
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					
+				}
+			}
+			currentx = x;
+			currenty = y;
+			loop//up
+			{
+				currenty--;
+				let type = GetCellType(currentx, currenty);
+				
+				if(type != 2)
+				{
+					if(type == 1)
+					{
+						ScanWallPart(currentx, currenty);
+						break;
+					}
+					else if(type == -1)
+					{
+						CreateWall(x, y, currentx, currenty);
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					
+				}
+			}
+			currentx = x;
+			currenty = y;
+			loop//down
+			{
+				currenty++;
+				let type = GetCellType(currentx, currenty);
+				
+				if(type != 2)
+				{
+					if(type == 1)
+					{
+						ScanWallPart(currentx, currenty);
+						break;
+					}
+					else if(type == -1)
+					{
+						CreateWall(x, y, currentx, currenty);
+					}
+					else
+					{
+						break;
+					}
+				}
+				else
+				{
+					
+				}
+
+			}
+			
+		}
+		
+		function CreateWall (x1, y1, x2, y2)
+		{
+			let temp = 0;
+			//WriteLog("CREATING WALL! X1: " ~ itoa(x1) ~ " Y1: " ~ itoa(y1) ~ " X2: " ~ itoa(x2) ~ " Y2: " ~ itoa(y2));
+			if(x2 < x1)//this makes sure that x1 and y1 are always the left top point
+			{
+				temp = x2;
+				x2 = x1;
+				x1 = temp;
+			}
+			if(y2 < y1)
+			{
+				temp = y2;
+				y2 = y1;
+				y1 = temp;
+			}
+			
+			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestRect(obj, CSD ~ "System/img/dot.png", x1 * cellsize, y1 * cellsize, x2 * cellsize + cellsize, y2 * cellsize + cellsize);
+			//ObjRender_SetColor(obj, 0, 0, 0);
+			Obj_SetRenderPriorityI(obj, renderpriority);
+			Obj_SetVisible(obj, Render2D);
+
+			Create3DWall(x1, y1, x2, y2);
+		}
+		
+		function SetCellType(x, y, type)
+		{
+			let array = GetAreaCommonData(name, itoa(y), []);
+			array[x] = type;
+			SetAreaCommonData(name, itoa(y), array);
+		}
+		
+		function GetCellType(x, y)
+		{
+			if(x < 0 || y < 0){return 99999;}
+			return GetAreaCommonData(name, itoa(y), [])[x];
+		}
+		function GetRealCellType(x, y)
+		{
+			if(x < 0 || y < 0){return 99999;}
+			return GetCellType(truncate(x / cellsize), truncate(y / cellsize));
+		}
+
+		function CreateShot(x, y, speed, angle, type)
+		{
+			let obj = CreateShotA1(x, y, speed, angle, 0, 0);
+			
+			ObjShot_SetAutoDelete(obj, false);
+			Obj_SetVisible(obj, Render2D);
+			Obj_SetRenderPriorityI(obj, renderpriority);
+
+			/*
+			let obj = ObjShot_Create(OBJ_SHOT);
+			ObjShot_Regist(obj);
+			ObjShot_SetAutoDelete(obj, false);
+			ObjMove_SetAngle(obj, angle);
+			ObjMove_SetSpeed(obj, speed);
+			ObjMove_SetPosition(obj, x, y);
+			ObjPrim_SetTexture(obj, GetCurrentScriptDirectory() ~ "player.png");
+			ObjSprite2D_SetSourceRect(obj, 0, 0, 100, 100);
+			ObjSprite2D_SetDestRect(obj, 400, 400, 800, 800);
+			//ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "player.png");
+			//Obj_SetVisible(obj, Render2D);
+			Obj_SetRenderPriorityI(obj, 60);
+			*/
+			Obj_SetValue(obj, "Type", type);
+
+			CollisionCheck;
+			if(Render2D == true){Graphic;}
+
+			task Graphic
+			{
+				let objg = ObjPrim_Create(OBJ_SPRITE_2D);
+				ObjSprite2D_SetSourceDestCenter(objg, GetCurrentScriptDirectory() ~ "bullet.png");
+				Obj_SetRenderPriorityI(objg, renderpriority + 1);
+				FollowObj(objg, obj);
+
+				if(type == "Player"){ObjRender_SetColor(objg, 0, 255, 0);}
+				else{ObjRender_SetColor(objg, 255, 0, 0);}
+			}
+
+			task CollisionCheck
+			{
+				while(!Obj_IsDeleted(obj))
+				{
+					WriteLog("X: " ~ itoa(ObjMove_GetX(obj)) ~ " Y: " ~ itoa(ObjMove_GetX(obj)));
+					let type = GetRealCellType(ObjMove_GetX(obj), ObjMove_GetY(obj));
+					if(type == -1 || type == 2)//scanned wallend -1; wallpart 2
+					{
+						Obj_Delete(obj);
+						return;
+					}
+					yield;
+				}
+			}
+		}
+	}
+	
 	function RecreateMap
 	{
-		let name = "Wolfenstein";
 		CreateCommonDataArea(name);
 		ascent(i in 0..height + 1)
 		{
@@ -117,7 +683,7 @@ task RenderMap
 
 		ascent(i in 0..height + 1)
 		{
-			WriteLog(GetAreaCommonData(name, itoa(i), []));
+			//WriteLog(GetAreaCommonData(name, itoa(i), []));
 		}
 	}
 
@@ -338,4 +904,3 @@ task Free3DMovement
 		}
 	}
 }
-
