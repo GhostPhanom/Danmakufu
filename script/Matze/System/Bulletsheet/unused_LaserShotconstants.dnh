@@ -1,8 +1,5 @@
-//SHOTSHEETLOADING IS DONE IN SYSTEM SCRIPT
-/*
 local {
 let CSD = GetCurrentScriptDirectory;
 let path = CSD ~ "LaserShotdata.dnh";
 LoadEnemyShotData(path);
 }
-*/

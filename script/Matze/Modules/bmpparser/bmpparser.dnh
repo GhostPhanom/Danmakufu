@@ -27,6 +27,8 @@ function ParseBMP
 	if(ObjFileB_ReadShort(obj) != 24){RaiseError("BMP File is not 24bit encoded!");}
 	ObjFileB_Seek(obj, headeroffset);
 	
+	//It only uses "bottom-up"-Bitmap. Does not check for “top-down”-Bitmap
+
 	//Do stuff with the BMP
 	ascent(j in 0..pictureheight)//height
 	{

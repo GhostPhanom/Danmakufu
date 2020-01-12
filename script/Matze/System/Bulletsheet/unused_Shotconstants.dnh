@@ -1,11 +1,8 @@
-//SHOTSHEETLOADING IS DONE IN SYSTEM SCRIPT
-/*
 local {
 let CSD = GetCurrentScriptDirectory;
 let path = CSD ~ "Shotdata.dnh";
 LoadEnemyShotData(path);
 }
-*/
 let BEAM_GRAY = 1;
 let BEAM_RED = 2;
 let BEAM_ORANGE = 3;

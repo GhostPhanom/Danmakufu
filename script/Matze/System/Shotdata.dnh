@@ -1,6 +1,6 @@
 #UserShotData
 
-shot_image = "./Shot.png"
+shot_image = "./Bulletsheet/Shot.png"
 ShotData{ id=0 rect=(0,0,0,0) render=ADD_ARGB collision = (1, 0, 0) angular_velocity = 0 delay_color= (0, 0, 0) fixed_angle=false }
 ShotData{ id=1 rect=(0,0,16,16) render=ADD_ARGB collision = (2, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
 ShotData{ id=2 rect=(16,0,32,16) render=ADD_ARGB collision = (2, 0, 0) angular_velocity = 0 delay_color= (255, 63, 63) fixed_angle=false }

@@ -1,6 +1,6 @@
 #UserShotData
 
-shot_image = "./delaylaser.png"
+shot_image = "./Bulletsheet/delaylaser.png"
 ShotData{ id=4001 rect=(0,0,16,255) render=ADD_ARGB collision = (2, 0, 0) angular_velocity = 0 delay_color= (127, 127, 127) fixed_angle=false }
 ShotData{ id=4002 rect=(16,0,32,255) render=ADD_ARGB collision = (2, 0, 0) angular_velocity = 0 delay_color= (255, 63, 63) fixed_angle=false }
 ShotData{ id=4003 rect=(32,0,48,255) render=ADD_ARGB collision = (2, 0, 0) angular_velocity = 0 delay_color= (255, 127, 63) fixed_angle=false }
