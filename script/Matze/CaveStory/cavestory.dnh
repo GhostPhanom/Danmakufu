@@ -407,16 +407,7 @@ task CreateMap(mapnumber)
 			SetAreaCommonData(name, itoa(y), array);
 		}
 		
-		function GetCellType(x, y)
-		{
-			if(x < 0 || y < 0){return 99999;}
-			return GetAreaCommonData(name, itoa(y), [])[x];
-		}
-		function GetRealCellType(x, y)
-		{
-			if(x < 0 || y < 0){return 99999;}
-			return GetCellType(truncate(x / cellsize), truncate(y / cellsize));
-		}
+		
 
 		function CreateShot(x, y, speed, angle, type)
 		{
@@ -470,6 +461,8 @@ task CreateMap(mapnumber)
 					yield;
 				}
 			}
+
+			
 		}
 	}
 	
@@ -500,6 +493,33 @@ task CreateMap(mapnumber)
 				array[value[0]] = j + 1;
 				SetAreaCommonData(name, itoa(value[1]), array);
 			}
+		}
+	}
+
+	function GetCellType(x, y)
+	{
+		if(x < 0 || y < 0){return 99999;}
+		return GetAreaCommonData(name, itoa(y), [])[x];
+	}
+	function GetRealCellType(x, y)
+	{
+		if(x < 0 || y < 0){return 99999;}
+		return GetCellType(truncate(x / cellsize), truncate(y / cellsize));
+	}
+
+	task Gravity(obj, acc, width, height)//width = collision check with the ground; only halve values of max width/height
+	{
+		Obj_SetValue(obj, "yspeed", 0);
+		Obj_SetValue(obj, "xspeed", 0);
+		while(!Obj_IsDeleted(obj))
+		{
+			let x = ObjRender_GetX(obj);
+			let y = ObjRender_GetY(obj);
+			let xmove = Obj_GetValue(obj, "xspeed");
+			let ymove = Obj_GetValue(obj, "yspeed");
+			if(GetRealCellType(x - width, y + ymove + height))
+
+			yield;
 		}
 	}
 
