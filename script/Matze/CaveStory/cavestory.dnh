@@ -25,7 +25,7 @@ task MainTask
 
 task CreateMap(mapnumber)
 {
-	
+	let mapx = 10000 * (mapnumber - 1);
 
 	let path = GetCurrentScriptDirectory ~ "./map" ~ itoa(mapnumber) ~ ".bmp";
 	
@@ -92,7 +92,7 @@ task CreateMap(mapnumber)
 			Obj_SetRenderPriorityI(obj, renderpriority);
 			Obj_SetVisible(obj, Render2D);
 			
-			ObjRender_SetPosition(obj, enemysarray[index][0] * cellsize + cellsize / 2, enemysarray[index][1] * cellsize + cellsize / 2, 0);
+			ObjRender_SetPosition(obj, enemysarray[index][0] * cellsize + cellsize / 2 + mapx, enemysarray[index][1] * cellsize + cellsize / 2, 0);
 			
 			Movement;
 
@@ -160,12 +160,15 @@ task CreateMap(mapnumber)
 			Obj_SetVisible(objPlayer, Render2D);
 			
 			let playerarray = GetAreaCommonData(name, "player", []);
-			ObjRender_SetPosition(objPlayer, playerarray[0][0] * cellsize + cellsize / 2, playerarray[0][1] * cellsize + cellsize / 2, 0);
+			ObjRender_SetPosition(objPlayer, playerarray[0][0] * cellsize + cellsize / 2 + mapx, playerarray[0][1] * cellsize + cellsize / 2, 0);
 			
 			//Laser;
-			Movement;
+			//Movement;
+			
+			Gravity(objPlayer, 0.05, cellsize / 2 - 5, cellsize / 2 - 3);
+			PlayerMovement(objPlayer, cellsize / 2 - 5, cellsize / 2 - 3);
 			ObjEnemy_CreateHitbox(objPlayer, 0, 0);
-			ShotControl;
+			//ShotControl;
 			
 			task ShotControl
 			{
@@ -394,7 +397,7 @@ task CreateMap(mapnumber)
 			}
 			
 			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
-			ObjSprite2D_SetSourceDestRect(obj, CSD ~ "System/img/dot.png", x1 * cellsize, y1 * cellsize, x2 * cellsize + cellsize, y2 * cellsize + cellsize);
+			ObjSprite2D_SetSourceDestRect(obj, CSD ~ "System/img/dot.png", x1 * cellsize + mapx, y1 * cellsize, x2 * cellsize + cellsize + mapx, y2 * cellsize + cellsize);
 			//ObjRender_SetColor(obj, 0, 0, 0);
 			Obj_SetRenderPriorityI(obj, renderpriority);
 			Obj_SetVisible(obj, Render2D);
@@ -506,9 +509,86 @@ task CreateMap(mapnumber)
 		if(x < 0 || y < 0){return 99999;}
 		return GetCellType(truncate(x / cellsize), truncate(y / cellsize));
 	}
+	function GetRealCellType2(x, y)
+	{
+		if(x < 0 || y < 0){return 99999;}
+		x = x % 10000;
+		return GetCellType(truncate(x / cellsize), truncate(y / cellsize));
+	}
+	function IsRealCellTypePassable(x, y)
+	{
+		if(x < 0 || y < 0){return 99999;}
+		x = x % 10000;
+		let cell = GetCellType(truncate(x / cellsize), truncate(y / cellsize));
+		if(cell == -1 || cell == 2)//-1 scanned wallends, 2 wallparts
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+
+	task PlayerMovement(obj, width, height)
+	{
+		let jumpstartspeed = -10;
+		let xacc = 0.05;
+		let xmaxspeed = 8;
+		let xslowdown = 0.05;
+		while(!Obj_IsDeleted(obj))
+		{
+			let x = ObjRender_GetX(obj);
+			let y = ObjRender_GetY(obj);
+			let ymove = Obj_GetValue(obj, "yspeed");
+
+			if(GetKeyState(KEY_SPACE) == KEY_PUSH)
+			{
+				if(IsRealCellTypePassable(x - width, y + ymove + height + 1) == false || IsRealCellTypePassable(x + width, y + ymove + height + 1) == false)
+				{
+					Obj_SetValue(obj, "yspeed", jumpstartspeed);
+					//WriteLog("JUMP!");
+				}
+			}
+
+			let xmove = Obj_GetValue(obj, "xspeed");
+			if(GetKeyState(KEY_RIGHT) == KEY_PUSH || GetKeyState(KEY_RIGHT) == KEY_HOLD)
+			{
+				if(xmove < xmaxspeed)
+				{
+					xmove += xacc;
+				}
+			}
+			else if(GetKeyState(KEY_LEFT) == KEY_PUSH || GetKeyState(KEY_LEFT) == KEY_HOLD)
+			{
+				if(xmove > xmaxspeed * -1)
+				{
+					xmove -= xacc;
+				}
+			}
+			else
+			{
+				if(xmove < 0)
+				{
+					xmove = min(xmove + xslowdown, 0);
+				}
+				else
+				{
+					xmove = max(xmove - xslowdown, 0);
+				}
+			}
+
+			Obj_SetValue(obj, "xspeed", xmove);
+			yield;
+		}
+		
+	}
 
 	task Gravity(obj, acc, width, height)//width = collision check with the ground; only halve values of max width/height
 	{
+		//let gravityacc = 0.05;
+		let maxgravity = cellsize / 8;
+
 		Obj_SetValue(obj, "yspeed", 0);
 		Obj_SetValue(obj, "xspeed", 0);
 		while(!Obj_IsDeleted(obj))
@@ -517,8 +597,35 @@ task CreateMap(mapnumber)
 			let y = ObjRender_GetY(obj);
 			let xmove = Obj_GetValue(obj, "xspeed");
 			let ymove = Obj_GetValue(obj, "yspeed");
-			if(GetRealCellType(x - width, y + ymove + height))
 
+			//WriteLog(IsRealCellTypePassable(x, y));
+			
+			if(IsRealCellTypePassable(x - width, y + ymove + height) == false || IsRealCellTypePassable(x + width, y + ymove + height) == false || IsRealCellTypePassable(x - width, y + ymove - height) == false || IsRealCellTypePassable(x + width, y + ymove - height) == false)
+			{
+				ymove = 0;
+				Obj_SetValue(obj, "yspeed", 0);
+				//WriteLog("HITTING GROUND!");
+			}
+			
+
+			
+			if(IsRealCellTypePassable(x - width + xmove, y + height) == false || IsRealCellTypePassable(x - width + xmove, y - height) == false || IsRealCellTypePassable(x + width + xmove, y + height) == false || IsRealCellTypePassable(x + width + xmove, y - height) == false)
+			{
+				xmove = 0;
+				Obj_SetValue(obj, "xspeed", 0);
+				//WriteLog("HITTING WALL!");
+			}
+			
+
+			ObjRender_SetPosition(obj, x + xmove, y + ymove, 0);
+
+			if(ymove < maxgravity)
+			{
+				ymove += acc;
+			}
+
+			Obj_SetValue(obj, "xspeed", xmove);
+			Obj_SetValue(obj, "yspeed", ymove);
 			yield;
 		}
 	}

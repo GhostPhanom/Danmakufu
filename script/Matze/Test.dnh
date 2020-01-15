@@ -1,0 +1,181 @@
+task CreateStageEnemy2(x, y, speedE, angleE) 
+{
+	let shootSFX = GetCurrentScriptDirectory ~ "SFX/ATTACK5.wav";
+	let honkSFX = GetCurrentScriptDirectory ~ "SFX/HELLGOOSE.mp3";
+	let deadSFX = GetCurrentScriptDirectory ~ "SFX/BEAT.mp3";
+	let animFrame = 0; 
+	let animFrame2 = 0;
+	let Xmin = -32;
+    let Xmax = GetStgFrameWidth + 32;
+    let Ymin = -32; 
+    let Ymax = GetStgFrameHeight + 32;
+	let count = 0; 
+    let objEnemy3 = ObjEnemy_Create(OBJ_ENEMY);
+    TInitialize;
+
+    task TInitialize 
+    {
+		LoadSound(shootSFX);
+		LoadSound(honkSFX);
+		LoadSound(deadSFX);
+		PlaySE(honkSFX);
+        
+        ObjEnemy_Regist(objEnemy3);
+        ObjEnemy_SetLife(objEnemy3, 40);
+		
+        ObjEnemy_SetDamageRate(objEnemy3, 200, 200);
+        ObjMove_SetPosition(objEnemy3, x, y);
+        ObjMove_SetAngle(objEnemy3, angleE);
+        ObjMove_SetSpeed(objEnemy3, speedE);
+        ObjMove_SetDestAtSpeed(objEnemy3, x , 150, 3); //movement function
+        TDrawLoop;
+        TMainLoop;
+        TFinalize;
+		wait(150);
+		
+		//let e_dir = GetAngleToPlayer(objEnemy3) + 192;
+		let e_dir = GetAngleToPlayer(objEnemy3) > 192;
+        ObjMove_AddPatternA2(objEnemy3, 0, 0, [+40, 220][e_dir], 6/120, 0, 6);
+
+        
+        //TFinalize;
+    }
+	function GetEnemyX
+	{
+		return ObjMove_GetX(objEnemy3);
+	}
+
+	function GetEnemyY
+	{
+		return ObjMove_GetY(objEnemy3);
+	}
+
+    task TMainLoop 
+    {
+        while(ObjEnemy_GetInfo(objEnemy3, INFO_LIFE) > 0) 
+        {
+            ObjEnemy_SetIntersectionCircleToShot(objEnemy3, ObjMove_GetX(objEnemy3), ObjMove_GetY(objEnemy3), 32); 
+            ObjEnemy_SetIntersectionCircleToPlayer(objEnemy3, ObjMove_GetX(objEnemy3), ObjMove_GetY(objEnemy3), 8);
+            if (count % 60 == 30) {bulletA;}
+            count++;
+			if (count == 220){DeleteShotAll(TYPE_CHILD, TYPE_ITEM);	}
+			
+			/// animation
+			let speed;
+            let dir;
+			dir = ObjMove_GetAngle(objEnemy3);
+			speed = ObjMove_GetSpeed(objEnemy3);
+		
+			if(speed == 0)
+			{ 
+				ObjRender_SetAngleXYZ(objEnemy3,0,0,0);
+				if(animFrame < 3) { ObjSprite2D_SetSourceRect(objEnemy3, 0, 0, 210, 137);}
+				if(animFrame >= 6 && animFrame < 9) { ObjSprite2D_SetSourceRect(objEnemy3,210,0,412,137); }
+				if(animFrame >= 12 && animFrame < 15) { ObjSprite2D_SetSourceRect(objEnemy3,425,0,655,137); }
+				if(animFrame >= 15 && animFrame < 18) { ObjSprite2D_SetSourceRect(objEnemy3,684,0,928,137); }
+	            if(animFrame >= 18) { ObjSprite2D_SetSourceRect(objEnemy3,960,0,1228,137); }
+				
+				animFrame2 = 0;
+			}
+			else if(cos(dir) < 0)
+			{ 
+				ObjRender_SetAngleXYZ(objEnemy3,0,180,0);	// flip vertical
+				if(animFrame2 < 3) { ObjSprite2D_SetSourceRect(objEnemy3, 0, 0, 210, 137);}
+				if(animFrame2 >= 6 && animFrame < 9) { ObjSprite2D_SetSourceRect(objEnemy3,210,0,412,137); }
+				if(animFrame2 >= 12 && animFrame < 15) { ObjSprite2D_SetSourceRect(objEnemy3,425,0,655,137); }
+				if(animFrame2 >= 15 && animFrame < 18) { ObjSprite2D_SetSourceRect(objEnemy3,684,0,928,137); }
+	            if(animFrame2 >= 18) { ObjSprite2D_SetSourceRect(objEnemy3,960,0,1228,137); }
+				
+			}
+			else if(cos(dir) > 0)
+			{ 
+				ObjRender_SetAngleXYZ(objEnemy3,0,0,0);	// flip vertical
+				if(animFrame2 < 3) { ObjSprite2D_SetSourceRect(objEnemy3, 0, 0, 210, 137);}
+				if(animFrame2 >= 6 && animFrame < 9) { ObjSprite2D_SetSourceRect(objEnemy3,210,0,412,137); }
+				if(animFrame2 >= 12 && animFrame < 15) { ObjSprite2D_SetSourceRect(objEnemy3,425,0,655,137); }
+				if(animFrame2 >= 15 && animFrame < 18) { ObjSprite2D_SetSourceRect(objEnemy3,684,0,928,137); }
+	            if(animFrame2 >= 18) { ObjSprite2D_SetSourceRect(objEnemy3,960,0,1228,137); }
+			}
+			animFrame++;		// count animFrame. (++ is +1)
+			animFrame2+=2;		// count animFrame2.
+			if(animFrame > 18) { animFrame = 0; }	// reset animFrame when it is higher than 18.
+			yield;
+		    if (ObjMove_GetX(objEnemy3) < Xmin || ObjMove_GetY(objEnemy3) > Xmax || ObjMove_GetY(objEnemy3) < Ymin || ObjMove_GetY(objEnemy3) > Ymax)
+		    {
+                Obj_Delete(objEnemy3); 
+            }
+            yield;
+        }
+	}
+    
+    task bulletA
+    {
+   		let angleT = GetAngleToPlayer(objEnemy3);
+    	loop(13)
+    	{
+	
+		    ascent(i in 0..4)
+		    {
+				PlaySE(shootSFX);
+		        CreateShotA1(ObjMove_GetX(objEnemy3), ObjMove_GetY(objEnemy3), 2.5 - i/2, angleT,20 + i, 5);
+		        angleT += 360/10;
+	    	}
+ 		}
+ 	}
+ 
+ 	task TExplosion
+ 	{
+	    let path = GetCurrentScriptDirectory() ~ "sprite/pow.png";
+	    let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	    ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
+	    Obj_SetRenderPriority(obj, 0.60);
+	    ObjPrim_SetTexture(obj, path);
+	    ObjSprite2D_SetSourceRect(obj, 0, 0, 100, 100);
+	    ObjSprite2D_SetDestRect(obj, -32, -32, 32, 32);
+	 
+	    let alpha = 230;
+	    let scale = 0.5;
+	    loop(12)
+	    {
+	        scale += 0.2;
+	        alpha -= 8;
+	        ObjRender_SetColor(obj, alpha, alpha, alpha);
+	        ObjRender_SetPosition(obj, GetEnemyX, GetEnemyY, 0);
+	        ObjRender_SetScaleXYZ(obj, scale, scale, 0.5);
+	        yield;
+	    }
+	    Obj_Delete(obj);
+	}
+	
+	task TDrawLoop 
+	{
+		
+		ObjSprite2D_SetSourceDestCenter(objEnemy3, GetCurrentScriptDirectory() ~  "./CaveStory/quote.png");
+		/*
+		let imgenemy = GetCurrentScriptDirectory() ~ "sprite/goose.png";
+	    ObjPrim_SetTexture(objEnemy3, imgenemy);
+	    ObjSprite2D_SetSourceRect(objEnemy3, 0, 0, 210, 137);
+		ObjRender_SetScaleXYZ(objEnemy3, 0.5, 0.5, 0);
+	    ObjSprite2D_SetDestCenter(objEnemy3);*/
+
+	}
+    task TFinalize 
+    {
+        //if(ObjEnemy_GetInfo(objEnemy3, INFO_LIFE) == 0) 
+        while(ObjEnemy_GetInfo(objEnemy3, INFO_LIFE) > 0)//this checks if the enemy has still life remaining
+        {
+        	yield;
+        }
+
+        if(!Obj_IsDeleted(objEnemy3))//This checks if the enemy is already deleted by other means like leaving the screen and getting killed through a differnt task and no effect is needed
+        {
+			PlaySE(deadSFX);
+			TExplosion;
+			wait(12);
+	        Obj_Delete(objEnemy3);
+			DeleteShotAll(TYPE_CHILD, TYPE_ITEM);	
+			yield;
+		}
+    }
+
+}
