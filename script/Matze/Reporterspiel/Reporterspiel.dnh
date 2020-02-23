@@ -1,0 +1,427 @@
+#TouhouDanmakufu[Plural]
+#ScriptVersion[3]
+#Title["ReporterSpiel"]
+#Text["Löwenzahn 4 ReporterSpiel" ]
+#System["./../System/Default_System.txt"]
+
+#include"./../Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
+#include"./../Generalfunction.dnh"
+#include"./../selibrary.dnh"
+
+@Initialize
+{
+	MainTask;
+}
+
+@MainLoop
+{
+    yield;
+}
+
+@Event
+{
+    alternative(GetEventType())
+	case(EV_USER) 
+	{
+
+	}
+}
+
+task MainTask
+{
+	let BG = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestRect(BG, "", 0, 0, 640, 480);
+	ObjRender_SetColor(BG, 0, 0, 0);
+	Obj_SetRenderPriorityI(BG, 21);
+
+	LoadTexturesInPath(GetCurrentScriptDirectory());
+	yield;
+
+	ReporterSpiel;
+
+	SetStgFrame(32, 16, 416, 464, 20, 80);
+
+	CloseScript(GetOwnScriptID());
+}
+
+function CreateTrigTable2(version, partcount)
+{
+	let array = [];
+	let part = 360 / partcount;
+
+	if(version == "sin" || version == "SIN")
+	{
+		ascent(i in 0..partcount + 1)
+		{
+			array = array ~ [sin(0 + i * part)];
+		}
+	}
+	else if(version == "cos" || version == "COS")
+	{
+		ascent(i in 0..partcount + 1)
+		{
+			array = array ~ [cos(0 + i * part)];
+		}
+	}
+
+	return array;
+}
+
+/*
+REAL PLANET DISTANCE IN KM
+Sun: stands at the edge of the area
+Mercury = 57.9
+Venus = 108.2
+Earth = 149.6
+Mars = 227.9
+Jupiter = 778.9
+Saturn = 1427.0
+Uranus = 2871.0
+Neptune = 4497.0
+Pluto = 5,913.0
+Kuiper belt = 100 steps from sun
+*/
+
+function ReporterSpiel
+{
+	CameraControl;
+	let realdistancearray = [57.9, 108.2, 149.6, 227.9, 778.9, 1427.0, 2871.0, 4497.0, 5913.0];
+
+	let speedtable = CreateSpeedTable(220, 0.2);
+	let sintable512_500 = CreateTrigTable2("sin", 512);
+	let costable512_500 = CreateTrigTable2("cos", 512);
+
+	let priorityHUD = 85;
+	let priority2d = 50;
+	let priority3d = 30;
+
+	let heat = 0;
+	let heatmax = 100;
+	let speed = 0;
+	let speedmax = 20;
+	let moveangle = 0;
+	let time = 0;
+
+	let Planets = [];
+	let Circle2D = [];
+	let Array2D = [];
+	let Array3D = [];
+	let ArrayKontroll = [];
+
+	let DebugList = [];
+
+	let ship = CreateShip;
+	let HUDMaster = CreateHUD;
+	ChangeScreen(5);//Default Startstate to Map
+	CreateMap;
+
+	let counterlist= CreateTestCounterList(50, 50, 16, 20);
+
+	SetStgFrame(0, 0, 640, 480, 20, 80);
+
+	//////////DEBUG////////
+	Obj_Delete(0);
+	//////////DEBUG////////
+
+	let gameticks = 0;
+	let timelimit = 36000; //10 Minutes
+	let reportergame = true;
+	//MAIN FRAME PROCCESSING
+	while(reportergame == true)
+	{
+		PlanetDistance();
+		PlanetMovement();
+		ShipMovement();
+		FocusCamera2D();
+		UpdateHUDZeiger();
+		gameticks++;
+
+		DEBUGDistanceCounter;
+		yield;
+	}
+
+	function UpdateHUDZeiger
+	{
+		let heatmindis = 100;
+		let heatmaxdis = 20;
+		let heatcurrentmax = 0;
+		let speedmax = speedtable[length(speedtable) - 1];
+
+		ObjRender_SetAngleZ(Obj_GetValue(HUDMaster, "Richtungszeiger"), ObjRender_GetAngleZ(ship));
+		ObjRender_SetAngleZ(Obj_GetValue(HUDMaster, "Geschwindigkeitszeiger"), speedtable[Obj_GetValue(ship, "speedstep")] / speedmax * 345);
+		ObjRender_SetAngleZ(Obj_GetValue(HUDMaster, "Zeitanzeiger"), gameticks / timelimit * 345);	
+
+
+		/*
+		Obj_SetValue(obj, "Richtungszeiger", CreateZeiger(GetCurrentScriptDirectory() ~ "schiff_kurz.png", 53, 445));
+		Obj_SetValue(obj, "Hitzeanzeiger", CreateZeiger(pathzeiger, 128, 445));
+		Obj_SetValue(obj, "Zeitanzeiger", CreateZeiger(pathzeiger, 205, 445));
+		Obj_SetValue(obj, "Geschwindigkeitszeiger", CreateZeiger(pathzeiger, 283, 445));
+		*/
+
+	}
+
+	function Change2DState(state)
+	{
+		ascent(i in 0..length(Array2D))
+		{
+			Obj_SetVisible(Array2D[i], state);
+		}
+	}
+
+	function ChangeScreen(targetversion)//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+	{
+		let currentscreen = Obj_GetValue(HUDMaster, "HUD_TYPE");
+		if(targetversion == 4)//Kontrollraum
+		{
+			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[4]);
+			Change2DState(false);
+		}
+		else if(targetversion == 5)//Karte
+		{
+			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[5]);
+			Change2DState(true);
+			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), false);
+		}
+		else
+		{
+			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[targetversion]);
+			Change2DState(true);
+		}
+	}
+
+	function CreateSpeedTable(stepcount, multi)
+	{
+		let array = [];
+		ascent(i in 0..stepcount)
+		{
+			array = array ~ [(i * 0.01)^2];
+		}
+		return array;
+	}
+
+	function ShipMovement
+	{
+		//One Rotation takes 10 seconds = currently used 50 0frames
+		//Acceleration from 0 to max is 4,5 sec == 270
+		if(GetKeyState(KEY_LEFT) == KEY_PUSH || GetKeyState(KEY_LEFT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) - 360 / 500);
+		} 
+		else if(GetKeyState(KEY_RIGHT) == KEY_PUSH || GetKeyState(KEY_RIGHT) == KEY_HOLD)
+		{
+			ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) + 360 / 500);
+		}
+
+		if(GetKeyState(KEY_UP) == KEY_PUSH || GetKeyState(KEY_UP) == KEY_HOLD)
+		{
+			if(Obj_GetValue(ship, "speedstep") < length(speedtable) - 1)
+			{
+				Obj_SetValue(ship, "speedstep", Obj_GetValue(ship, "speedstep") + 1);
+			}
+		}
+		else if(GetKeyState(KEY_DOWN) == KEY_PUSH || GetKeyState(KEY_DOWN) == KEY_HOLD)
+		{
+			if(Obj_GetValue(ship, "speedstep") > 0)
+			{
+				Obj_SetValue(ship, "speedstep", Obj_GetValue(ship, "speedstep") - 1);
+			}
+		}
+
+		ObjRender_SetPosition(ship, ObjRender_GetX(ship) + speedtable[Obj_GetValue(ship, "speedstep")] * cos(ObjRender_GetAngleZ(ship)), ObjRender_GetY(ship) + speedtable[Obj_GetValue(ship, "speedstep")] * sin(ObjRender_GetAngleZ(ship)), 0);
+		ObjRender_SetScaleXYZ(ship, Obj_GetValue(ship, "scale"), Obj_GetValue(ship, "scale"), 1);
+
+		ObjText_SetText(counterlist[length(counterlist) - 2], "Speedstep: " ~ itoa(Obj_GetValue(ship, "speedstep")));
+		ObjText_SetText(counterlist[length(counterlist) - 1], "Speed: " ~ rtoa(speedtable[Obj_GetValue(ship, "speedstep")]));
+	}
+
+	function FocusCamera2D
+	{
+		Set2DCameraFocusX(ObjRender_GetX(ship));
+		Set2DCameraFocusY(ObjRender_GetY(ship));
+	}
+
+	function DEBUGDistanceCounter
+	{
+		ascent(i in 0..length(Planets))
+		{
+			ObjText_SetText(counterlist[i], Obj_GetValue(Planets[i], "name") ~ ": " ~ rtoa(Obj_GetValue(Planets[i], "distance")));
+		}
+	}
+
+	function PlanetMovement
+	{
+		ascent(i in 0..length(Planets))
+		{
+			let obj = Planets[i];
+
+			Obj_SetValue(obj, "current_rotation", Obj_GetValue(obj, "current_rotation") + Obj_GetValue(obj, "movespeed"));
+
+			if(Obj_GetValue(obj, "focusobj") != -1)
+			{
+				ObjRender_SetPosition(obj, ObjRender_GetX(Obj_GetValue(obj, "focusobj")) + Obj_GetValue(obj, "radius") * cos(Obj_GetValue(obj, "current_rotation")), ObjRender_GetY(Obj_GetValue(obj, "focusobj")) + Obj_GetValue(obj, "radius") * sin(Obj_GetValue(obj, "current_rotation")), 0);
+			}
+			else
+			{
+				ObjRender_SetPosition(obj, Obj_GetValue(obj, "focuspointx") + Obj_GetValue(obj, "radius") * cos(Obj_GetValue(obj, "current_rotation")), Obj_GetValue(obj, "focuspointy") + Obj_GetValue(obj, "radius") * sin(Obj_GetValue(obj, "current_rotation")), 0);
+			}
+		}
+
+		ascent(i in 0..length(Circle2D))
+		{
+			ObjRender_SetPosition(Circle2D[i], ObjRender_GetX(Obj_GetValue(Circle2D[i], "focusobj")), ObjRender_GetY(Obj_GetValue(Circle2D[i], "focusobj")), 0);
+		}
+	}
+
+	function PlanetDistance
+	{
+		ascent(i in 0..length(Planets))
+		{
+			Obj_SetValue(Planets[i], "distance", GetObjectDistance(Planets[i], ship));
+		}
+	}
+
+	//RenderHUD;
+
+	function CreateHUD
+	{
+		let CSD = GetCurrentScriptDirectory();
+		let pathzeiger = GetCurrentScriptDirectory() ~ "zeiger.png";
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestRect(obj, GetCurrentScriptDirectory() ~ "./Ohne.png", 0, 0, 640, 480);
+		Obj_SetValue(obj, "HUD_TYPE", 0); //0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+		Obj_SetValue(obj, "Richtungszeiger", CreateZeiger(GetCurrentScriptDirectory() ~ "schiff_kurz.png", 53, 445));
+		Obj_SetValue(obj, "Hitzeanzeiger", CreateZeiger(pathzeiger, 128, 445));
+		Obj_SetValue(obj, "Zeitanzeiger", CreateZeiger(pathzeiger, 205, 445));
+		Obj_SetValue(obj, "Geschwindigkeitszeiger", CreateZeiger(pathzeiger, 281, 445));
+		Obj_SetValue(obj, "Grafikarray", [CSD ~ "Ohne.png", CSD ~ "sonne.png", CSD ~ "laser.png", CSD ~ "kamera.png", CSD ~ "menü.png", CSD ~ "karte.png"]);
+
+		Obj_SetRenderPriorityI(obj, priorityHUD);
+
+
+		return obj;
+
+		function CreateZeiger(path, x, y)
+		{
+			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestCenter(obj, pathzeiger);
+			Obj_SetRenderPriorityI(obj, priorityHUD);
+			ObjRender_SetPosition(obj, x, y, 0);
+			Array2D = Array2D ~ [obj];
+
+			return obj;
+		}
+	}
+
+	function CreateShip
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "schiff.png");
+		Obj_SetRenderPriorityI(obj, priority2d + 1);
+		ObjRender_SetPosition(obj, 350, 350, 0);
+
+		Obj_SetValue(obj, "scale", 1);
+		Obj_SetValue(obj, "speedstep", 0);
+
+		return obj; 
+	}
+
+	function CreateMap
+	{
+		let innerdismulti = 4;
+		let middledismulti = 1.5;
+		let outerdismulti = 0.9;
+		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, 0, 0, 0, -1, 0);
+		CreatePlanet("Merkur", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Venus", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.1);
+		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 1, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.5, 25, 0, 0, Earth, 0.1);
+		CreatePlanet("Mars", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Jupiter", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[4] * middledismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Saturn", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[5] * middledismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Uranus", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Neptun", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.1);
+		CreatePlanet("Pluto", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.1);
+		
+
+		function CreatePlanet(name, path2d, path3d, scale3d, radius, focuspointx, focuspointy, focusobj, movespeed)
+		{
+			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ path2d);
+			Obj_SetRenderPriorityI(obj, priority2d);
+
+			Planets = Planets ~ [obj];
+			Array2D = Array2D ~ [obj];
+
+			if(movespeed > 0)
+			{
+				CreateCircle(radius, focuspointx, focuspointy, focusobj);
+				//CreateCircle(radius + 1, focuspointx, focuspointy, focusobj);
+				//CreateCircle(radius + 2, focuspointx, focuspointy, focusobj);
+			}
+
+			let dir = RandomChoice([1, -1]);
+
+			Obj_SetValue(obj, "name", name);
+			Obj_SetValue(obj, "path3d", GetCurrentScriptDirectory() ~ path3d);
+			Obj_SetValue(obj, "scale3d", scale3d);
+			Obj_SetValue(obj, "radius", radius);
+			Obj_SetValue(obj, "focuspointx", focuspointx);
+			Obj_SetValue(obj, "focuspointy", focuspointy);
+			Obj_SetValue(obj, "focusobj", focusobj);
+			Obj_SetValue(obj, "movespeed", movespeed * dir);
+			Obj_SetValue(obj, "current_rotation", rand(0, 360));
+			Obj_SetValue(obj, "distance", 9999);
+
+			return obj;
+
+			function CreateCircle(radius, focuspointx, focuspointy, focusobj)
+			{
+				let vertcount = 512;
+
+				let obj = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+				ObjPrim_SetPrimitiveType(obj, PRIMITIVE_LINESTRIP);
+				ObjPrim_SetVertexCount(obj, vertcount + 1);
+				Obj_SetRenderPriorityI(obj, priority2d - 1);
+
+				ascent(i in 0..vertcount + 1)
+				{
+					ObjPrim_SetVertexPosition(obj, i, radius * costable512_500[i], radius * sintable512_500[i], 0);
+				}
+				
+				Array2D = Array2D ~ [obj];
+				if(focusobj != -1)
+				{
+					Circle2D = Circle2D ~ [obj];
+				}
+
+				Obj_SetValue(obj, "focuspointx", focuspointx);
+				Obj_SetValue(obj, "focuspointy", focuspointy);
+				Obj_SetValue(obj, "focusobj", focusobj);
+			}
+		}
+	}
+
+	task CameraControl
+	{
+		Set2DCameraRatio(0.8);
+		yield;
+		while(true)
+		{
+			if(GetKeyState(KEY_R) == KEY_PUSH)
+			{
+				Set2DCameraRatio(0.8);
+			}
+			if(GetKeyState(KEY_ADD) == KEY_PUSH)
+			{
+				Set2DCameraRatio(Get2DCameraRatio() + 0.02);
+			}
+			if(GetKeyState(KEY_SUBTRACT) == KEY_PUSH)
+			{
+				Set2DCameraRatio(Get2DCameraRatio() - 0.02);
+			}
+			Obj_SetValue(ship, "scale", 2 - Get2DCameraRatio());
+			yield;
+		}
+	}
+}
