@@ -106,14 +106,19 @@ function ReporterSpiel
 	let Circle2D = [];
 	let Array2D = [];
 	let Array3D = [];
+	let Array3DAssign = [];
 	let ArrayKontroll = [];
 
 	let DebugList = [];
+
+	LoadTexturesInPath(GetCurrentScriptDirectory());
 
 	let ship = CreateShip;
 	let HUDMaster = CreateHUD;
 	ChangeScreen(5);//Default Startstate to Map
 	CreateMap;
+	Create3DAssignArray;
+	Create3D;
 
 	let counterlist= CreateTestCounterList(50, 50, 16, 20);
 
@@ -127,17 +132,134 @@ function ReporterSpiel
 	let timelimit = 36000; //10 Minutes
 	let reportergame = true;
 	//MAIN FRAME PROCCESSING
+	PlanetDistance();
+	PlanetMovement();
+	ShipMovement();
+	FocusCamera2D();
+	FocusCamera3D();
+	//Update3D();
+	DynamicAssignObj(); // Containes Update3D
+	UpdateHUDZeiger();
 	while(reportergame == true)
 	{
 		PlanetDistance();
 		PlanetMovement();
 		ShipMovement();
 		FocusCamera2D();
+		FocusCamera3D();
+		//Update3D();
+		if(gameticks % 2 == 0){DynamicAssignObj();} // Containes Update3D
 		UpdateHUDZeiger();
 		gameticks++;
 
-		DEBUGDistanceCounter;
+		//DEBUGDistanceCounter;
 		yield;
+	}
+
+	function Create3DAssignArray
+	{
+		loop(length(Planets))
+		{
+			let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+			ObjPrim_SetTexture(obj, "");
+			ObjSprite3D_SetSourceRect(obj, 0, 0, 1024, 1024);
+			ObjSprite3D_SetDestRect(obj, -512, -512, 512, 512);
+			ObjSprite3D_SetBillboard(obj, true);
+			Obj_SetRenderPriorityI(obj, priority3d);
+
+			Array3DAssign = Array3DAssign ~ [obj];
+		}
+	}
+
+	function DynamicAssignObj
+	{
+		let array3d = [];
+		let array = [];
+
+		ascent(i in 0..length(Planets))
+		{
+			array3d = array3d ~ [Obj_GetValue(Planets[i], "obj3d")];
+			array = array ~ [GetObjectDistance(Planets[i], ship)];
+		}
+
+		InsertionSort;
+
+		ascent(i in 0..length(array3d))
+		{
+			ObjPrim_SetTexture(Array3DAssign[length(array3d) - 1 - i], Obj_GetValue(array3d[i], "path3d"));
+			ObjRender_SetScaleXYZ(Array3DAssign[length(array3d) - 1 - i], Obj_GetValue(array3d[i], "scale3d"), Obj_GetValue(array3d[i], "scale3d"), 0);
+			ObjRender_SetPosition(Array3DAssign[length(array3d) - 1 - i], ObjRender_GetX(Obj_GetValue(array3d[i], "origobj")), 0, ObjRender_GetY(Obj_GetValue(array3d[i], "origobj")));
+
+			ObjSprite3D_SetSourceRect(Array3DAssign[length(array3d) - 1 - i], 0, 0, 1024, 1024);
+			ObjSprite3D_SetDestRect(Array3DAssign[length(array3d) - 1 - i], -512, -512, 512, 512);
+			ObjSprite3D_SetBillboard(Array3DAssign[length(array3d) - 1 - i], true);
+			//Obj_SetValue(obj, "radius", Obj_GetValue(origobj, "radius"));
+		}
+
+		function InsertionSort //the first index in the returned array is the lowest value
+		{
+			ascent(i in 0..length(array) - 1)
+			{
+				let j = i + 1;
+				
+				while(j > 0)
+				{
+					if(array[j - 1] > array[j])
+					{
+						let temp = array[j - 1];
+						array[j - 1] = array[j];
+						array[j] = temp;
+
+						temp = array3d[j - 1];
+						array3d[j - 1] = array3d[j];
+						array3d[j] = temp;
+					}
+					j--;
+				}
+			}
+			//return array;
+		}
+	}
+
+	function Update3D
+	{
+		ascent(i in 0..length(Array3D))
+		{
+			ObjRender_SetPosition(Array3D[i], ObjRender_GetX(Obj_GetValue(Array3D[i], "origobj")), 0, ObjRender_GetY(Obj_GetValue(Array3D[i], "origobj")));
+		}
+	}
+
+	function Create3D
+	{
+		ascent(i in 0..length(Planets))
+		{
+			Create3DPlanet(Planets[i]);
+		}
+
+		function Create3DPlanet(origobj)
+		{
+			let obj = ObjPrim_Create(OBJ_SPRITE_3D);
+			Array3D = Array3D ~ [obj];
+
+			ObjPrim_SetTexture(obj, Obj_GetValue(origobj, "path3d"));
+			ObjSprite3D_SetSourceRect(obj, 0, 0, 1024, 1024);
+			ObjSprite3D_SetDestRect(obj, -512, -512, 512, 512);
+			//ObjSprite3D_SetDestRect(obj, 0, 0, 1024, 1024);
+			ObjSprite3D_SetBillboard(obj, true);
+			//ObjRender_SetZWrite(obj, true);
+			Obj_SetRenderPriorityI(obj, priority3d);
+			Obj_SetVisible(obj, false);
+
+			Obj_SetValue(origobj, "obj3d", obj);
+
+			Obj_SetValue(obj, "origobj", origobj);
+			Obj_SetValue(obj, "path3d", GetCurrentScriptDirectory() ~ Obj_GetValue(origobj, "path3d"));
+			Obj_SetValue(obj, "scale3d", Obj_GetValue(origobj, "scale3d"));
+			Obj_SetValue(obj, "radius", Obj_GetValue(origobj, "radius"));
+			Obj_SetValue(obj, "focuspointx", Obj_GetValue(origobj, "focuspointx"));
+			Obj_SetValue(obj, "focuspointy", Obj_GetValue(origobj, "focuspointy"));
+			Obj_SetValue(obj, "focusobj", Obj_GetValue(origobj, "focusobj"));
+		}
 	}
 
 	function UpdateHUDZeiger
@@ -176,6 +298,7 @@ function ReporterSpiel
 		{
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[4]);
 			Change2DState(false);
+			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), false);
 		}
 		else if(targetversion == 5)//Karte
 		{
@@ -186,7 +309,8 @@ function ReporterSpiel
 		else
 		{
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[targetversion]);
-			Change2DState(true);
+			Change2DState(false);
+			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), true);
 		}
 	}
 
@@ -233,6 +357,14 @@ function ReporterSpiel
 
 		ObjText_SetText(counterlist[length(counterlist) - 2], "Speedstep: " ~ itoa(Obj_GetValue(ship, "speedstep")));
 		ObjText_SetText(counterlist[length(counterlist) - 1], "Speed: " ~ rtoa(speedtable[Obj_GetValue(ship, "speedstep")]));
+	}
+
+	function FocusCamera3D
+	{
+		SetCameraFocusXYZ(ObjRender_GetX(ship), 0, ObjRender_GetY(ship));
+		SetCameraAzimuthAngle(ObjRender_GetAngleZ(ship) + 180);
+		SetCameraPerspectiveClip(0, 99999);//DRAWING EVERYTHING
+
 	}
 
 	function FocusCamera2D
@@ -304,10 +436,10 @@ function ReporterSpiel
 		function CreateZeiger(path, x, y)
 		{
 			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
-			ObjSprite2D_SetSourceDestCenter(obj, pathzeiger);
+			ObjSprite2D_SetSourceDestCenter(obj, path);
 			Obj_SetRenderPriorityI(obj, priorityHUD);
 			ObjRender_SetPosition(obj, x, y, 0);
-			Array2D = Array2D ~ [obj];
+			//Array2D = Array2D ~ [obj];
 
 			return obj;
 		}
@@ -319,6 +451,7 @@ function ReporterSpiel
 		ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "schiff.png");
 		Obj_SetRenderPriorityI(obj, priority2d + 1);
 		ObjRender_SetPosition(obj, 350, 350, 0);
+		Array2D = Array2D ~ [obj];
 
 		Obj_SetValue(obj, "scale", 1);
 		Obj_SetValue(obj, "speedstep", 0);
@@ -331,18 +464,17 @@ function ReporterSpiel
 		let innerdismulti = 4;
 		let middledismulti = 1.5;
 		let outerdismulti = 0.9;
-		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, 0, 0, 0, -1, 0);
-		CreatePlanet("Merkur", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Venus", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.1);
-		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 1, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.5, 25, 0, 0, Earth, 0.1);
-		CreatePlanet("Mars", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Jupiter", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[4] * middledismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Saturn", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[5] * middledismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Uranus", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Neptun", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.1);
-		CreatePlanet("Pluto", "./Sonne2d.png", "./Sonne_Stern.png", 0.5, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.1);
-		
+		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, 0, 0, 0, -1, 0);
+		CreatePlanet("Merkur", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Venus", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01);
+		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 0.07, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.07, 25, 0, 0, Earth, 0.1);
+		CreatePlanet("Mars", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Jupiter", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[4] * middledismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Saturn", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[5] * middledismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Uranus", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Neptun", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Pluto", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.01);
 
 		function CreatePlanet(name, path2d, path3d, scale3d, radius, focuspointx, focuspointy, focusobj, movespeed)
 		{
@@ -363,7 +495,8 @@ function ReporterSpiel
 			let dir = RandomChoice([1, -1]);
 
 			Obj_SetValue(obj, "name", name);
-			Obj_SetValue(obj, "path3d", GetCurrentScriptDirectory() ~ path3d);
+			Obj_SetValue(obj, "obj3d", -1);
+			Obj_SetValue(obj, "path3d", path3d);
 			Obj_SetValue(obj, "scale3d", scale3d);
 			Obj_SetValue(obj, "radius", radius);
 			Obj_SetValue(obj, "focuspointx", focuspointx);
@@ -406,8 +539,36 @@ function ReporterSpiel
 	{
 		Set2DCameraRatio(0.8);
 		yield;
+		CameraTestValues;
+		Create3DTestCube(0, 0, 0);
+		Reset3DCamera;
+		SetCameraRadius(1);
 		while(true)
 		{
+			if(GetKeyState(KEY_0) == KEY_PUSH)
+			{
+				ChangeScreen(0);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_1) == KEY_PUSH)
+			{
+				ChangeScreen(1);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_2) == KEY_PUSH)
+			{
+				ChangeScreen(2);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_3) == KEY_PUSH)
+			{
+				ChangeScreen(3);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_4) == KEY_PUSH)
+			{
+				//ChangeScreen(4);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_5) == KEY_PUSH)
+			{
+				ChangeScreen(5);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
 			if(GetKeyState(KEY_R) == KEY_PUSH)
 			{
 				Set2DCameraRatio(0.8);
