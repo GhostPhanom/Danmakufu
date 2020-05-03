@@ -363,7 +363,7 @@ function ReporterSpiel
 	{
 		SetCameraFocusXYZ(ObjRender_GetX(ship), 0, ObjRender_GetY(ship));
 		SetCameraAzimuthAngle(ObjRender_GetAngleZ(ship) + 180);
-		SetCameraPerspectiveClip(0, 99999);//DRAWING EVERYTHING
+		SetCameraPerspectiveClip(0, 1000);//DRAWING EVERYTHING
 
 	}
 
@@ -465,16 +465,16 @@ function ReporterSpiel
 		let middledismulti = 1.5;
 		let outerdismulti = 0.9;
 		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, 0, 0, 0, -1, 0);
-		CreatePlanet("Merkur", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Venus", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Merkur", "./Merkur2d.png", "./Merkur.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Venus", "./Venus2d.png", "./Venus.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01);
 		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 0.07, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.01);
 		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.07, 25, 0, 0, Earth, 0.1);
-		CreatePlanet("Mars", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Jupiter", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[4] * middledismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Saturn", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[5] * middledismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Uranus", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Neptun", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Pluto", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Mars", "./Mars2d.png", "./Mars.png", 0.07, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Jupiter", "./Jupiter2d.png", "./Jupiter.png", 0.07, realdistancearray[4] * middledismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Saturn", "./Saturn2d.png", "./Saturn.png", 0.07, realdistancearray[5] * middledismulti, 0, 0, -1, 0.01);
+		CreatePlanet("Uranus", "./Uranus2d.png", "./Uranus.png", 0.07, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.005);
+		CreatePlanet("Neptun", "./Neptun2d.png", "./Neptun.png", 0.07, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.005);
+		CreatePlanet("Pluto", "./Pluto2d.png", "./Pluto.png", 0.07, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.005);
 
 		function CreatePlanet(name, path2d, path3d, scale3d, radius, focuspointx, focuspointy, focusobj, movespeed)
 		{
