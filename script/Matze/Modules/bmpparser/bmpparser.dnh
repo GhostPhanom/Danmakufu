@@ -2,8 +2,6 @@
 //BMP are coded from bottom left to top right
 
 //NEEDS TO BE MODIFIED FOR SPECIFIC USES
-//IM0024856770
-//IM0024850509
 //Explanation: With each ObjFileB_ReadXXX the _Seek moves the length of the datatype forward
 
 function ParseBMP
@@ -45,5 +43,31 @@ function ParseBMP
 }
 
 //ShotData{ id=9876 rect=(8,2,9,3) render=ALPHA collision = (1, 0, 0) angular_velocity = 0 delay_color= (0, 0, 200) fixed_angle=false }
+
+/*
+//PICTURE REBUILD EXAMPLE
+	let pixelcount = picturewidth * pictureheight;
+	let objp = ObjPrim_Create(OBJ_PRIMITIVE_2D);
+	ObjPrim_SetPrimitiveType(objp, PRIMITIVE_POINT_LIST);
+    ObjPrim_SetVertexCount(objp, pixelcount);
+    ObjRender_SetPosition(objp, 0, 400, 0);
+    Obj_SetRenderPriorityI(objp, 99);
+    ObjRender_SetAngleX(objp, 180);
+    let counter = 0;
+
+	ascent(j in 0..pictureheight)//height
+	{
+		ascent(i in 0..picturewidth)//width
+		{
+			//WriteLog("R:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " G:" ~ itoa(ObjFileB_ReadByte(obj)) ~ " B:" ~ itoa(ObjFileB_ReadByte(obj)));
+			let colors = [ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj), ObjFileB_ReadUByte(obj)];
+			ObjPrim_SetVertexPosition(objp, counter, i, j, 0);
+            ObjPrim_SetVertexColor(objp, counter, colors[2], colors[1], colors[0]);
+            counter++;
+			//WriteLog("count: " ~ itoa(counter) ~ " Colom: " ~ itoa(j) ~ " Blue: " ~ itoa(colors[0]) ~ " Green: " ~ itoa(colors[1]) ~ " Red: " ~ itoa(colors[2]));
+		}
+		ObjFileB_Seek(obj, ObjFileB_GetPointer(obj) + skippedbytes); 
+	}
+*/
 
 
