@@ -10,11 +10,11 @@
 	yield;
 }
 
-let tower_start = 50;
-let tower_winlevel = 150;
+let tower_start = 35;
+let tower_winlevel = 110;
 let wall_start = 10;
 let ressource_start = 10;
-let ressource_winlevel = 300;
+let ressource_winlevel = 220;
 let ressource_level_start = 3;
 
 let setpath = GetModuleDirectory ~ "gamestate";
@@ -1506,6 +1506,24 @@ task EndGame(text)
 	CloseScript(GetOwnScriptID());
 }
 
+function CreateRenderB1(x, y, xspeed, yspeed, unused, unused2)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		Move;
+		return obj;
+
+		task Move
+		{
+			while(!Obj_IsDeleted(obj))
+			{
+				ObjRender_SetPosition(obj, x, y, 0);
+				x += xspeed;
+				y += yspeed;
+				yield;
+			}
+		}
+	}
+
 task DoEffect(obj, color, xoffset, yoffset)
 {
 	let colors = [];
@@ -1529,17 +1547,14 @@ task DoEffect(obj, color, xoffset, yoffset)
 	{
 		//Movement(CreateShotA1(x, y, rand(0.5, 2), rand(0, 360), 0, 0));
 		//Movement(CreateShotB1(x + rand(-5, 5) + 30, y + rand(-5, 5) - 30, rand(-3, 3), rand(-3, 3), 0, 0));
-		Movement(CreateShotB1(x + rand(-5, 5) + xoffset, y + rand(-5, 5) + yoffset, rand(-3, 3), rand(-3, 3), 0, 0));
+		Movement(CreateRenderB1(x + rand(-5, 5) + xoffset, y + rand(-5, 5) + yoffset, rand(-3, 3), rand(-3, 3), 0, 0));
 	}
 
 	task Movement(obj)
 	{
-		ObjShot_Regist(obj);
 		let scale = rand(0.2, 0.05);
 		let objr = ObjRender_SetIAnimation(obj, path, 0, 32, 32, 2, 2, scale, scale, 0, 0);
 		ObjRender_SetColor(objr, colors[0], colors[1], colors[2]);
-		ObjShot_SetAutoDelete(obj, false);
-		ObjShot_SetIntersectionEnable(obj, false);
 		Obj_SetRenderPriorityI(objr, 95);
 		Obj_SetRenderPriorityI(obj, 95);
 
@@ -1578,17 +1593,14 @@ task DoBattleEffect(obj, color)
 	loop(n)
 	{
 		//Movement(CreateShotA1(x, y, rand(0.5, 2), rand(0, 360), 0, 0));
-		Movement(CreateShotB1(x + rand(-5, 5) + 2, y + rand(-5, 5) + 2, rand(-3, 3), rand(-3, 3), 0, 0));
+		Movement(CreateRenderB1(x + rand(-5, 5) + 2, y + rand(-5, 5) + 2, rand(-3, 3), rand(-3, 3), 0, 0));
 	}
 
 	task Movement(obj)
 	{
-		ObjShot_Regist(obj);
 		let scale = rand(0.2, 0.05);
 		let objr = ObjRender_SetIAnimation(obj, path, 0, 32, 32, 2, 2, scale, scale, 0, 0);
 		ObjRender_SetColor(objr, colors[0], colors[1], colors[2]);
-		ObjShot_SetAutoDelete(obj, false);
-		ObjShot_SetIntersectionEnable(obj, false);
 		Obj_SetRenderPriorityI(objr, 95);
 		Obj_SetRenderPriorityI(obj, 95);
 
