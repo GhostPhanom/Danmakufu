@@ -1,2 +1,3 @@
+cd files
 get remote_gamestate
 bye

@@ -1,0 +1,433 @@
+#include "../Generalfunction.dnh"
+
+@Initialize
+{
+	MainTask;
+}
+
+@MainLoop
+{
+	yield;
+}
+
+let workprio = 90;
+let BGprio = 82;
+
+let game = true;
+
+let music = ObjMusic_CreateBGM(GetCurrentScriptDirectory() ~ "anagram.ogg", 70);
+ObjMusic_AddPauseStop(music);
+
+task MainTask
+{
+	let BG = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjPrim_SetTexture(BG, "");
+	ObjSprite2D_SetSourceRect(BG, 0, 0, 1, 1);
+	ObjSprite2D_SetDestRect(BG, 0, 0, 640, 480);
+	ObjRender_SetColor(BG, 0, 0, 0);
+	Obj_SetRenderPriorityI(BG, BGprio);
+
+	Anagram;
+}
+
+task Anagram
+{
+	let spalten = 10;
+	let offspalten = 2;
+	let zeilen = 8;
+	let maxspalten = spalten + offspalten * 2;
+
+	let xpart = 640 / spalten;
+	let ypart = 480 / zeilen;
+
+	let ystart = 0 + xpart / 2;
+	//let xend = 
+	let xstart = 0 - xpart * offspalten + xpart * 0.5;
+	let xend = 640 + xpart * offspalten - xpart * 0.5; 
+
+	WriteLog("XSTART:" ~ rtoa(xstart));
+	WriteLog("YSTART:" ~ rtoa(ystart));
+	WriteLog("XPART:" ~ rtoa(xpart));
+	WriteLog("YPART:" ~ rtoa(ypart));
+
+	let size = 640 / max(spalten, zeilen);
+	let scale = size / 64 - 0.35;
+	let path = GetCurrentScriptDirectory() ~ "form.png";
+
+	let letterpool = "DEKAIDALEXLUFETZEGAMEBOY";
+
+	let ticklength = 40;
+	let tick = 0;
+
+	wait(60);
+
+	test;
+	tickcounter;
+
+	task test
+	{
+		while(game)
+		{
+			if(GetKeyState(KEY_O) == KEY_PUSH){ticklength -= 5;}
+			if(GetKeyState(KEY_L) == KEY_PUSH){ticklength += 5;}
+		yield;
+		}
+	}
+
+	CreateCommonDataArea("Anagram");
+	ascent(i in 0..maxspalten)
+	{
+		let array = [];
+		ascent(j in 0..zeilen)
+		{
+			array = array ~ [CreateField(i, j)];
+		}
+		SetAreaCommonData("Anagram", "S" ~ itoa(i), array);
+		WriteLog("S" ~ itoa(i));
+		WriteLog(array);
+	}
+
+
+	let zeilenarray = FillZeilenArray;
+	let zeilenarray2 = FillZeilenArray;
+	let zcounter = 0;
+	while(game)
+	{
+		/*
+		if(GetKeyState(KEY_L) == KEY_PUSH)
+		{
+			if(round(rand(0,1)) == 1)
+			{
+				WriteLog("<-");
+				CreateChar(maxspalten - 1, round(rand(0, zeilen- 1)));
+			}
+			else
+			{
+				WriteLog("->");
+				CreateChar(0, round(rand(0, zeilen - 1)));
+			}
+		}
+		if(GetKeyState(KEY_K) == KEY_PUSH)
+		{
+			ascent(i in 0..zeilen)
+			{
+				CreateChar(maxspalten - 1, i);
+			}
+		}
+		if(GetKeyState(KEY_I) == KEY_PUSH)
+		{
+			ascent(i in 0..zeilen)
+			{
+				CreateChar(maxspalten - 1, i);
+			}
+		}
+		*/
+		if(tick % ticklength == 0)
+		{
+			
+			if(zcounter > length(zeilen))
+			{
+				zeilenarray = FillZeilenArray;
+				zeilenarray2 = FillZeilenArray;
+				zcounter = 0;
+			}
+			CreateChar(maxspalten - 1, zeilenarray[zcounter]);
+			CreateChar(0, zeilenarray2[zcounter]);
+			zcounter++;
+			
+			/*
+			if(round(rand(0,1)) == 1)
+			{
+				//WriteLog("<-");
+				CreateChar(maxspalten - 1, round(rand(0, zeilen- 1)));
+			}
+			else
+			{
+				//WriteLog("->");
+				CreateChar(0, round(rand(0, zeilen - 1)));
+			}
+			*/
+		}
+		
+		yield;
+	}
+
+	function FillZeilenArray
+	{
+		let array = [];
+		ascent(i in 0..zeilen)
+		{
+			array = array ~ [i];
+		}
+		return ShuffleArray(array);
+	}
+
+	task CreateChar(startspalte, startzeile)
+	{
+		
+		ReserveField(0, startspalte, startzeile);
+
+		let obj = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(obj);
+		ObjSprite2D_SetSourceDestCenter(obj, path);
+		Obj_SetRenderPriorityI(obj, workprio);
+		ObjRender_SetScaleXYZ(obj, scale, scale, 1);
+		ObjRender_SetColorHSV(obj, rand(0, 360), 255, 150);
+		let targetspalte = 0;
+		let dir = 2;//rechts 0, unten 1, links 2, oben 3
+		let alt = false;
+		if(startspalte == 0){targetspalte = maxspalten - 1; dir = 0;}
+		let maindir = dir;
+		let dirarray = [];
+		let counter = 1;
+
+		WriteLog("----------NEW LETTER!------------");
+
+		//WriteLog("MAINDIR" ~ itoa(maindir));
+		//WriteLog("STARTSPALTE:" ~ itoa(startspalte));
+		//WriteLog("STARTZEILE:" ~ itoa(startzeile));
+		//WriteLog("ZIELSPALTE:" ~ itoa(targetspalte));
+
+		let curspalte = startspalte;
+		let curzeile = startzeile;
+		let tempspalte = curspalte;
+		let tempzeile = curzeile;
+		while(curspalte != targetspalte)
+		{
+			//WriteLog("--NEXTTURN--");
+			//WriteLog("CURRENTSPALTE:" ~ itoa(curspalte));
+			//WriteLog("CURRENTZEILE:" ~ itoa(curzeile));
+			//WriteLog("CURRENT TURN:" ~ itoa(counter));
+			
+
+			let choice1 = 0;
+			let choice2 = 0;
+			if(round(rand(0, 1)) == 1){choice1 = 1;}
+			else{choice1 = 3;}
+			if(choice1 == 1){choice2 = 3;}
+			else{choice2 = 1;}
+			let tryarray = [maindir, choice1, choice2];
+			let tempcounter = 0;
+
+			//WriteLog("DIR TO CHECK: |");
+			//WriteLog(tryarray);
+			
+			let hit = false;
+
+			//WriteLog("DIRCHECK:" ~ itoa(tryarray[tempcounter]));
+			if(tryarray[tempcounter] == 0){tempspalte += 1;}
+			else if(tryarray[tempcounter] == 1){tempzeile += 1;}
+			else if(tryarray[tempcounter] == 2){tempspalte -= 1;}
+			else if(tryarray[tempcounter] == 3){tempzeile -= 1;}
+			//WriteLog("EXPECTED SPALTE:" ~ itoa(tempspalte));
+			//WriteLog("EXPECTED ZEILE:" ~ itoa(tempzeile));
+
+			if(!hit)
+			{
+				hit = ReserveField(counter, tempspalte, tempzeile);
+				if(hit){dirarray = dirarray ~ [tryarray[tempcounter]];}
+				//WriteLog("STATE OF CHECK:");
+				//WriteLog(hit);
+			}
+
+			if(counter != 1)//The first move is always forward
+			{
+				if(!hit)
+				{
+					tempcounter++;
+					tempspalte = curspalte;
+					tempzeile = curzeile;
+					//WriteLog("DIRCHECK:" ~ itoa(tryarray[tempcounter]));
+					if(tryarray[tempcounter] == 0){tempspalte += 1;}
+					else if(tryarray[tempcounter] == 1){tempzeile += 1;}
+					else if(tryarray[tempcounter] == 2){tempspalte -= 1;}
+					else if(tryarray[tempcounter] == 3){tempzeile -= 1;}
+					//WriteLog("EXPECTED SPALTE:" ~ itoa(tempspalte));
+					//WriteLog("EXPECTED ZEILE:" ~ itoa(tempzeile));
+
+					if(tempzeile > -1 && tempzeile < zeilen){hit = ReserveField(counter, tempspalte, tempzeile)};
+					if(hit){dirarray = dirarray ~ [tryarray[tempcounter]];}
+					//WriteLog("STATE OF CHECK:");
+					//WriteLog(hit);
+				}
+
+				if(!hit)
+				{
+					tempcounter++;
+					tempspalte = curspalte;
+					tempzeile = curzeile;
+					//WriteLog("DIRCHECK:" ~ itoa(tryarray[tempcounter]));
+					if(tryarray[tempcounter] == 0){tempspalte += 1;}
+					else if(tryarray[tempcounter] == 1){tempzeile += 1;}
+					else if(tryarray[tempcounter] == 2){tempspalte -= 1;}
+					else if(tryarray[tempcounter] == 3){tempzeile -= 1;}
+					//WriteLog("EXPECTED SPALTE:" ~ itoa(tempspalte));
+					//WriteLog("EXPECTED ZEILE:" ~ itoa(tempzeile));
+
+					if(tempzeile > -1 && tempzeile < zeilen){hit = ReserveField(counter, tempspalte, tempzeile)};
+					if(hit){dirarray = dirarray ~ [tryarray[tempcounter]];}
+					//WriteLog("STATE OF CHECK:");
+					//WriteLog(hit);
+				}
+			}
+			if(!hit)
+			{
+				WriteLog("!!!!!!!!!!!!!!!!NO WAY FOUND!!!!!!!!!!!!!!!!!!!!!!!!");
+				WriteLog(dirarray);
+				FreeField(startspalte, startzeile);
+				WriteLog("Terminating");
+
+				Obj_Delete(obj);
+				return;
+			}
+
+			curspalte = tempspalte;
+			curzeile = tempzeile;
+
+			counter++;
+
+			//WriteLog("-ENDCHECKROUND-");
+
+			//WriteLog("DIRARRAY");
+			//WriteLog(dirarray);
+		}
+		//WriteLog("----WAY PROCESS COMPLETED!----");
+
+		counter = 0;
+		if(maindir == 2){ObjMove_SetPosition(obj, xend, ystart + ypart * startzeile);}
+		else{ObjMove_SetPosition(obj, xstart, ystart + ypart * startzeile);}
+		let funvalue = 0;
+		ObjMove_SetPosition(obj, ObjRender_GetX(obj) + rand(funvalue * -1, funvalue), ObjRender_GetY(obj) + rand(funvalue * -1, funvalue));
+		while(counter <= length(dirarray))
+		{
+			let targetx = ObjMove_GetX(obj);
+			let targety = ObjMove_GetY(obj);
+			if(tick % ticklength == 0)
+			{
+				if(counter == length(dirarray)){break;}
+				alternative(dirarray[counter])
+				case(0){targetx += xpart;}
+				case(1){targety += ypart;}
+				case(2){targetx -= xpart;}
+				case(3){targety -= ypart;}
+				ObjMove_SetDestAtFrame(obj, targetx, targety, ticklength);
+				//WriteLog("LETTERX:" ~ itoa(ObjMove_GetX(obj)));
+				//WriteLog("LETTERY:" ~ itoa(ObjMove_GetY(obj)));
+				if(counter == 0){ChooseLetter(obj);}
+				counter++;
+			}
+			if(!game){Obj_Delete(obj);return;}
+			yield;
+		}
+		Obj_Delete(obj);
+
+		task ChooseLetter(oriobj)
+		{
+			let objt = ObjText_Create();
+			ObjRender_SetPosition(objt, 999, 999, 0);
+			let letter = letterpool[round(rand(0, length(letterpool) - 1))];
+			ObjText_SetText(objt, letter);
+			ObjText_SetFontSize(objt, 30);
+			Obj_SetRenderPriorityI(objt, Obj_GetRenderPriorityI(oriobj));
+			Obj_SetValue(oriobj, "letter", letter);
+
+			let correctx = -3;
+			let correcty = -14;
+			if(maindir == 2){correctx = -10;}
+
+			while(!Obj_IsDeleted(oriobj))
+			{
+				ObjRender_SetPosition(objt, ObjMove_GetX(oriobj) + correctx, ObjMove_GetY(oriobj) + correcty, 0);
+				yield;
+			}
+			Obj_Delete(objt);
+		}
+	}
+
+	function FreeFieldArray(spaltenarray, zeilenarray)
+	{
+
+	}
+
+	function FreeField(spalte, zeile)
+	{
+		let array = GetAreaCommonData("Anagram", "S" ~ itoa(spalte), []);
+		let infoarray = Obj_GetValue(array[zeile], "arr");
+		infoarray = slice(infoarray, 0, length(infoarray));
+		Obj_SetValue(array[zeile], "arr", infoarray);
+	}
+
+	function IsFieldFree(turn, spalte, zeile)
+	{
+		let array = GetAreaCommonData("Anagram", "S" ~ itoa(spalte), []);
+		let infoarray = Obj_GetValue(array[zeile], "arr");
+		ascent(i in 0..length(infoarray))
+		{
+			if(infoarray[i] == turn){return false;break;} 
+		}
+		return true;
+	}
+
+	function ReserveField(turn, spalte, zeile)
+	{
+		let array = GetAreaCommonData("Anagram", "S" ~ itoa(spalte), []);
+		//WriteLog("S" ~ itoa(spalte));
+		//WriteLog("TURN" ~ itoa(turn));
+		//WriteLog("SPALTE"~itoa(spalte));
+		//WriteLog("ZEILE"~itoa(zeile));
+		let infoarray = Obj_GetValue(array[zeile], "arr");
+		ascent(i in 0..length(infoarray))
+		{
+			//if(infoarray[i] == turn || infoarray[i] == turn + 1 || infoarray[i] == turn - 1){return false;} 
+			if(infoarray[i] == turn || infoarray[i] == turn + 1){return false;} 
+		}
+		infoarray = infoarray ~ [turn];
+		Obj_SetValue(array[zeile], "arr", infoarray);
+		return true;
+	}
+
+	function CreateField(x,y)
+	{
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		//Obj_SetValue(obj, "active", false);
+		let array = [];
+		Obj_SetValue(obj, "arr", array);
+		FieldCleanup;
+		return obj;
+
+		task FieldCleanup
+		{
+			while(game)
+			{
+				if(tick % ticklength == 0)
+				{
+					let array = Obj_GetValue(obj, "arr");
+					let temparray = [];
+					ascent(i in 0..length(array))
+					{
+						let number = array[i];
+						if(number != 0)
+						{
+							temparray = temparray ~ [number - 1];
+						}
+					}
+					Obj_SetValue(obj, "arr", temparray);
+				}
+				yield;
+			}
+			Obj_Delete(obj);
+		}
+	}
+
+	task tickcounter
+	{
+		yield;
+		while(game)
+		{
+			tick++;
+			yield;
+		}
+	}
+}
+
+

@@ -34,15 +34,23 @@ task MainTask
 	ObjRender_SetColor(BG, 0, 0, 0);
 	Obj_SetRenderPriorityI(BG, 21);
 
+	SetPlayerInvincibility(true);
+	AllowPlayerShots(false);
+
 	LoadTexturesInPath(GetCurrentScriptDirectory());
 	yield;
 
 	ReporterSpiel;
+	while(true){yield;}
 
 	SetStgFrame(32, 16, 416, 464, 20, 80);
 
 	CloseScript(GetOwnScriptID());
 }
+
+let DebugText = ObjText_Create();
+Obj_SetRenderPriorityI(DebugText, 99);
+ObjRender_SetPosition(DebugText, 100, 400, 0);
 
 function CreateTrigTable2(version, partcount)
 {
@@ -84,7 +92,7 @@ Kuiper belt = 100 steps from sun
 
 function ReporterSpiel
 {
-	CameraControl;
+	KeyControl;
 	let realdistancearray = [57.9, 108.2, 149.6, 227.9, 778.9, 1427.0, 2871.0, 4497.0, 5913.0];
 
 	let speedtable = CreateSpeedTable(220, 0.2);
@@ -102,6 +110,9 @@ function ReporterSpiel
 	let moveangle = 0;
 	let time = 0;
 
+	let cameraratio = 0.8;
+	let cameraratiostep = 0.02;
+
 	let Planets = [];
 	let Circle2D = [];
 	let Array2D = [];
@@ -112,6 +123,8 @@ function ReporterSpiel
 	let DebugList = [];
 
 	LoadTexturesInPath(GetCurrentScriptDirectory());
+
+	let starsphere = CreateStarsphere;
 
 	let ship = CreateShip;
 	let HUDMaster = CreateHUD;
@@ -128,13 +141,22 @@ function ReporterSpiel
 	Obj_Delete(0);
 	//////////DEBUG////////
 
+	//////////Setup 3D Camera////////
+	//CameraTestValues;
+	//Create3DTestCube(0, 0, 0);
+	Reset3DCamera;
+	SetCameraRadius(1);
+
+	let pausegame = false;
 	let gameticks = 0;
 	let timelimit = 36000; //10 Minutes
 	let reportergame = true;
 	//MAIN FRAME PROCCESSING
+	UpdateStarsphere(starsphere);
 	PlanetDistance();
 	PlanetMovement();
 	ShipMovement();
+	Update2DMapCamera();
 	FocusCamera2D();
 	FocusCamera3D();
 	//Update3D();
@@ -142,15 +164,24 @@ function ReporterSpiel
 	UpdateHUDZeiger();
 	while(reportergame == true)
 	{
-		PlanetDistance();
-		PlanetMovement();
-		ShipMovement();
-		FocusCamera2D();
-		FocusCamera3D();
-		//Update3D();
-		if(gameticks % 2 == 0){DynamicAssignObj();} // Containes Update3D
-		UpdateHUDZeiger();
-		gameticks++;
+		if(!pausegame)
+		{
+			UpdateStarsphere(starsphere);
+			PlanetDistance();
+			PlanetMovement();
+			ShipMovement();
+			if(Obj_GetValue(HUDMaster, "HUD_TYPE") == 5) //Map
+			{
+				FocusCamera2D();
+				Update2DMapCamera();
+			}
+			FocusCamera3D();
+			//Update3D();
+			if(gameticks % 2 == 0){DynamicAssignObj();} // Containes Update3D
+			UpdateHUDZeiger();
+			gameticks++;
+		}
+		
 
 		//DEBUGDistanceCounter;
 		yield;
@@ -171,7 +202,7 @@ function ReporterSpiel
 		}
 	}
 
-	function DynamicAssignObj
+	function DynamicAssignObj //Is Responsable for the dynamic assignment of render priority of the Planets based on distance 
 	{
 		let array3d = [];
 		let array = [];
@@ -244,6 +275,7 @@ function ReporterSpiel
 			ObjPrim_SetTexture(obj, Obj_GetValue(origobj, "path3d"));
 			ObjSprite3D_SetSourceRect(obj, 0, 0, 1024, 1024);
 			ObjSprite3D_SetDestRect(obj, -512, -512, 512, 512);
+			//ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
 			//ObjSprite3D_SetDestRect(obj, 0, 0, 1024, 1024);
 			ObjSprite3D_SetBillboard(obj, true);
 			//ObjRender_SetZWrite(obj, true);
@@ -293,7 +325,7 @@ function ReporterSpiel
 
 	function ChangeScreen(targetversion)//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
 	{
-		let currentscreen = Obj_GetValue(HUDMaster, "HUD_TYPE");
+		Obj_SetValue(HUDMaster, "HUD_TYPE", targetversion);
 		if(targetversion == 4)//Kontrollraum
 		{
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[4]);
@@ -308,6 +340,7 @@ function ReporterSpiel
 		}
 		else
 		{
+			Reset2DCamera();
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[targetversion]);
 			Change2DState(false);
 			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), true);
@@ -355,8 +388,8 @@ function ReporterSpiel
 		ObjRender_SetPosition(ship, ObjRender_GetX(ship) + speedtable[Obj_GetValue(ship, "speedstep")] * cos(ObjRender_GetAngleZ(ship)), ObjRender_GetY(ship) + speedtable[Obj_GetValue(ship, "speedstep")] * sin(ObjRender_GetAngleZ(ship)), 0);
 		ObjRender_SetScaleXYZ(ship, Obj_GetValue(ship, "scale"), Obj_GetValue(ship, "scale"), 1);
 
-		ObjText_SetText(counterlist[length(counterlist) - 2], "Speedstep: " ~ itoa(Obj_GetValue(ship, "speedstep")));
-		ObjText_SetText(counterlist[length(counterlist) - 1], "Speed: " ~ rtoa(speedtable[Obj_GetValue(ship, "speedstep")]));
+		//ObjText_SetText(counterlist[length(counterlist) - 2], "Speedstep: " ~ itoa(Obj_GetValue(ship, "speedstep")));
+		//ObjText_SetText(counterlist[length(counterlist) - 1], "Speed: " ~ rtoa(speedtable[Obj_GetValue(ship, "speedstep")]));
 	}
 
 	function FocusCamera3D
@@ -459,11 +492,45 @@ function ReporterSpiel
 		return obj; 
 	}
 
+	function CreateStarsphere
+	{
+		let path = GetCurrentScriptDirectory() ~ "./Starsphere.png";
+		//LoadTexture(path);
+		let texturestep = GetTextureWidth(path) / 360 * -1;
+		let textureheight = GetTextureHeight(path);
+		let yoffset = 240 - (textureheight / 2);
+		let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjPrim_SetTexture(obj, path);
+		//ObjSprite2D_SetSourceRect(obj, 0, 0, GetTextureWidth(path), GetTextureHeight(path));
+		ObjSprite2D_SetDestRect(obj, 0, yoffset, 640, 480 - yoffset);
+		//ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
+		Obj_SetRenderPriorityI(obj, priority3d);
+		WriteLog(yoffset);
+		WriteLog(480 - yoffset);
+
+		return [obj, texturestep, textureheight];
+	}
+
+	function UpdateStarsphere (information)
+	{
+		let xstep = information[1];
+		let xvalue = ObjRender_GetAngleZ(ship);
+
+		ObjSprite2D_SetSourceRect(information[0], xvalue * xstep, 0, 640 + xvalue * xstep, information[2]);
+	}
+
 	function CreateMap
 	{
 		let innerdismulti = 4;
 		let middledismulti = 1.5;
 		let outerdismulti = 0.9;
+
+		let blackBG = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestRect(blackBG, "", -99999, -99999, 99999, 99999);
+		ObjRender_SetColor(blackBG, 0, 0, 0);
+		Obj_SetRenderPriorityI(blackBG, priority2d - 1);
+		Array2D = Array2D ~ [blackBG];
+
 		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, 0, 0, 0, -1, 0);
 		CreatePlanet("Merkur", "./Merkur2d.png", "./Merkur.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01);
 		CreatePlanet("Venus", "./Venus2d.png", "./Venus.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01);
@@ -535,6 +602,72 @@ function ReporterSpiel
 		}
 	}
 
+	task KeyControl
+	{
+		while(true)
+		{
+			if(GetKeyState(KEY_0) == KEY_PUSH)
+			{
+				ChangeScreen(0);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_1) == KEY_PUSH)
+			{
+				ChangeScreen(1);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_2) == KEY_PUSH)
+			{
+				ChangeScreen(2);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_3) == KEY_PUSH)
+			{
+				ChangeScreen(3);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_4) == KEY_PUSH)
+			{
+				//ChangeScreen(4);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_5) == KEY_PUSH)
+			{
+				ChangeScreen(5);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+			}
+			if(GetKeyState(KEY_R) == KEY_PUSH)
+			{
+				cameraratio = 0.8;
+				//Set2DCameraRatio(0.8);
+			}
+			if(GetKeyState(KEY_ADD) == KEY_PUSH)
+			{
+				cameraratio += cameraratiostep
+				//Set2DCameraRatio(Get2DCameraRatio() + 0.02);
+			}
+			if(GetKeyState(KEY_SUBTRACT) == KEY_PUSH)
+			{
+				cameraratio -= cameraratiostep
+				//Set2DCameraRatio(Get2DCameraRatio() - 0.02);
+			}
+			if(GetKeyState(KEY_P) == KEY_PUSH)
+			{
+				if(Obj_GetValue(HUDMaster, "HUD_TYPE") != 5 && Obj_GetValue(HUDMaster, "HUD_TYPE") != 4) //Not Map or List
+				{
+					PauseMapProcessing(true);
+					TakePicture;
+					PauseMapProcessing(false);
+				}
+			}
+			if(GetKeyState(KEY_U) == KEY_PUSH)
+			{
+				//ReporterSpiel;//Test for fun
+			}
+			yield;
+		}
+	}
+
+	function Update2DMapCamera
+	{
+		Set2DCameraRatio(cameraratio);
+		Obj_SetValue(ship, "scale", 2 - Get2DCameraRatio());
+	}
+	/*
 	task CameraControl
 	{
 		Set2DCameraRatio(0.8);
@@ -571,18 +704,192 @@ function ReporterSpiel
 			}
 			if(GetKeyState(KEY_R) == KEY_PUSH)
 			{
-				Set2DCameraRatio(0.8);
+				//Set2DCameraRatio(0.8);
 			}
 			if(GetKeyState(KEY_ADD) == KEY_PUSH)
 			{
-				Set2DCameraRatio(Get2DCameraRatio() + 0.02);
+				//Set2DCameraRatio(Get2DCameraRatio() + 0.02);
 			}
 			if(GetKeyState(KEY_SUBTRACT) == KEY_PUSH)
 			{
-				Set2DCameraRatio(Get2DCameraRatio() - 0.02);
+				//Set2DCameraRatio(Get2DCameraRatio() - 0.02);
 			}
 			Obj_SetValue(ship, "scale", 2 - Get2DCameraRatio());
 			yield;
 		}
+	}
+	*/
+	function PauseMapProcessing(value)
+	{
+		pausegame = value;
+	}
+
+	function TakePicture
+	{
+		let button = KEY_P;
+		let anglemaxdis = 15;
+		let dismax = 200;
+
+		let targetname = "Nichts";
+		let targetdis = 99999;
+		let shipangle = ObjRender_GetAngleZ(ship);
+		//Planets;
+		ascent(i in 0..length(Planets))
+		{
+			let name = Obj_GetValue(Planets[i], "name");
+			let dis = GetObjectDistance(ship, Planets[i]);
+			if(dis < dismax)
+			{
+				let angledis = AngularDistance(shipangle, GetAngleTo(ship, Planets[i]));
+				if(absolute(angledis) < anglemaxdis)
+				{
+					if(dis < targetdis)
+					{
+						targetname = name;
+						targetdis = dis;
+					}
+				}
+			}
+		}
+		ProcessPicture(targetname);
+		//CheckList(targetname); //Needs to be implemented
+		//ObjText_SetText(DebugText, targetname);
+		yield;
+	}
+
+	function ProcessPicture(name)
+	{
+		//PauseMapProcessing(true);
+		let texturename = "Pictureshot";
+		//let specialhandling = ["Sonne", "Erde", "Venus", "Mond", "Merkur"];
+		let whitedis = 15;
+
+		ShowFPSCounter(false);
+		SaveSnapShotA1(GetModuleDirectory() ~ "Fotos/Schnapschuss_" ~ GetCurrentDateTimeS() ~ ".bmp");
+
+		ScreenFlash(4, 6, 10, 255, 255, 255, 99);
+		wait(5);
+		CreateRenderTarget(texturename);
+
+		RenderToTextureA1(texturename, 0, 90, true);
+		//let picture = ObjPrim_Create(OBJ_SPRITE_2D);
+		let picture = ObjEnemy_Create(OBJ_ENEMY);
+		ObjEnemy_Regist(picture);
+		ObjPrim_SetTexture(picture, texturename);
+		ObjSprite2D_SetSourceRect(picture, 0, 0, 640, 480);
+		ObjSprite2D_SetDestRect(picture, 0 + whitedis, 0 + whitedis, 640 - whitedis, 480 - whitedis);
+		Obj_SetRenderPriorityI(picture, 90);
+
+		let blockN = ObjPrim_Create(OBJ_SPRITE_2D);
+		let blockW = ObjPrim_Create(OBJ_SPRITE_2D);
+		let blockS = ObjPrim_Create(OBJ_SPRITE_2D);
+		let blockO = ObjPrim_Create(OBJ_SPRITE_2D);
+
+		ObjSprite2D_SetSourceDestRect(blockN, "", 0, 0, 640 - whitedis, whitedis);
+		ObjSprite2D_SetSourceDestRect(blockW, "", 0, 0, whitedis, 480 - whitedis);
+		ObjSprite2D_SetSourceDestRect(blockS, "", 0, 480 - whitedis, 640, 480);
+		ObjSprite2D_SetSourceDestRect(blockO, "", 640 - whitedis, 0, 640, 480);
+
+		Obj_SetRenderPriorityI(blockN, 90);
+		Obj_SetRenderPriorityI(blockW, 90);
+		Obj_SetRenderPriorityI(blockS, 90);
+		Obj_SetRenderPriorityI(blockO, 90);
+
+		RenderToTextureA1(texturename, 0, 92, true);
+
+		ObjSprite2D_SetDestRect(picture, 0, 0, 640, 480);
+
+		Obj_Delete(blockN);
+		Obj_Delete(blockW);
+		Obj_Delete(blockS);
+		Obj_Delete(blockO);
+
+		ShowFPSCounter(true);
+
+		//END PICTURE PROCESSING
+
+		ObjSprite2D_SetDestRect(picture, 0 - whitedis - 320, 0 - whitedis - 240, 640 + whitedis - 320, 480 + whitedis - 240);
+		ObjRender_SetPosition(picture, 320, 240, 0);
+
+		ObjRender_SetScaleAtFrame(picture, 1, 1, 0.5, 0.5, 40);
+		ObjRender_SetSpinAtFrame(picture, 12, 40);
+
+		wait(40 + 40);
+
+		//START DISPLAY TEXT
+
+		let text = ObjText_Create();
+		ObjText_SetFontSize(text, 28);
+		//ObjText_SetFontType(Score, "Cirno");
+		ObjText_SetFontBold(text, true);
+		ObjText_SetFontColorTop(text, 255, 255, 255);
+		ObjText_SetFontColorBottom(text, 255, 255, 255);
+		ObjText_SetFontBorderType(text, BORDER_FULL);
+		ObjText_SetFontBorderColor(text, 0, 0, 0);
+		ObjText_SetFontBorderWidth(text, 2);
+		ObjText_SetHorizontalAlignment(text, ALIGNMENT_LEFT);
+		Obj_SetRenderPriorityI(text, 90);
+
+		ObjRender_SetPosition(text, 250, 60, 0);
+
+		let namedisplay = "";
+		ascent(i in 0..length(name))
+		{
+			namedisplay = namedisplay ~ [name[i]];
+			ObjText_SetText(text, namedisplay);
+			wait(18);
+		}
+
+		wait(30);
+		FadeDelete(text, 60, 255);
+
+		if(name == "Nichts")
+		{
+			ObjRender_SetSpin(picture, 30, 1);
+			ObjMove_AddPatternB2(picture, 0, 2, -12, 0.03, 0.3, 6, 20);
+			wait(180);
+			Obj_Delete(picture);
+		}
+		else if(name == "DUMMY")
+		{
+
+		}
+		else
+		{
+			let duck = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestCenter(duck, GetCurrentScriptDirectory() ~ "duck.png");
+			ObjRender_SetScaleXYZ(duck, 0.1, 0.1, 1);
+			ObjRender_SetAngleY(duck, 180);
+			Obj_SetRenderPriorityI(duck, 90);
+
+			ObjRender_SetPosition(duck, 300, -150, 0);
+			ObjRender_SetDestAtFrame(duck, 180, 60, 60);
+
+			wait(120);
+
+			//PLAY SOUND QUACK
+
+			FollowObj2(picture, duck);
+
+			ObjRender_SetDestAtFrame(duck, -400, -400, 120);
+
+			wait(120);
+			Obj_Delete(picture);
+			Obj_Delete(duck);
+		}
+
+		return;
+
+
+		/*
+		RenderToTextureA1(texturename, 0, 79, true);
+		let picture = ObjPrim_Create(OBJ_SPRITE_2D);
+		//ObjPrim_SetTexture(picture, texturename);
+		//ObjSprite2D_SetSourceDestCenter(picture, texturename);
+		ObjPrim_SetTexture(picture, texturename);
+		ObjSprite2D_SetSourceRect(picture, whitedis * -1, whitedis * -1, 640 + whitedis, 480 + whitedis);
+		ObjSprite2D_SetDestRect(picture, 0, 0, 640, 480);
+		Obj_SetRenderPriorityI(picture, 90);
+		*/
 	}
 }
