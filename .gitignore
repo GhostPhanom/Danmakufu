@@ -1,8 +1,11 @@
 script/1und1/System/Pause.dnh
 LogWindow.dat
-LogWindow.dat
-LogWindow.dat
-LogWindow.dat
-
-script/Matze/Deltarune/deltaruneo.ddnh
-script/Matze/LOCCA_N12.dnh
+Fotos
+psftp.exe
+remote_gamestate
+reset_gamestate
+th_dnh.loh
+Game_Download.txt
+Game_Upload.txt
+Game_OnlineSync.bat
+config.dat
