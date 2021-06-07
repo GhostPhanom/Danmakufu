@@ -1,7 +1,7 @@
 #TouhouDanmakufu[Plural]
 #ScriptVersion[3]
 #Title["ReporterSpiel"]
-#Text["Löwenzahn 4 ReporterSpiel" ]
+#Text["Loewenzahn 4 ReporterSpiel" ]
 #System["./../System/Default_System.txt"]
 
 #include"./../Bulletsheet/Shotconstants.dnh" // ./../ bringt dich zum script Ordner
@@ -92,6 +92,9 @@ Kuiper belt = 100 steps from sun
 
 function ReporterSpiel
 {
+	SetAreaCommonData("ReporterSpiel", "active", true);
+
+	let pausegame = false;
 	KeyControl;
 	let realdistancearray = [57.9, 108.2, 149.6, 227.9, 778.9, 1427.0, 2871.0, 4497.0, 5913.0];
 
@@ -101,7 +104,7 @@ function ReporterSpiel
 
 	let priorityHUD = 85;
 	let priority2d = 50;
-	let priority3d = 30;
+	let priority3d = 35;
 
 	let heat = 0;
 	let heatmax = 100;
@@ -126,19 +129,25 @@ function ReporterSpiel
 
 	let starsphere = CreateStarsphere;
 
+	let photolist = [];
+	let speciallist = [];
+
 	let ship = CreateShip;
 	let HUDMaster = CreateHUD;
-	ChangeScreen(5);//Default Startstate to Map
 	CreateMap;
 	Create3DAssignArray;
 	Create3D;
 
+	let ControlRoomObjList = [];
+	CreateControlRoom;
+	ChangeScreen(5);//Default Startstate to Map
+
 	let counterlist= CreateTestCounterList(50, 50, 16, 20);
 
-	SetStgFrame(0, 0, 640, 480, 20, 80);
+	SetStgFrame(0, 0, 640, 480, 20, 90);
 
 	//////////DEBUG////////
-	Obj_Delete(0);
+	//Obj_Delete(0);
 	//////////DEBUG////////
 
 	//////////Setup 3D Camera////////
@@ -147,7 +156,7 @@ function ReporterSpiel
 	Reset3DCamera;
 	SetCameraRadius(1);
 
-	let pausegame = false;
+	let encountercounter = 0;
 	let gameticks = 0;
 	let timelimit = 36000; //10 Minutes
 	let reportergame = true;
@@ -323,23 +332,33 @@ function ReporterSpiel
 		}
 	}
 
-	function ChangeScreen(targetversion)//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+	function ChangeScreen(targetversion)//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraum, 5 Sternenkarte
 	{
 		Obj_SetValue(HUDMaster, "HUD_TYPE", targetversion);
 		if(targetversion == 4)//Kontrollraum
 		{
+			PauseMapProcessing(true);
+			Obj_SetRenderPriorityI(HUDMaster, priorityHUD + 1);
+			Reset2DCamera();
+			ShowControlRoomText(true);
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[4]);
 			Change2DState(false);
 			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), false);
 		}
 		else if(targetversion == 5)//Karte
 		{
+			PauseMapProcessing(false);
+			ShowControlRoomText(false);
+			Obj_SetRenderPriorityI(HUDMaster, priorityHUD);
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[5]);
 			Change2DState(true);
 			Obj_SetVisible(Obj_GetValue(HUDMaster, "Richtungszeiger"), false);
 		}
 		else
 		{
+			PauseMapProcessing(false);
+			ShowControlRoomText(false);
+			Obj_SetRenderPriorityI(HUDMaster, priorityHUD);
 			Reset2DCamera();
 			ObjPrim_SetTexture(HUDMaster, Obj_GetValue(HUDMaster, "Grafikarray")[targetversion]);
 			Change2DState(false);
@@ -363,11 +382,13 @@ function ReporterSpiel
 		//Acceleration from 0 to max is 4,5 sec == 270
 		if(GetKeyState(KEY_LEFT) == KEY_PUSH || GetKeyState(KEY_LEFT) == KEY_HOLD)
 		{
-			ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) - 360 / 500);
+			if(Obj_GetValue(HUDMaster, "HUD_TYPE") == 5){ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) - 360 / 500);}
+			else{ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) + 360 / 500);}
 		} 
 		else if(GetKeyState(KEY_RIGHT) == KEY_PUSH || GetKeyState(KEY_RIGHT) == KEY_HOLD)
 		{
-			ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) + 360 / 500);
+			if(Obj_GetValue(HUDMaster, "HUD_TYPE") == 5){ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) + 360 / 500);}
+			else{ObjRender_SetAngleZ(ship, ObjRender_GetAngleZ(ship) - 360 / 500);}
 		}
 
 		if(GetKeyState(KEY_UP) == KEY_PUSH || GetKeyState(KEY_UP) == KEY_HOLD)
@@ -459,7 +480,7 @@ function ReporterSpiel
 		Obj_SetValue(obj, "Hitzeanzeiger", CreateZeiger(pathzeiger, 128, 445));
 		Obj_SetValue(obj, "Zeitanzeiger", CreateZeiger(pathzeiger, 205, 445));
 		Obj_SetValue(obj, "Geschwindigkeitszeiger", CreateZeiger(pathzeiger, 281, 445));
-		Obj_SetValue(obj, "Grafikarray", [CSD ~ "Ohne.png", CSD ~ "sonne.png", CSD ~ "laser.png", CSD ~ "kamera.png", CSD ~ "menü.png", CSD ~ "karte.png"]);
+		Obj_SetValue(obj, "Grafikarray", [CSD ~ "Ohne.png", CSD ~ "sonne.png", CSD ~ "laser.png", CSD ~ "kamera.png", CSD ~ "menu.png", CSD ~ "karte.png"]);
 
 		Obj_SetRenderPriorityI(obj, priorityHUD);
 
@@ -475,6 +496,61 @@ function ReporterSpiel
 			//Array2D = Array2D ~ [obj];
 
 			return obj;
+		}
+	}
+
+	function CreateControlRoom
+	{
+		let counter = 0;
+		ControlRoomObjList = [];
+
+		ascent(i in 0..2)
+		{
+			ascent(j in 0..2)
+			{
+				ascent(k in 0..4)
+				{
+					CreateTextField(40 + 141 * k, 70 + 130 * j + 30 * i);
+				}
+			}
+		}
+
+		ascent(i in 0..2)
+		{
+			CreateSpecialBild;
+		}
+
+		function CreateSpecialBild
+		{
+			//Later
+		}
+
+		function CreateTextField(x, y)
+		{
+			if(counter >= length(photolist)){return;}
+			let targetobj = photolist[counter];
+			let obj = ObjText_Create();
+			ObjText_SetText(obj, Obj_GetValue(targetobj, "name"));
+			ObjText_SetFontSize(obj, 22);
+			ObjText_SetFontColorTop(obj, 255, 0, 0);
+			ObjText_SetFontColorBottom(obj, 255, 0, 0);
+			ObjText_SetFontBorderType(obj, BORDER_FULL);
+			ObjText_SetFontBorderWidth(obj, 2);
+			ObjText_SetFontBorderColor(obj, 255, 255, 255);
+			Obj_SetRenderPriorityI(obj, priorityHUD + 1);
+			ObjRender_SetPosition(obj, x, y, 0);
+			Obj_SetValue(photolist[counter], "textobj", obj);
+
+			counter++;
+			ControlRoomObjList = ControlRoomObjList ~ [obj];
+		}
+	}
+
+	function ShowControlRoomText(value)
+	{
+		ascent(i in 0..length(ControlRoomObjList))
+		{
+			Obj_SetVisible(ControlRoomObjList[i], value);
 		}
 	}
 
@@ -531,19 +607,19 @@ function ReporterSpiel
 		Obj_SetRenderPriorityI(blackBG, priority2d - 1);
 		Array2D = Array2D ~ [blackBG];
 
-		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, 0, 0, 0, -1, 0);
-		CreatePlanet("Merkur", "./Merkur2d.png", "./Merkur.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Venus", "./Venus2d.png", "./Venus.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01);
-		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 0.07, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.07, 25, 0, 0, Earth, 0.1);
-		CreatePlanet("Mars", "./Mars2d.png", "./Mars.png", 0.07, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Jupiter", "./Jupiter2d.png", "./Jupiter.png", 0.07, realdistancearray[4] * middledismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Saturn", "./Saturn2d.png", "./Saturn.png", 0.07, realdistancearray[5] * middledismulti, 0, 0, -1, 0.01);
-		CreatePlanet("Uranus", "./Uranus2d.png", "./Uranus.png", 0.07, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.005);
-		CreatePlanet("Neptun", "./Neptun2d.png", "./Neptun.png", 0.07, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.005);
-		CreatePlanet("Pluto", "./Pluto2d.png", "./Pluto.png", 0.07, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.005);
+		CreatePlanet("Sonne", "./Sonne2d.png", "./Sonne_Stern.png", 0.07, 0, 0, 0, -1, 0, true, false);
+		CreatePlanet("Merkur", "./Merkur2d.png", "./Merkur.png", 0.07, realdistancearray[0] * innerdismulti, 0, 0, -1, 0.01, true, false);
+		CreatePlanet("Venus", "./Venus2d.png", "./Venus.png", 0.07, realdistancearray[1] * innerdismulti, 0, 0, -1, 0.01, true, false);
+		let Earth = CreatePlanet("Erde", "./Erde2d.png", "./Erde.png", 0.07, realdistancearray[2] * innerdismulti, 0, 0, -1, 0.01, true, false);
+		CreatePlanet("Mond", "./Mond2d.png", "./Mond.png", 0.07, 25, 0, 0, Earth, 0.1, true, false);
+		CreatePlanet("Mars", "./Mars2d.png", "./Mars.png", 0.07, realdistancearray[3] * innerdismulti, 0, 0, -1, 0.01, true, false);
+		CreatePlanet("Jupiter", "./Jupiter2d.png", "./Jupiter.png", 0.07, realdistancearray[4] * middledismulti, 0, 0, -1, 0.01, true, false);
+		CreatePlanet("Saturn", "./Saturn2d.png", "./Saturn.png", 0.07, realdistancearray[5] * middledismulti, 0, 0, -1, 0.01, true, false);
+		CreatePlanet("Uranus", "./Uranus2d.png", "./Uranus.png", 0.07, realdistancearray[6] * outerdismulti, 0, 0, -1, 0.005, true, false);
+		CreatePlanet("Neptun", "./Neptun2d.png", "./Neptun.png", 0.07, realdistancearray[7] * outerdismulti, 0, 0, -1, 0.005, true, false);
+		CreatePlanet("Pluto", "./Pluto2d.png", "./Pluto.png", 0.07, realdistancearray[8] * outerdismulti, 0, 0, -1, 0.005, true, false);
 
-		function CreatePlanet(name, path2d, path3d, scale3d, radius, focuspointx, focuspointy, focusobj, movespeed)
+		function CreatePlanet(name, path2d, path3d, scale3d, radius, focuspointx, focuspointy, focusobj, movespeed, photo, special)
 		{
 			let obj = ObjPrim_Create(OBJ_SPRITE_2D);
 			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ path2d);
@@ -552,9 +628,12 @@ function ReporterSpiel
 			Planets = Planets ~ [obj];
 			Array2D = Array2D ~ [obj];
 
-			if(movespeed > 0)
+			let circleobj = -1;
+
+			//if(movespeed > 0)
+			if(true)
 			{
-				CreateCircle(radius, focuspointx, focuspointy, focusobj);
+				circleobj = CreateCircle(radius, focuspointx, focuspointy, focusobj);
 				//CreateCircle(radius + 1, focuspointx, focuspointy, focusobj);
 				//CreateCircle(radius + 2, focuspointx, focuspointy, focusobj);
 			}
@@ -572,6 +651,12 @@ function ReporterSpiel
 			Obj_SetValue(obj, "movespeed", movespeed * dir);
 			Obj_SetValue(obj, "current_rotation", rand(0, 360));
 			Obj_SetValue(obj, "distance", 9999);
+			Obj_SetValue(obj, "circleobj", circleobj);
+			Obj_SetValue(obj, "phototaken", false);
+
+
+			if(photo){photolist = photolist ~ [obj];}
+			if(special){speciallist = speciallist ~ [obj];}
 
 			return obj;
 
@@ -598,6 +683,8 @@ function ReporterSpiel
 				Obj_SetValue(obj, "focuspointx", focuspointx);
 				Obj_SetValue(obj, "focuspointy", focuspointy);
 				Obj_SetValue(obj, "focusobj", focusobj);
+
+				return obj;
 			}
 		}
 	}
@@ -606,59 +693,71 @@ function ReporterSpiel
 	{
 		while(true)
 		{
-			if(GetKeyState(KEY_0) == KEY_PUSH)
+			if(!pausegame || Obj_GetValueD(HUDMaster, "HUD_TYPE", 3) == 4)//When in control room game is paused but control should be still available
 			{
-				ChangeScreen(0);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_1) == KEY_PUSH)
-			{
-				ChangeScreen(1);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_2) == KEY_PUSH)
-			{
-				ChangeScreen(2);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_3) == KEY_PUSH)
-			{
-				ChangeScreen(3);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_4) == KEY_PUSH)
-			{
-				//ChangeScreen(4);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_5) == KEY_PUSH)
-			{
-				ChangeScreen(5);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
-			}
-			if(GetKeyState(KEY_R) == KEY_PUSH)
-			{
-				cameraratio = 0.8;
-				//Set2DCameraRatio(0.8);
-			}
-			if(GetKeyState(KEY_ADD) == KEY_PUSH)
-			{
-				cameraratio += cameraratiostep
-				//Set2DCameraRatio(Get2DCameraRatio() + 0.02);
-			}
-			if(GetKeyState(KEY_SUBTRACT) == KEY_PUSH)
-			{
-				cameraratio -= cameraratiostep
-				//Set2DCameraRatio(Get2DCameraRatio() - 0.02);
-			}
-			if(GetKeyState(KEY_P) == KEY_PUSH)
-			{
-				if(Obj_GetValue(HUDMaster, "HUD_TYPE") != 5 && Obj_GetValue(HUDMaster, "HUD_TYPE") != 4) //Not Map or List
+				/*
+				if(GetKeyState(KEY_0) == KEY_PUSH)
 				{
-					PauseMapProcessing(true);
-					TakePicture;
-					PauseMapProcessing(false);
+					ChangeScreen(0);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
 				}
+				*/
+				if(GetKeyState(KEY_1) == KEY_PUSH)
+				{
+					ChangeScreen(2);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+				}
+				if(GetKeyState(KEY_2) == KEY_PUSH)
+				{
+					ChangeScreen(3);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+				}
+				if(GetKeyState(KEY_3) == KEY_PUSH)
+				{
+					ChangeScreen(4);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+				}
+				if(GetKeyState(KEY_4) == KEY_PUSH)
+				{
+					ChangeScreen(5);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+				}
+				/*
+				if(GetKeyState(KEY_5) == KEY_PUSH)
+				{
+					ChangeScreen(5);//0 ohne, 1 sonne, 2 leser, 3 kamera, 4 Kontrollraumn, 5 Sternenkarte
+				}
+				*/
+				if(GetKeyState(KEY_R) == KEY_PUSH)
+				{
+					cameraratio = 0.8;
+					//Set2DCameraRatio(0.8);
+				}
+				if(GetKeyState(KEY_ADD) == KEY_PUSH)
+				{
+					cameraratio += cameraratiostep;
+					//Set2DCameraRatio(Get2DCameraRatio() + 0.02);
+				}
+				if(GetKeyState(KEY_SUBTRACT) == KEY_PUSH)
+				{
+					if(cameraratio > 0.03){cameraratio -= cameraratiostep;}//Below 0 does cause errors
+					//Set2DCameraRatio(Get2DCameraRatio() - 0.02);
+				}
+				if(GetKeyState(KEY_P) == KEY_PUSH)
+				{
+					if(Obj_GetValue(HUDMaster, "HUD_TYPE") != 5 && Obj_GetValue(HUDMaster, "HUD_TYPE") != 4) //Not Map or List
+					{
+						PauseMapProcessing(true);
+						TakePicture;
+						PauseMapProcessing(false);
+					}
+				}
+				if(GetKeyState(KEY_U) == KEY_PUSH)
+				{
+					//ReporterSpiel;//Test for fun
+				}
+				if(GetKeyState(KEY_E) == KEY_PUSH)
+				{
+					CreateSTGEncounter;
+				}
+				
+				yield;
 			}
-			if(GetKeyState(KEY_U) == KEY_PUSH)
-			{
-				//ReporterSpiel;//Test for fun
-			}
-			yield;
 		}
 	}
 
@@ -731,6 +830,7 @@ function ReporterSpiel
 		let dismax = 200;
 
 		let targetname = "Nichts";
+		let targetobj = -1;
 		let targetdis = 99999;
 		let shipangle = ObjRender_GetAngleZ(ship);
 		//Planets;
@@ -747,17 +847,18 @@ function ReporterSpiel
 					{
 						targetname = name;
 						targetdis = dis;
+						targetobj = Planets[i];
 					}
 				}
 			}
 		}
-		ProcessPicture(targetname);
+		ProcessPicture(targetname, targetobj);
 		//CheckList(targetname); //Needs to be implemented
 		//ObjText_SetText(DebugText, targetname);
 		yield;
 	}
 
-	function ProcessPicture(name)
+	function ProcessPicture(name, targetobj)
 	{
 		//PauseMapProcessing(true);
 		let texturename = "Pictureshot";
@@ -878,6 +979,8 @@ function ReporterSpiel
 			Obj_Delete(duck);
 		}
 
+		if(targetobj != -1){MarkPhoto(name, targetobj);}
+
 		return;
 
 
@@ -891,5 +994,117 @@ function ReporterSpiel
 		ObjSprite2D_SetDestRect(picture, 0, 0, 640, 480);
 		Obj_SetRenderPriorityI(picture, 90);
 		*/
+	}
+
+	function MarkPhoto(name, obj)
+	{
+		if(Obj_GetValue(obj, "phototaken")){return;}
+
+		let textobj = Obj_GetValueD(obj, "textobj", -1);
+		if(textobj == -1)
+		{
+			//SPECIAL HANDLER
+		}
+		else
+		{
+			ObjText_SetFontColorTop(textobj, 0, 255, 0);
+			ObjText_SetFontColorBottom(textobj, 0, 255, 0);
+		}
+
+		let circleobj = Obj_GetValue(obj, "circleobj");
+		ascent(i in 0..ObjPrim_GetVertexCount(circleobj))
+		{
+			ObjPrim_SetVertexColor(circleobj, i, 0, 255, 0);
+		}
+		Obj_SetValue(obj, "phototaken", true);
+	}
+
+	function CreateSTGEncounter
+	{
+		if(encountercounter > 3){return;}
+		encountercounter++;
+
+		let STGpriority = 94;
+		SetAreaCommonData("ReporterSpiel", "Priority", STGpriority);
+
+		if(Obj_GetValueD(HUDMaster, "HUD_TYPE", 3) == 4 || Obj_GetValueD(HUDMaster, "HUD_TYPE", 3) == 5) // If in Map Mode change to 3D
+		{
+			ChangeScreen(3);
+		}
+		yield;
+		Reset2DCamera();
+		
+		PauseMapProcessing(true);
+		ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "alert.mp3", 70);
+		ScreenFlashA(40, 0, 40, 255, 0, 0, 100, 99);
+		wait(100);
+		ScreenFlashA(40, 0, 40, 255, 0, 0, 100, 99);
+		wait(100);
+
+		
+		let schwarz = ObjPrim_Create(OBJ_SPRITE_2D);
+		ObjSprite2D_SetSourceDestCenter(schwarz, GetCurrentScriptDirectory() ~ "schwarz.png");
+		Obj_SetRenderPriorityI(schwarz, 99);
+		ObjRender_SetPosition(schwarz, 640 + 399, 240, 0);
+		ObjRender_SetDestAtFrame(schwarz, 320, 240, 90);
+		wait(90);
+
+		SetPlayerInvincibility(false);
+		SetAreaCommonData("ReporterSpiel", "STGactive", true);
+		ObjRender_SetDestAtFrame(schwarz, -399, 240, 90);
+		
+		let BG = ObjPrim_Create(OBJ_SPRITE_2D);
+		if(encountercounter == 1)
+		{
+			ObjSprite2D_SetSourceDestRect(BG, GetCurrentScriptDirectory() ~ "Background1.png", 0, 0, 640, 480);
+
+			loop(300)
+			{
+				Toilet(rand(64, 640 - 64), rand(-3000, -600));
+			}
+		}
+		Obj_SetRenderPriorityI(BG, STGpriority - 2);
+		ObjMove_SetPosition(GetPlayerObjectID(), 320, 400);
+
+		wait(90);
+		AllowPlayerShots(true);
+
+		WaitForZeroHitboxEnemy();
+		//wait(99999);
+		DeleteAllBullets(1);
+
+		AllowPlayerShots(false);
+		ObjRender_SetPosition(schwarz, 640 + 399, 240, 0);
+		ObjRender_SetDestAtFrame(schwarz, 320, 240, 90);
+		wait(90);
+		Obj_Delete(BG);
+		SetAreaCommonData("ReporterSpiel", "STGactive", false);
+		SetPlayerInvincibility(true);
+		ObjRender_SetDestAtFrame(schwarz, -399, 240, 90);
+		wait(90);
+
+		AllowPlayerShots(false);
+		Obj_Delete(schwarz);
+		PauseMapProcessing(false);
+	
+		task Toilet(x, y)
+		{
+			let obj = ObjEnemy_Create(OBJ_ENEMY);
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "toilet.png");
+			ObjRender_SetScaleXYZ(obj, 0.5, 0.5, 0.5);
+			ObjEnemy_Regist(obj);
+			ObjEnemy_SetLife(obj, 1);
+			ObjEnemy_ZeroLifeDelete(obj);
+			ObjEnemy_CreateHitbox(obj, 10, 25);
+			ObjMove_SetAngle(obj, rand(60, 120));
+			ObjMove_SetPosition(obj, x, y);
+			AutoDelete3(obj, 64, 3000, 64, 64);
+			Obj_SetRenderPriorityI(obj, STGpriority + 1);
+
+			wait(60);
+			ObjMove_SetSpeed(obj, rand(4, 10));
+		}
+
+
 	}
 }
