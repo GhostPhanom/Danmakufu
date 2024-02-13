@@ -1,0 +1,40 @@
+#TouhouDanmakufu[Plural]
+#ScriptVersion[3]
+#Title["After Forest Main"]
+#System["./../System/Default_System.txt"]
+
+#include"./../Generalfunction.dnh"
+#include"./../selibrary.dnh"
+#include"./../Dialog/Dialog System.dnh"
+
+@Initialize
+{
+	MainTask;
+}
+
+@MainLoop
+{
+    yield;
+}
+
+@Event
+{
+    alternative(GetEventType())
+	case(EV_USER) 
+	{
+
+	}
+}
+
+task MainTask
+{
+	let BG2 = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjSprite2D_SetSourceDestRect(BG2, "", 0, 0, 640, 480);
+	ObjRender_SetColor(BG2, 0, 0, 0);
+	Obj_SetRenderPriorityI(BG2, 60);
+
+	FadeDelete(BG2,120,255);
+	let script = LoadScript(GetCurrentScriptDirectory() ~ "./AfterStage.dnh");
+	StartScript(script);
+	while(!IsCloseScript(script)){yield;}
+}

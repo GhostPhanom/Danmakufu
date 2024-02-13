@@ -1,5 +1,6 @@
 task PlayHoMM
 {
+	let EnemyCounter = 4;
 	let ObeliskSound = GetCurrentScriptDirectory ~ "Obelisk.wav";
 	LoadSound(ObeliskSound);
 	
@@ -51,11 +52,13 @@ task PlayHoMM
 	}
 	
 	let BG = ObjPrim_Create(OBJ_SPRITE_2D);
-	ObjPrim_SetTexture(BG, "");
-	ObjSprite2D_SetSourceRect(BG, 0, 0, 0, 0);
+	ObjPrim_SetTexture(BG, GetCurrentScriptDirectory ~ "BG.png");
+	ObjSprite2D_SetSourceRect(BG, 0, 0, 640, 480);
 	ObjSprite2D_SetDestRect(BG, 0, 0, 640, 480);
-	ObjRender_SetColor(BG, 50, 50, 50);
+	ObjRender_SetColor(BG, 255, 255, 255);
 	Obj_SetRenderPriorityI(BG, 85);
+	ObjRender_SetAlphaAtFrame(BG, 0, 255, 60);
+	wait(60);
 	
 	ascent(i in 0..zeilen)//Nachschlageliste für die FelderIDs
 	{
@@ -70,15 +73,15 @@ task PlayHoMM
 	
 
 	//activeFighterBewegung = -1;
-	wait(180);
-	CreateEnemy(0, 1, 8, 2, 100, 10, 1);//fraktion, reihe, zeile, gegnertyp, health, damage, misc
+	wait(60);
+	CreateEnemy(0, 1, 8, 2, 100, 20, 1);//fraktion, reihe, zeile, gegnertyp, health, damage, misc
 	CreateEnemy(0, 3, 8, 1, 100, 10, 2);
-	CreateEnemy(0, 5, 8, 2, 100, 10, 1);
+	CreateEnemy(0, 5, 8, 2, 100, 20, 1);
 	CreateEnemy(0, 7, 8, 1, 100, 10, 2);
-	CreateEnemy(1, 5, 2, 0, 100, 10, 66);
-	CreateEnemy(1, 4, 2, 0, 100, 10, 66);
-	CreateEnemy(1, 8, 1, 0, 100, 10, 66);
-	CreateEnemy(1, 1, 1, 0, 100, 10, 66);
+	CreateEnemy(1, 5, 2, 0, 70, 10, 66);
+	CreateEnemy(1, 4, 2, 0, 70, 10, 66);
+	CreateEnemy(1, 8, 1, 0, 70, 10, 66);
+	CreateEnemy(1, 1, 1, 0, 70, 10, 66);
 	activeFighter = fighterarray[0];
 	activeFighterNumber = 0;
 	activeFighterReihe = Obj_GetValueD(activeFighter, "Reihe", -1);
@@ -90,6 +93,21 @@ task PlayHoMM
 	UpdateEnemyFieldPositionData;
 	ButtonControl;
 	//Obj_Delete(GetFieldID(7, 3));
+	while(EnemyCounter > 0){yield;}
+	ObjMusic_FadeoutDelete(objm, 60, 100);
+	wait(60);
+	HoMMphase = 1;
+	yield;
+	ascent(i in 0..length(fighterarray))
+	{
+		Obj_Delete(fighterarray[i]);
+	}
+	FadeDelete(BG, 60, 255);
+	wait(60);
+	SetCommonData("StageTrigger", true);
+	yield;
+
+
 	
 	task ButtonControl
 	{
@@ -104,7 +122,6 @@ task PlayHoMM
 					CheckIfEnemyInRange;
 				}
 			}
-			
 			yield;
 		}
 	}
@@ -305,6 +322,7 @@ task PlayHoMM
 				{
 					activeFighterNumber = activeFighterNumber - 1;
 				}
+				EnemyCounter--;
 				Obj_Delete(obj);
 				break;
 			}
@@ -412,11 +430,11 @@ task PlayHoMM
 
 		Obj_SetRenderPriorityI(obj, 87);
 		//ObjSprite2D_SetDestCenter(obj);
-		if(misc == 0)
+		if(misc == 1)
 		{
-			//ObjPrim_SetTexture(obj, "");
-			ObjSprite2D_SetSourceRect(obj, 0, 0, 10, 10);
-			ObjSprite2D_SetDestRect(obj, -5, -5, 5, 5);
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory ~ "Matze.png");
+			ObjRender_SetScaleXYZ(obj, 0.3, 0.3, 1);
+			/*
 			if(fraktion == 0)//Freundlich
 			{
 				ObjRender_SetColor(obj, 128, 128, 128);
@@ -425,6 +443,22 @@ task PlayHoMM
 			{
 				ObjRender_SetColor(obj, 50, 50, 255);
 			}
+			*/
+		}
+		if(misc == 2)
+		{
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory ~ "Rudiger.png");
+			ObjRender_SetScaleXYZ(obj, 0.3, 0.3, 1);
+			/*
+			if(fraktion == 0)//Freundlich
+			{
+				ObjRender_SetColor(obj, 128, 128, 128);
+			}
+			else//Feindlich
+			{
+				ObjRender_SetColor(obj, 50, 50, 255);
+			}
+			*/
 		}
 		else if(misc == 66)
 		{
@@ -574,6 +608,7 @@ task PlayHoMM
 				yield;
 			}
 			Obj_Delete(objf);
+			SetCommonData("StageTrigger", true);
 		}
 	}
 	
@@ -599,11 +634,11 @@ task PlayHoMM
 	
 	task CheckMouse
 	{
-		let counter = CreateTestCounter(10, 50);
-		Obj_SetRenderPriorityI(counter, 90);
+		//let counter = CreateTestCounter(10, 50);
+		//Obj_SetRenderPriorityI(counter, 90);
 		while(HoMMphase == 0)
 		{
-			ObjText_SetText(counter, MouseX);
+			//ObjText_SetText(counter, MouseX);
 			MouseX = GetMouseX;
 			MouseY = GetMouseY;
 			yield;

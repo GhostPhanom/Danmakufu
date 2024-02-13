@@ -22,7 +22,8 @@
 		}
 		if(casefile[0] == "Music_Alice")
 		{
-			ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 70);
+			music = ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 70);
+			ObjMusic_AddPauseStop(music)
 		}
 	}
 }
@@ -39,15 +40,19 @@
     yield;
 }
 
+let music = -1;
 let script = LoadScript(CSD ~ "./cutincontrol.dnh");
 StartScript(script);
+
+let bossend = false;
+let bgend = false;
 
 task Background
 {
 	let path = CSD ~ "./Background/magiekreisalice.png";
 	LoadTexture(path);
 	
-	while(true)
+	while(!bossend)
 	{
 		CreateRing(1, [255, 255, 255]);
 		wait(12);
@@ -62,6 +67,7 @@ task Background
 		CreateRing(-1, [0, 0, 255]);
 		wait(60);
 	}
+	bgend = true;
 	
 	task CreateRing(dir, color)
 	{
@@ -80,9 +86,11 @@ task Background
 		ObjRender_SetPosition(obj, GetCenterX, GetCenterY, 0);
 		ObjRender_SetColor(obj, color[0], color[1], color[2]);
 		
+		let targetalpha = 150;
+
 		loop(60)
 		{
-			alpha += 255 / 20;
+			alpha += targetalpha / 60;
 			ObjRender_SetAlpha(obj, alpha);
 			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
 			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
@@ -91,10 +99,10 @@ task Background
 			startscale += scalegrowth;
 			yield;
 		}
-		alpha = 255;
+		alpha = targetalpha;
 		loop(20)
 		{
-			alpha -= 255 / 20;
+			alpha -= targetalpha / 20;
 			ObjRender_SetAlpha(obj, alpha);
 			ObjRender_SetScaleXYZ(obj, startscale, startscale, 1);
 			ObjRender_SetBlendType(obj, BLEND_ADD_ARGB);
@@ -117,6 +125,9 @@ task TPlural{
     while(!Obj_IsDeleted(obj)){
         yield;
     }
-	wait(240);
+    bossend = true;
+    while(!bgend){yield;}
+    ObjMusic_FadeoutDelete(music, 58, 70);
+	wait(60);
     CloseScript(GetOwnScriptID());
 }
