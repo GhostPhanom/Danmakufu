@@ -37,4 +37,5 @@ task MainTask
 	let script = LoadScript(GetCurrentScriptDirectory() ~ "./AfterStage.dnh");
 	StartScript(script);
 	while(!IsCloseScript(script)){yield;}
+	CloseScript(GetOwnScriptID());
 }
