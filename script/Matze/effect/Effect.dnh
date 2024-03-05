@@ -112,6 +112,122 @@ task BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxr
 	}
 }
 
+task BulletExplosionEffectO_2(originobj, xoffset, yoffset, targetobj, number, maxradius, scale, spinspeed, ttogrow, ttomove, ttoshrink, bulletgraphicid, alpha)
+{
+	/*
+	ascent(i in 0 .. 10){
+		  //BulletExplosionEffectO(originobj, xoffset, yoffset, targetobj, number, maxradius, scale, spinspeed, ttogrow, ttomove, ttoshrink, bulletgraphicid, alpha)
+			BulletExplosionEffectO(objBoss, 0, 0, GetPlayerObjectID, 9, 200, 1, 5, 100, 50, 60, 201+i%8, 63);
+		}*/
+	let anglex = rand(0.2, 0.8);
+	let angley = rand(0.2, 0.8);
+	let obj = ObjPrim_Create(OBJ_SPRITE_2D);
+	ObjRender_SetPosition(obj, ObjRender_GetX(originobj) + xoffset, ObjRender_GetY(originobj) + yoffset, 0);
+	let angle = rand(0, 360);
+	let radius = 0;
+	let radiuspart = maxradius / ttogrow;
+	ascent(i in 0..number)
+	{
+		Bullets(360 / number * i);
+	}
+	/*
+	loop(ttogrow)
+	{
+		radius += radiuspart;
+		angle += spinspeed;
+		yield;
+	}
+	*/
+	let cospart = 90 / ttogrow;
+	let t = ttomove + ttogrow;
+	let grow = 0;
+	ascent(i in 0..ttomove + ttogrow)
+	{
+		if(grow <= ttogrow)
+		{
+			radius = maxradius * sin(cospart * i);;
+		}
+		angle += spinspeed;
+		let disangle = GetAngleTo(obj, targetobj);
+		let dispart = GetObjectDistance(obj, targetobj) / t;
+		ObjRender_SetPosition(obj, ObjRender_GetX(obj) + dispart * cos(disangle), ObjRender_GetY(obj) + dispart * sin(disangle), 0);
+		
+		grow++;
+		t--;
+		yield;
+	}
+	cospart = 90 / ttoshrink;
+	ascent(i in 0..ttoshrink)
+	{
+		angle += spinspeed;
+		radius = maxradius * cos(cospart * i);
+		spinspeed -= spinspeed * (1.5 / ttoshrink);
+		ObjRender_SetPosition(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), 0);
+		yield;
+	}
+	/*
+	radiuspart = maxradius / ttoshrink;
+	loop(ttoshrink)
+	{
+		angle += spinspeed;
+		radius -= radiuspart;
+		spinspeed -= spinspeed * (1.5 / ttoshrink);
+		ObjRender_SetPosition(obj, ObjRender_GetX(targetobj), ObjRender_GetY(targetobj), 0);
+		yield;
+	}*/
+	Obj_Delete(obj);
+	
+	task Bullets(angleoffset)
+	{
+		let objb = CreateShotA1(0, 0, 0, 0, bulletgraphicid, 0);
+		ObjShot_SetIntersectionEnable(objb, false);
+		ObjShot_SetAutoDelete(objb, false);
+		ObjRender_SetScaleXYZ(objb, scale, scale, 1);
+		ObjRender_SetAlpha(objb, alpha);
+		Obj_SetRenderPriorityI(objb, 92);
+		Afterglow;
+		loop(ttogrow + ttomove + ttoshrink)
+		{
+			ObjMove_SetPosition(objb, ObjRender_GetX(obj) + radius * cos(angleoffset + angle) * anglex, ObjRender_GetY(obj) + radius * sin(angleoffset + angle) * angley);
+			yield;
+		}
+		Obj_Delete(objb);
+		
+		task Afterglow
+		{
+			let time = 10;
+			let startscale = scale * 0.8;
+			let scalepart = startscale / time;
+			let alphapart = alpha / time;
+			yield;
+			while(!Obj_IsDeleted(objb))
+			{
+				CreateImage;
+				wait(1);
+			}
+			
+			task CreateImage
+			{
+				let scale = startscale;
+				let objg = CreateShotA1(0, 0, 0, 0, bulletgraphicid, 0);
+				Obj_SetRenderPriorityI(objg, 92);
+				ObjShot_SetIntersectionEnable(objg, false);
+				ObjShot_SetAutoDelete(objg, false);
+				ObjMove_SetPosition(objg, ObjMove_GetX(objb), ObjMove_GetY(objb));
+				ObjRender_SetBlendType(objg, BLEND_ADD_RGB);
+				ascent(i in 0..time)
+				{
+					ObjRender_SetScaleXYZ(objg, scale - scalepart * i, scale - scalepart * i, 1);
+					ObjRender_SetAlpha(objg, alpha - alphapart * i);
+					yield;
+				}
+				Obj_Delete(objg);
+				
+			}
+		}
+	}
+}
+
 
 
 /*
