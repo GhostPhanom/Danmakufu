@@ -39,14 +39,25 @@ task MainTask
 
 	LoadTexturesInPath(GetCurrentScriptDirectory());
 	yield;
-
+	SetAutoDeleteObject(true);
 	ReporterSpiel;
-	while(true){yield;}
+	wait(60);
+	while(reportergame == true){yield;}
 
 	SetStgFrame(32, 16, 416, 464, 20, 80);
+	Obj_Delete(BG);
+	SetCameraAzimuthAngle(-90);
+	SetCameraElevationAngle(0);
+	SetCameraRadius(2000);
+	SetCameraFocusX(1024);
+	SetCameraFocusY(400);
+	SetCameraFocusZ(-1000);
+	Reset2DCamera;
 
 	CloseScript(GetOwnScriptID());
 }
+
+let reportergame = false;
 
 let DebugText = ObjText_Create();
 Obj_SetRenderPriorityI(DebugText, 99);
@@ -116,6 +127,16 @@ function ReporterSpiel
 	let cameraratio = 0.8;
 	let cameraratiostep = 0.02;
 
+	let planetfinishedcounter = 0;
+	let queuecounter = 0;
+	let music1 = -1;
+	let music2 = -1;
+	let musicqueue = [];
+	let patharray_music = ["music_ku_danger.ogg","music_ku_battle.ogg","music_tau_space.ogg","music_tau_danger.ogg","music_tau_battle.ogg","music_br_space.ogg","music - end.mp3"];
+
+	let turbogefahr = 0;
+	turbogefahrcounter;
+
 	let Planets = [];
 	let Circle2D = [];
 	let Array2D = [];
@@ -141,6 +162,7 @@ function ReporterSpiel
 	let ControlRoomObjList = [];
 	CreateControlRoom;
 	ChangeScreen(5);//Default Startstate to Map
+	
 
 	let counterlist= CreateTestCounterList(50, 50, 16, 20);
 
@@ -159,7 +181,8 @@ function ReporterSpiel
 	let encountercounter = 0;
 	let gameticks = 0;
 	let timelimit = 36000; //10 Minutes
-	let reportergame = true;
+	reportergame = true;
+	MusicHandler;
 	//MAIN FRAME PROCCESSING
 	UpdateStarsphere(starsphere);
 	PlanetDistance();
@@ -171,6 +194,7 @@ function ReporterSpiel
 	//Update3D();
 	DynamicAssignObj(); // Containes Update3D
 	UpdateHUDZeiger();
+	ChangeScreen(2);
 	while(reportergame == true)
 	{
 		if(!pausegame)
@@ -195,6 +219,7 @@ function ReporterSpiel
 		//DEBUGDistanceCounter;
 		yield;
 	}
+	//CloseScript(GetOwnScriptID);
 
 	function Create3DAssignArray
 	{
@@ -403,6 +428,15 @@ function ReporterSpiel
 			if(Obj_GetValue(ship, "speedstep") > 0)
 			{
 				Obj_SetValue(ship, "speedstep", Obj_GetValue(ship, "speedstep") - 1);
+			}
+		}
+
+		if(Obj_GetValue(ship, "speedstep") > (length(speedtable) / 9 * 8))
+		{
+			if(turbogefahr <= 0)
+			{
+				ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "turbogefahr.wav", 70);
+				turbogefahr = 700;
 			}
 		}
 
@@ -753,11 +787,11 @@ function ReporterSpiel
 				}
 				if(GetKeyState(KEY_E) == KEY_PUSH)
 				{
-					CreateSTGEncounter;
+					//CreateSTGEncounter;
 				}
 				
-				yield;
 			}
+			yield;
 		}
 	}
 
@@ -867,6 +901,8 @@ function ReporterSpiel
 
 		ShowFPSCounter(false);
 		SaveSnapShotA1(GetModuleDirectory() ~ "Fotos/Schnapschuss_" ~ GetCurrentDateTimeS() ~ ".bmp");
+
+		ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "camera.wav", 70);
 
 		ScreenFlash(4, 6, 10, 255, 255, 255, 99);
 		wait(5);
@@ -1017,14 +1053,46 @@ function ReporterSpiel
 			ObjPrim_SetVertexColor(circleobj, i, 0, 255, 0);
 		}
 		Obj_SetValue(obj, "phototaken", true);
+		planetfinishedcounter++;
+		if(planetfinishedcounter == 3){QueueSTGEncounter;}
+		if(planetfinishedcounter == 7){QueueSTGEncounter;}
+		if(planetfinishedcounter == 10){AdvanceMusic;}
+		if(planetfinishedcounter == 11)
+		{
+			PauseMapProcessing(true);
+			ObjMusic_FadeoutDelete(music1, 60, 50);
+			wait(50);
+			let sound = ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "win.wav", 70);
+			let camera = ObjPrim_Create(OBJ_SPRITE_2D);
+			ObjSprite2D_SetSourceDestCenter(camera, GetCurrentScriptDirectory ~ "goldene kamera.png");
+			ObjRender_SetAlphaAtFrame(camera, 0, 255, 180);
+			ObjRender_SetPosition(camera, 320, 240, 0);
+			Obj_SetRenderPriorityI(camera, 97);
+			yield;
+			//while(ObjSound_IsPlaying(sound) == true){yield;}
+			wait(700);
+			reportergame = false;
+			//SetAreaCommonData("ReporterSpiel", "active", false);
+			yield;
+			//CloseScript(GetOwnScriptID);
+		}
+	}
+
+	task turbogefahrcounter
+	{
+		while(true)
+		{
+			turbogefahr--;
+			yield;
+		}
 	}
 
 	function CreateSTGEncounter
 	{
-		if(encountercounter > 3){return;}
+		if(encountercounter >= 2){return;}
 		encountercounter++;
 
-		let STGpriority = 94;
+		let STGpriority = 95;
 		SetAreaCommonData("ReporterSpiel", "Priority", STGpriority);
 
 		if(Obj_GetValueD(HUDMaster, "HUD_TYPE", 3) == 4 || Obj_GetValueD(HUDMaster, "HUD_TYPE", 3) == 5) // If in Map Mode change to 3D
@@ -1040,7 +1108,8 @@ function ReporterSpiel
 		wait(100);
 		ScreenFlashA(40, 0, 40, 255, 0, 0, 100, 99);
 		wait(100);
-
+		AdvanceMusic;
+		ObjMusic_CreateSE(GetCurrentScriptDirectory() ~ "weltraummull.wav", 70);
 		
 		let schwarz = ObjPrim_Create(OBJ_SPRITE_2D);
 		ObjSprite2D_SetSourceDestCenter(schwarz, GetCurrentScriptDirectory() ~ "schwarz.png");
@@ -1063,12 +1132,27 @@ function ReporterSpiel
 				Toilet(rand(64, 640 - 64), rand(-3000, -600));
 			}
 		}
-		Obj_SetRenderPriorityI(BG, STGpriority - 2);
-		ObjMove_SetPosition(GetPlayerObjectID(), 320, 400);
+		else if(encountercounter > 1)
+		{
+			ObjSprite2D_SetSourceDestRect(BG, GetCurrentScriptDirectory() ~ "Background1.png", 0, 0, 640, 480);
+			Obj_SetRenderPriorityI(BG, STGpriority - 2);
+			ObjMove_SetPosition(GetPlayerObjectID(), 320, 400);
+			AllowPlayerShots(true);
 
-		wait(90);
-		AllowPlayerShots(true);
+			let count = 16;
+			let anglepart = 360 / count;
 
+			loop(20)
+			{
+				ascent(i in 0..count)
+				{
+					Toilet2(rand(64, 640 - 64), rand(-100, -290), anglepart * i, rand(0.2, 0.4));
+				}
+				wait(20);
+			}
+		}
+		
+		wait(60);
 		WaitForZeroHitboxEnemy();
 		//wait(99999);
 		DeleteAllBullets(1);
@@ -1077,6 +1161,7 @@ function ReporterSpiel
 		ObjRender_SetPosition(schwarz, 640 + 399, 240, 0);
 		ObjRender_SetDestAtFrame(schwarz, 320, 240, 90);
 		wait(90);
+		AdvanceMusic;
 		Obj_Delete(BG);
 		SetAreaCommonData("ReporterSpiel", "STGactive", false);
 		SetPlayerInvincibility(true);
@@ -1105,6 +1190,91 @@ function ReporterSpiel
 			ObjMove_SetSpeed(obj, rand(4, 10));
 		}
 
+		task Toilet2(x, y, angle, av)
+		{
+			let obj = ObjEnemy_Create(OBJ_ENEMY);
+			ObjSprite2D_SetSourceDestCenter(obj, GetCurrentScriptDirectory() ~ "toilet.png");
+			ObjRender_SetScaleXYZ(obj, 0.5, 0.5, 0.5);
+			ObjEnemy_Regist(obj);
+			ObjEnemy_SetLife(obj, 1);
+			ObjEnemy_ZeroLifeDelete(obj);
+			ObjEnemy_CreateHitbox(obj, 10, 25);
+			ObjMove_SetAngle(obj, angle);
+			ObjMove_SetPosition(obj, x, y);
+			ObjMove_SetAngularVelocity(obj, av);
+			AutoDelete3(obj, 64, 300, 64, 64);
+			Obj_SetRenderPriorityI(obj, STGpriority + 1);
+
+			wait(60);
+			ObjMove_SetSpeed(obj, rand(4, 10));
+		}
+
 
 	}
+
+
+
+
+	task QueueSTGEncounter
+	{
+		AdvanceMusic;
+		queuecounter = rand(300, 400);
+		QueueCounter;
+		while(queuecounter > 0){yield;}
+		CreateSTGEncounter;
+	}
+
+	task QueueCounter
+	{
+		while(queuecounter > 0)
+		{
+			if(pausegame == false)
+			{
+				queuecounter--;
+			}
+			yield;
+		}
+	}
+
+	
+	task MusicHandler
+	{
+		let volume = 50;
+		let fadetime = 60;
+		let fadepart = volume / fadetime;
+		music1 = ObjMusic_CreateBGM(GetCurrentScriptDirectory ~ "music_ku_space.ogg", volume);
+		ObjMusic_AddPauseStop(music1);
+
+		while(true)
+		{
+			if(length(musicqueue) > 0)
+			{
+				let volume1 = volume;
+				let volume2 = 0;
+				music2 = ObjMusic_CreateBGM(GetCurrentScriptDirectory ~ musicqueue[0], 0);
+				ObjMusic_AddPauseStop(music2);
+				loop(fadetime)
+				{
+					volume1 = volume1 - fadepart;
+					volume2 = volume2 + fadepart;
+					ObjSound_SetVolumeRate(music1, volume1);
+					ObjSound_SetVolumeRate(music2, volume2);
+					yield;
+				}
+				Obj_Delete(music1);
+				music1 = music2;
+				musicqueue = erase(musicqueue, 0);
+			} 
+			yield;
+		}
+	}
+
+	
+	function AdvanceMusic
+	{
+		if(length(patharray_music) == 0){return;}
+		musicqueue = musicqueue ~ [patharray_music[0]];
+		patharray_music = erase(patharray_music, 0);
+	}
 }
+
