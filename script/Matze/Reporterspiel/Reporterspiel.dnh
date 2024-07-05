@@ -53,6 +53,7 @@ task MainTask
 	SetCameraFocusY(400);
 	SetCameraFocusZ(-1000);
 	Reset2DCamera;
+	SetAreaCommonData("ReporterSpiel", "active", false);
 
 	CloseScript(GetOwnScriptID());
 }

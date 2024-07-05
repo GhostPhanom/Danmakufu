@@ -41,7 +41,7 @@ task CreateStarWarsLogo
 
 task PlayStarWarsMusic
 {
-	let path = GetCurrentScriptDirectory() ~ "./Intro.ogg";
+	let path = GetCurrentScriptDirectory() ~ "./Intro3.ogg";
 	let obj = ObjSound_Create;
 	ObjSound_Load(obj, path);
 	ObjSound_SetVolumeRate(obj, 80);

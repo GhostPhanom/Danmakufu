@@ -92,7 +92,7 @@ task PlayTestVideo(folder, frames, duration) //duration in sec / 30 FPS Version
 	//ObjSprite2D_SetDestRect(obj, 0, 0, 640, 480);
 	Obj_SetRenderPriorityI(obj, 90);
 	
-	PlaySound(videopath ~ "Ton.ogg");
+	let vidoesound = PlaySound(videopath ~ "Ton.ogg");
 	
 	/* //Path Debug
 	let test = CreateTestCounter(-600, 200);
@@ -112,6 +112,9 @@ task PlayTestVideo(folder, frames, duration) //duration in sec / 30 FPS Version
 		yield;
 	}
 	Obj_Delete(obj);
+	Obj_Delete(videoSound);
+	yield;
+	RemoveSound(videopath ~ "Ton.ogg");
 }
 
 function CreateLoadingScreen
@@ -144,6 +147,7 @@ function PlaySound (path)
 	ObjSound_SetRestartEnable(videoSound, true);
 	
 	ObjSound_Play(videoSound);
+	return videoSound;
 }
 
 let videoPlayer;

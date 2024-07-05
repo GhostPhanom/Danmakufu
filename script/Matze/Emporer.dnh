@@ -22,7 +22,7 @@
 		}
 		if(casefile[0] == "Music_Alice")
 		{
-			music = ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 70);
+			music = ObjMusic_CreateBGM(CSD ~ "./bgm/grimoreofalice.ogg", 50);
 			ObjMusic_AddPauseStop(music)
 		}
 	}

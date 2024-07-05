@@ -41,10 +41,10 @@ task CreateStarWarsLogo
 
 task PlayStarWarsMusic
 {
-	let path = CSD ~ "./StarWarsText/Intro.ogg";
+	let path = CSD ~ "./StarWarsText/intro2.mp3";
 	let obj = ObjSound_Create;
 	ObjSound_Load(obj, path);
-	ObjSound_SetVolumeRate(obj, 100);
+	ObjSound_SetVolumeRate(obj, 70);
 	ObjSound_Play(obj);
 }
 
