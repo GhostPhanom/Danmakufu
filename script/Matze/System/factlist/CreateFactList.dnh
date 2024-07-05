@@ -2,14 +2,12 @@ function CreateFactList
 {
 	let factlist = 
 	[
-		"Taking a little break[r]can improve your[r]concentration",
-		"Underage drinking is[r]forbidden by law",
-		"If you get hit you die",
-		"If you die you lose a life",
-		"If you lose all lives[r]you get a Game Over",
-		"All TSA Games since 9.5[r]do not work properly[r]without an [r]enabled sound device",
-		"You are currently playing[r]Danmakufu PH3",
-		"Laser can kill you too!"
+		"Mima!",
+		"SEITENBACHER[r]BERGSTEIGERMUESLI",
+		"Koffer behalten!",
+		"Smarva",
+		"Wieviel Quacken hat ein[r]Quant?",
+		"Die Steinzeitmenschen[r]waren stark![r]Ihr Mittagessen war[r]recht karg."
 	];
 	
 	CreateCommonDataArea("Factlistlength");
