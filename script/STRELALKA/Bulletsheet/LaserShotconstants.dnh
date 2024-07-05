@@ -1,5 +1,0 @@
-local {
-let CSD = GetCurrentScriptDirectory;
-let path = CSD ~ "LaserShotdata.dnh";
-LoadEnemyShotData(path);
-}
